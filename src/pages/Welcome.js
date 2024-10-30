@@ -7,8 +7,9 @@ import * as SecureStore from 'expo-secure-store';
 const Welcome = ({navigation}) => {
   async function getToken(){
     try{
-      const credentials = await SecureStore.getItemAsync("Token");
-      await SecureStore.deleteItemAsync('Token')
+      // const credentials = await SecureStore.getItemAsync("Token");
+      const credentials = false
+      console.log(credentials)
       return credentials
     }catch(e){
       console.log(e)
@@ -17,9 +18,10 @@ const Welcome = ({navigation}) => {
 
   useEffect(()=>{
       setTimeout(async()=>{
-      const token = await getToken()
+      // const token = await getToken()
+      const token = true
         if(token){
-          navigation.replace('Main')
+          navigation.replace('Home')
         }else{
           navigation.replace('Home')
         }

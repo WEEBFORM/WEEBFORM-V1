@@ -24,7 +24,7 @@ const Feed = () => {
       const newposts = await getUserPostsByFollowing()
       if (posts) {
         setAllPosts(posts);
-        console.log('allpost', posts)
+        console.log('allpost', posts[0]) 
       }
       if(newposts){
         setNewPosts(newposts)

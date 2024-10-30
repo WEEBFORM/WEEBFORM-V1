@@ -1,4 +1,5 @@
-import { StatusBar } from "expo-status-bar";
+// import { StatusBar } from "expo-status-bar";
+import { StatusBar } from 'react-native';
 import { StyleSheet, Text, View, SafeAreaView, ImageBackground, TouchableWithoutFeedback, Keyboard } from "react-native";
 import Welcome from "./src/pages/Welcome";
 import WelcomeOne from "./src/pages/WelcomeOne";
@@ -19,6 +20,8 @@ import Home from "./src/pages/Home";
 import Textpost from "./src/components/Textpost";
 import Photopost from "./src/components/Photopost";
 import MPMore from "./src/pages/MPMore";
+import Username from "./src/pages/Username";
+// import EditProfile from "./src/pages/EditProfile";
 
 const Stack = createNativeStackNavigator()
 
@@ -31,7 +34,7 @@ export default function App() {
     // }}>
     <View style={Globalstyles.container}>
     <NavigationContainer>
-    
+    <StatusBar barStyle="light-content" translucent={true} backgroundColor="transparent" />
     <Stack.Navigator screenOptions={{
       headerStyle:{
         backgroundColor: 'transperent'
@@ -112,6 +115,19 @@ export default function App() {
         headerBackTitleVisible: false,
         headerBackVisible:false 
       }} />
+      <Stack.Screen name='Username' component={Username} options={{
+        title: 'Username',
+        headerStyle:{
+          backgroundColor: 'transparent',
+        },
+        headerTintColor: 'white',
+        headerTransparent: true , 
+        headerTitleStyle: {
+          fontSize: 20
+        },
+        headerBackTitleVisible: false,
+        headerBackVisible:false 
+      }} />
       <Stack.Screen name='Otp' component={Otp} options={{
         title: 'Verify',
         headerStyle:{
@@ -166,6 +182,20 @@ export default function App() {
         headerBackTitleVisible: false,
         headerBackVisible:false 
       }} />
+      {/* <Stack.Screen name='EditProfile' component={EditProfile} options={{
+        title: 'Edit Profile',
+        headerStyle:{
+          backgroundColor: 'black',
+        },
+        headerTintColor: 'white',
+        headerTransparent: true ,
+        headerShown: false,
+        headerTitleStyle: {
+          fontSize: 20
+        },
+        headerBackTitleVisible: false,
+        headerBackVisible:false 
+      }} /> */}
 
     </Stack.Navigator>
    

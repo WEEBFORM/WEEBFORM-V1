@@ -59,7 +59,7 @@ export const userPosts = (req, res) => {
                 return res.status(500).json(err);
             }
             if (data.length === 0) {
-                return res.status(404).json('No posts yet..');
+                return res.status(404).json('No posts yet..'); 
             }
             return res.status(200).json(data);
         });
@@ -85,7 +85,7 @@ export const allPosts = (req, res)=>{
     authenticateUser(req, res, () => {
         const user = req.user;
         //QUERY DB TO GET POSTS
-        const q = "SELECT * FROM posts ORDER BY createdAt DESC";
+        const q = "SELECT p.*, u.id AS userId, username, profilePic FROM posts AS p JOIN users AS u ON (u.id = p.userId) ORDER BY createdAt DESC";
         db.query(q, (err,data)=>{
         if(err) return res.status(500).json(err)
         //SHUFFLE POSTS

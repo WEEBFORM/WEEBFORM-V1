@@ -16,7 +16,7 @@ export const viewProfile = (req, res)=>{
         if(err){
             return res.status(500).json(err)
         }
-        if(data.length === 0){
+        if(data.length === 0){ 
             return res.status(404).json("User not found");
         }
         const {password, ...userInfo} = data[0];

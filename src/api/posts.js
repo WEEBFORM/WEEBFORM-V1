@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import axios, { all } from "axios";
 
-const baseUrl = `http://192.168.1.118:8000/api/v1/posts`;
+const baseUrl = `http://localhost:8000/api/v1/posts`;
 async function getToken(){
     try{
       const credentials = await SecureStore.getItemAsync("Token");
@@ -20,8 +20,6 @@ async function getToken(){
     'Postman-Token': 've5465yrter546576879768uyt6756t3435',
     // 'Cookie' : `accessToken=${await getToken()},`
   };
-  console.log(headers)
-
 
 export const getAllPosts = async () => {
     try {
@@ -82,3 +80,4 @@ export const getUserPostsByFollowing = async () => {
       return null; // Or handle the error as needed
     }
   };
+

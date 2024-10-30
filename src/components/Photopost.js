@@ -2,7 +2,8 @@ import React from 'react'
 import { useState } from 'react';
 import { StyleSheet, Text, View, Image, FlatList, SafeAreaView, ImageBackground} from "react-native";
 import MorePost from './MorePost';
-
+import { all } from 'axios';
+import { Buffer } from 'buffer';
 const ExploreData =[
     {
         id: '1',
@@ -128,8 +129,6 @@ const NewPostData =[
     },
 ]
 
-
-
 const Photopost = ({allpost, newpost, categorypost}) => {
     const [liked, setLiked] = useState(false)
     const [more, setMore] = useState(false)
@@ -151,6 +150,32 @@ const Photopost = ({allpost, newpost, categorypost}) => {
         setMore(!more)
         console.log('show')
     }
+    function convertBufferToUrl(imgData){
+        const imageBuffer = Buffer.from(imgData)
+        const base64Image = imageBuffer.toString('base64')
+        const imageUrl = `data:image/png;base64,${base64Image}`
+        // console.log(imageUrl)
+        return imageUrl
+    }
+    function convertDate(date){
+        try{
+          console.log(date)
+            const date = new Date(date);
+            const hours = date.getUTCHours().toString().padStart(2, '0');
+            const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+        const day = date.getUTCDate().toString().padStart(2, '0');
+        const month = date.toLocaleString('default', { month: 'long' }); // e.g., "January"
+        const year = date.getUTCFullYear();
+        // if(hours<24){
+        //   return `${hours}:${minutes}`;
+        // }else{
+        console.log(`${hours}:${minutes} ${day} ${month} ${year}`)
+          return `${hours}:${minutes} ${day} ${month} ${year}`
+        // }
+        }catch(e){
+          console.log('errr', e)
+        }
+      }
   return (
     <View style={styles.container}>
       <View style={styles.layoutNav}>
@@ -161,7 +186,7 @@ const Photopost = ({allpost, newpost, categorypost}) => {
     </View>
         <FlatList
         contentContainerStyle={{flexGrow:1}}
-            data={explore ? ExploreData: NewPostData}
+            data={explore ? allpost: NewPostData}
             renderItem={({item})=>(
                 <View style={styles.layout}>
     <Image source={require('../assets/postInd.png')} style={styles.ind} />
@@ -172,7 +197,7 @@ const Photopost = ({allpost, newpost, categorypost}) => {
             </View>
             <View style={styles.topMiddle}>
                 <View>
-                    <Text style={styles.text}>{item.name}</Text>
+                    <Text style={styles.text}>{item.username}</Text>
                     <Text style={styles.text}>@Shezzy</Text>
                 </View>
                 <View><Text style={styles.follow}>Follow</Text></View>
@@ -181,10 +206,12 @@ const Photopost = ({allpost, newpost, categorypost}) => {
             <View><Image source={require('../assets/more.png')} onTouchStart={showmore} /></View>
         </View>
         <View style={styles.middle}>
-            <Text style={styles.maintext}>Catch me if you can...😂😂😂</Text>
+            <Text style={styles.maintext}>{item.description}</Text>
             <View>
-            {item.photo && <Image style={styles.photo} source={require('../assets/post1.png')} />}
+            {/* {item.photo && <Image style={styles.photo} source={require('../assets/post1.png')} />} */}
+            {item.image && <Image style={styles.photo} source={item.image=== null ? require('../assets/post1.png'): {uri: `data:image/png;base64,${base64Image}`}} />}
             </View>
+            {/* <Text style={styles.date}>{convertDate(item.createdAt)}</Text> */}
         </View>
         <View style={styles.bottom}>
             <View style={styles.reactionCon} onTouchStart={likePost} ><Image source={liked ? require('../assets/liked.png'): require('../assets/like.png')}/><Text style={{...styles.text2, color: liked ? '#FF0808': 'white'}}>{item.number_of_likes>0 ? item.number_of_likes: 0}</Text></View>
@@ -280,6 +307,10 @@ const styles = StyleSheet.create({
         fontSize: 18,
         lineHeight: 22
     },
+    date:{
+        color: 'white',
+        fontSize: 10,
+    },
     middle:{
         paddingVertical: 5,
         flexDirection: 'column',
@@ -287,7 +318,9 @@ const styles = StyleSheet.create({
         // paddingHorizontal: 20
     }, 
     photo:{
-        width: '100%'
+        width: '100%',
+        borderWidth: 1,
+        borderColor: 'white'
     },
     bottom:{
         flexDirection: 'row',

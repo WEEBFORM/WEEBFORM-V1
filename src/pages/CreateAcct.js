@@ -10,12 +10,18 @@ import {
 import ButtonComp from "../components/ButtonComp";
 import { Globalstyles } from "../Styles/globalstyles";
 import { createAcct } from "../api/auth";
+import Loading from "../components/Loading/Loading";
 
 const CreateAcct = ({ navigation }) => {
 const [username, setUsername] = useState('')
 const [email, setEmail] = useState('')
 const [password, setPassword] = useState('')
+const [loading, setLoading] = useState(false)
 console.log(username)
+
+function toggleLoad(cond){
+  setLoading(cond)
+}
   
 const userData = {
     username : username,
@@ -34,6 +40,7 @@ console.log(userData)
   return (
     <View style={Globalstyles.form}>
       <SafeAreaView>
+      {loading && <Loading/>}
         <View style={styles.layout}>
           <View style={styles.header}>
             <Image source={require("../assets/logo2.png")} />
@@ -90,7 +97,8 @@ console.log(userData)
             </View>
           </View>
           <View style={styles.signupCon}>
-            <ButtonComp text="Sign up" next={createNewAcct} />
+          <View></View>
+            <ButtonComp text="Sign up" next={createNewAcct} load={loading} toggleLoad={toggleLoad} />
             <Text
               onPress={() => {
                 login();

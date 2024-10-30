@@ -2,7 +2,7 @@ import * as SecureStore from 'expo-secure-store';
 import axios from "axios";
 
 
-const baseUrl = `http://192.168.1.118:8000/api/v1/user`;
+const baseUrl = `http://localhost:8000/api/v1/user`;
 const headers = {
   "Content-Type": "application/json",
   'Accept': "*/*",

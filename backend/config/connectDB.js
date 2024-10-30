@@ -8,7 +8,7 @@ export const db = mysql.createConnection({
     database: process.env.DB
 });
   
-function handleDisconnect() {
+function handleDisconnect() {    
     db.connect((err) => {
         if (err) {
           console.error('Error connecting to MySQL:', err);
