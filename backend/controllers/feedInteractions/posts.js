@@ -32,7 +32,7 @@ export const newPost = (req, res) => {
             const q = "INSERT INTO posts (`userId`, `description`, `image`, `video`, `tags`, `category`, `createdAt`) VALUES (?)";
             const values = [
                 user.id,
-                req.body.description,
+                req.body.description, 
                 image,
                 video,
                 req.body.tags,

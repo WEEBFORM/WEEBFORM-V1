@@ -152,7 +152,7 @@ export const register = (req, res, next) => {
                 }).status(200).json({ message: "User created successfully", token });
             }); 
     })
-    }catch(err) {
+    }catch(err) { 
         console.log(err);
         res.status(500).json('Internal server error!')
     };
@@ -185,7 +185,7 @@ export const login = (req, res) => {
         res.cookie("accessToken", token, {
             httpOnly: true
         }).status(200).json({ message: "User Logged in successfully", token, others }); 
-    });
+    }); 
 };
 
 // API FOR LOGOUT
