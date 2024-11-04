@@ -1,7 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
 import axios from "axios";
 
-const baseUrl = `http://localhost:8000/api/v1/user`;
+// const baseUrl = `https://weebform1-1dba705ec65b.herokuapp.com/api/v1/user`;
+const baseUrl = `https://weebform1-1dba705ec65b.herokuapp.com/api/v1/user`;
 const headers = {
   "Content-Type": "application/json",
   'Accept': "*/*",
@@ -25,8 +26,8 @@ export const login = async (credentials, navigation) =>{
         await SecureStore.setItemAsync("Token", res.data.token);
         navigation.replace('Main')
       })
-      .catch(e => { // catch should be in lowercase
-        console.log('Failed to login', e);
+      .catch(e => { // catch should be in lowercase 
+        console.log('Failed to login', e.status);
       });
 }
 
@@ -107,4 +108,18 @@ export const forgotPassword = async (credentials, navigation) =>{
         console.log('Failed to reset password', e);
       });
 }
+
+export const getUserData = async () => {
+  try {
+    const Token = await SecureStore.getItemAsync("Token");
+    const response = await axios.get(`${baseUrl}/user`, {
+      headers: { ...headers, Cookie: `accessToken=${Token}` }
+    });
+    console.log('true', response.data);
+    return response.data; // This will properly return the data
+  } catch (e) {
+    console.log('Failed to get user profile', e);
+    return null; // Ensure to return a value in case of an error
+  }
+};
 

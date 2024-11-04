@@ -53,7 +53,7 @@ const Home = () => {
           tintColor: focused ? '#CF833F': 'white'
         }} />
       </View>
-    }
+    } 
    }} />
      <Tab.Screen name="Communities" component={Communities} options={{
     tabBarIcon:({focused})=>{

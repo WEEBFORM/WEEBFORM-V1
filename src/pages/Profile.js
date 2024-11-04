@@ -1,40 +1,69 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
-  Text,
+  Text, 
   View,
   SafeAreaView,
   Image,
   TextInput,
   Che,
 } from "react-native";
+import { getUserData } from "../api/auth";
+import Loading from "../components/Loading/Loading";
+import { Buffer } from 'buffer';
 
 const Profile = () => {
+  const [loading, setLoading] = useState(true)
+  const [userData, setUserData] = useState([])
+  const [image, setImage] = useState("")
+  async function getUserProfile() {
+    try {
+      const data = await getUserData();
+      setUserData(data);
+    } catch (error) {
+      console.log("fetch profile failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(()=>{
+    getUserProfile()
+  },[])
+
+
   return (
     <View style={styles.container}>
+    {
+      loading ? <Loading/> : <>
     <View style={styles.top}>
-      <Image source={require('./../assets/coverphoto.png')} style={styles.coverphoto} />
+    <Image
+        source={{uri: userData.coverImage}}
+        style={styles.coverphoto}
+        resizeMode="cover"
+        onError={(error) => console.error('Cover Image Error:', error.nativeEvent.error)}
+      />
     </View>
     <View style={styles.pfpCon}>
-    <Image source={require('./../assets/coverphoto.png')} style={styles.pfp} />
-    <Text style={{...styles.text, fontWeight: '800', fontSize:'24px'}}>Gullibeeman</Text>
-    <Text style={{...styles.text, fontWeight: '400', fontSize:'20px'}}>@gullie</Text>
+    <Image source={{uri: userData.profileImage}} style={styles.pfp} />
+    <Text style={{...styles.text, fontWeight: '800', fontSize:'24px'}}>{userData.full_name}</Text>
+    <Text style={{...styles.text, fontWeight: '400', fontSize:'20px'}}>{userData.username}</Text>
     </View>
     <View style={styles.bottom}>
       <View style={styles.bio}>
-        <Text style={{...styles.text, fontWeight: '800', fontSize:'18px'}}>Anime freek</Text>
+        <Text style={{...styles.text, fontWeight: '800', fontSize:'18px'}}>{userData.bio}</Text>
       </View>
       <View style={styles.stats}>
         <View style={styles.eachStats}>
-          <Text style={{...styles.text, fontWeight: '800', fontSize:'18px'}}>5.7K</Text>
+          <Text style={{...styles.text, fontWeight: '800', fontSize:'18px'}}>{userData.followingCount}</Text>
           <Text style={{...styles.text, fontWeight: '500', fontSize:'14px'}}>Following</Text>
         </View>
         <View style={styles.eachStats}>
-          <Text style={{...styles.text, fontWeight: '800', fontSize:'18px'}}>240</Text>
+          <Text style={{...styles.text, fontWeight: '800', fontSize:'18px'}}>{userData.followerCount}</Text>
           <Text style={{...styles.text, fontWeight: '500', fontSize:'14px'}}>Followers</Text>
         </View>
         <View style={styles.eachStats}>
-          <Text style={{...styles.text, fontWeight: '800', fontSize:'18px'}}>7K</Text>
+          <Text style={{...styles.text, fontWeight: '800', fontSize:'18px'}}>{userData.postsCount}</Text>
           <Text style={{...styles.text, fontWeight: '500', fontSize:'14px'}}>Posts</Text>
         </View>
         <View style={styles.eachStats}>
@@ -47,6 +76,8 @@ const Profile = () => {
       </View>
     </View>
       <Text>Profile</Text>
+      </>
+    }
     </View>
   );
 };
@@ -61,7 +92,10 @@ const styles = StyleSheet.create({
   }, 
   coverphoto:{
     width: '100%',
-    height: '100%'
+    height: '100%',
+    borderColor:'red',
+    borderWidth: 4,
+    backgroundColor:'gray',
   },
   pfpCon:{
     flexDirection: 'column',
