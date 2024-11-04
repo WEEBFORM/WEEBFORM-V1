@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import axios, { all } from "axios";
 
-const baseUrl = `http://localhost:8000/api/v1/posts`;
+const baseUrl = `https://weebform1-1dba705ec65b.herokuapp.com//api/v1/posts`;
 async function getToken(){
     try{
       const credentials = await SecureStore.getItemAsync("Token");

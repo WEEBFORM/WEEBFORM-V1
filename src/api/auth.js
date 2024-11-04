@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import axios from "axios";
 
-const baseUrl = `http://localhost:8000/api/v1/user`;
+const baseUrl = `https://weebform1-1dba705ec65b.herokuapp.com//api/v1/user`;
 const headers = {
   "Content-Type": "application/json",
   'Accept': "*/*",

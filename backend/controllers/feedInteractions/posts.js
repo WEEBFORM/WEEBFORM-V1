@@ -47,12 +47,12 @@ export const newPost = (req, res) => {
     });
 };
 
+
 //API TO VIEW POST IN USER PROFILE
-// API TO VIEW POST IN USER PROFILE
 export const userPosts = (req, res) => {
     authenticateUser(req, res, () => {
         const userId = req.params.id;
-        // QUERY DB TO GET POSTS
+        
         const q = "SELECT p.*, u.id AS userId, username, profilePic FROM posts AS p LEFT JOIN users AS u ON (u.id = p.userId) WHERE userId = ? ORDER BY createdAt DESC";
         db.query(q, [userId], (err, data) => {
             if (err) {
@@ -71,7 +71,7 @@ export const userPosts = (req, res) => {
 export const followingPosts = (req, res)=>{
     authenticateUser(req, res, () => {
         const user = req.user;
-        //QUERY DB TO GET POSTS
+        
         const q = "SELECT p.*, u.id AS userId, username, profilePic FROM posts AS p JOIN users AS u ON (u.id = p.userId) LEFT JOIN reach AS r ON (p.userId = r.followed) WHERE r.follower = ? OR p.userId = ? ORDER BY createdAt DESC";
         db.query(q, [user.id, user.id], (err,data)=>{
         if(err) return res.status(500).json(err)
@@ -80,26 +80,61 @@ export const followingPosts = (req, res)=>{
     }) 
 }
 
-//API TO VIEW ALL POSTS
-export const allPosts = (req, res)=>{
+// API TO VIEW ALL POSTS
+export const allPosts = (req, res) => {
     authenticateUser(req, res, () => {
-        const user = req.user;
-        //QUERY DB TO GET POSTS
-        const q = "SELECT p.*, u.id AS userId, username, profilePic FROM posts AS p JOIN users AS u ON (u.id = p.userId) ORDER BY createdAt DESC";
-        db.query(q, (err,data)=>{
-        if(err) return res.status(500).json(err)
-        //SHUFFLE POSTS
-        const posts = shufflePosts(data);
-        return res.status(200).json(data)
-        })
-    }) 
-}
+      const user = req.user;
+  
+      const q = `
+        SELECT 
+          p.*, 
+          u.id AS userId, 
+          u.username, 
+          u.profilePic, 
+          COUNT(l.id) AS likesCount
+        FROM 
+          posts AS p 
+        JOIN 
+          users AS u ON u.id = p.userId 
+        LEFT JOIN 
+          likes AS l ON l.postId = p.id
+        GROUP BY 
+          p.id, u.id
+        ORDER BY 
+          p.createdAt DESC
+      `;
+  
+      db.query(q, (err, data) => {
+        if (err) return res.status(500).json(err);
+        const {image, profilePic, video, ...postData} = data[0];
+        const posts = data.map(post => {
+          const profileImage = post.profilePic 
+            ? `data:image/jpeg;base64,${Buffer.from(post.profilePic).toString('base64')}` 
+            : null;
+          const postImage = post.image 
+            ? `data:image/jpeg;base64,${Buffer.from(post.image).toString('base64')}` 
+            : null;
+          const postVideo = post.video 
+            ? `data:video/mp4;base64,${Buffer.from(post.video).toString('base64')}` 
+            : null;
+          return {
+            postData,
+            profileImage,
+            postImage,
+            postVideo,
+          };
+        });
+        const shuffledPosts = shufflePosts(posts);
+        return res.status(200).json(shuffledPosts);
+      });
+    });
+};  
 
 //API TO VIEW POST BASED ON CATEGORY
 export const postCategory = (req, res)=>{
     authenticateUser(req, res, () => {
         const user = req.user;
-        //QUERY DB TO GET POSTS
+        
         const q = "SELECT * FROM posts AS p WHERE p.category = ? ORDER BY createdAt DESC";
         const category = req.params.category;
         db.query(q, category, (err,data)=>{
@@ -117,7 +152,7 @@ export const postCategory = (req, res)=>{
 export const deletePost = (req, res)=>{
     authenticateUser(req, res, () => {
         const user = req.user;
-        //QUERY DB TO GET POSTS
+        
         const q = "DELETE FROM posts WHERE id = ? AND userId = ?";
 
         db.query(q, [req.params.id, user.id], (err,data)=>{

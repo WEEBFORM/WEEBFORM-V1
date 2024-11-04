@@ -11,6 +11,5 @@ export function authenticateUser(req, res, next) {
     next();
   });
 }
- 
 
 export default authenticateUser

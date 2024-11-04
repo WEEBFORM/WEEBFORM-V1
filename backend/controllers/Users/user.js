@@ -9,9 +9,17 @@ export const viewProfile = (req, res)=>{
     //CHECK FOR JWT
     authenticateUser(req, res, () => {
         //const user = req.user;
-        const userId = req.params.id;
+        const userId = req.user.id;
         //QUERY DB TO GET USER INFO
-        const q = "SELECT * FROM users WHERE id = ?"
+        const q = `SELECT 
+                    u.*, 
+                    (SELECT COUNT(*) FROM reach WHERE followed = u.id) AS followerCount,
+                    (SELECT COUNT(*) FROM reach WHERE follower = u.id) AS followingCount,
+                    (SELECT COUNT(*) FROM posts WHERE userId = u.id) AS postsCount
+                    FROM 
+                    users AS u 
+                    WHERE 
+                    u.id = ?;`
         db.query(q, [userId], (err, data)=>{
         if(err){
             return res.status(500).json(err)
@@ -19,8 +27,58 @@ export const viewProfile = (req, res)=>{
         if(data.length === 0){ 
             return res.status(404).json("User not found");
         }
-        const {password, ...userInfo} = data[0];
-        return res.status(200).json(userInfo)
+        const {coverPhoto, profilePic, password, ...userInfo} = data[0];
+        let profileImage = profilePic 
+        ? `data:image/jpeg;base64,${Buffer.from(profilePic).toString('base64')}` 
+        : null;
+        let coverImage = coverPhoto 
+            ? `data:image/jpeg;base64,${Buffer.from(coverPhoto).toString('base64')}` 
+            : null;
+
+            return res.status(200).json({
+                ...userInfo,
+                profileImage,
+                coverImage,
+            });
+        })
+    });
+}
+
+//API TO GET ANOTHER USER'S INFORMATION
+export const viewUserProfile = (req, res)=>{
+    //CHECK FOR JWT
+    authenticateUser(req, res, () => {
+        //const user = req.user;
+        const userId = req.params.id;
+        const q = `SELECT 
+                    u.*, 
+                    (SELECT COUNT(*) FROM reach WHERE followed = u.id) AS followerCount,
+                    (SELECT COUNT(*) FROM reach WHERE follower = u.id) AS followingCount,
+                    (SELECT COUNT(*) FROM posts WHERE userId = u.id) AS postsCount
+                    FROM 
+                    users AS u 
+                    WHERE 
+                    u.id = ?;`
+        db.query(q, [userId], (err, data)=>{
+        if(err){
+            return res.status(500).json(err)
+        }
+        if(data.length === 0){ 
+            return res.status(404).json("User not found");
+        }
+        const {coverPhoto, profilePic, password, ...userInfo} = data[0];
+        let profileImage = profilePic 
+        ? `data:image/jpeg;base64,${Buffer.from(profilePic).toString('base64')}` 
+        : null;
+        let coverImage = coverPhoto 
+            ? `data:image/jpeg;base64,${Buffer.from(coverPhoto).toString('base64')}` 
+            : null;
+
+        return res.status(200).json({
+            ...userInfo,
+            profileImage,
+            coverImage,
+        });
         })
     });
 }
@@ -67,9 +125,10 @@ export const editProfile = (req, res)=>{
                 return res.status(400).send('Files were not uploaded correctly.');
             }
 
-            const q = "UPDATE users SET email = ?, username = ?, nationality = ?, password = ?, coverPhoto = ?, profilePic = ?, bio = ? WHERE id = ?";
+            const q = "UPDATE users SET email = ?, full_name =?, username = ?, nationality = ?, password = ?, coverPhoto = ?, profilePic = ?, bio = ? WHERE id = ?";
             const values = [
                req.body.email,
+               req.body.fullName,
                req.body.username,  
                req.body.nationality,
                hashedPassword,
@@ -92,7 +151,7 @@ export const editProfile = (req, res)=>{
 }
 
 //API TO DELETE ACCOUNT 
-export const deleteAccount = (req, res)=>{
+export const deleteAccount = (req, res)=>{ 
     authenticateUser(req, res, () => {
         const user = req.user;
         //QUERY DB TO EDIT USER INFO

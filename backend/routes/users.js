@@ -1,10 +1,11 @@
 import express from "express";
-import {viewUsers, viewProfile, editProfile, deleteAccount} from "../controllers/Users/user.js"
+import {viewUsers, viewProfile, viewUserProfile, editProfile, deleteAccount} from "../controllers/Users/user.js"
 
 const router = express.Router()
 
 router.get('/', viewUsers)
-router.get('/:id', viewProfile)
+router.get('/user', viewProfile)
+router.get('/:id', viewUserProfile)
 router.put('/:userId', editProfile)
 router.delete('/:id', deleteAccount)
 

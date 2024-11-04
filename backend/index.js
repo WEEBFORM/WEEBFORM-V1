@@ -26,6 +26,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(cookieParser());
+app.use('/uploads', express.static('uploads'));
 app.use(express.urlencoded({ extended: true }));
 config();
 app.use('/api/v1/user', authRoute);
@@ -40,7 +41,7 @@ app.use('/api/v1/stories', Stories);
 app.use('/api/v1/stores', Stores);
 app.use('/api/v1/communities', Communities);
 
-const port = 8000;
+const port = process.env.PORT;
 
 // HTTP SERVER
 const server = http.createServer(app);
