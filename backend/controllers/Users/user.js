@@ -4,11 +4,10 @@ import {cpUpload} from "../../middlewares/storage.js";
 import multer from "multer";
 import bcrypt from "bcryptjs";
 
+const baseUrl = 'https://weebform1-1dba705ec65b.herokuapp.com'
 //API TO GET USER INFORMATION
 export const viewProfile = (req, res)=>{
-    //CHECK FOR JWT
     authenticateUser(req, res, () => {
-        //const user = req.user;
         const userId = req.user.id;
         //QUERY DB TO GET USER INFO
         const q = `SELECT 
@@ -27,28 +26,29 @@ export const viewProfile = (req, res)=>{
         if(data.length === 0){ 
             return res.status(404).json("User not found");
         }
-        const {coverPhoto, profilePic, password, ...userInfo} = data[0];
-        let profileImage = profilePic 
-        ? `data:image/jpeg;base64,${Buffer.from(profilePic).toString('base64')}` 
-        : null;
-        let coverImage = coverPhoto 
-            ? `data:image/jpeg;base64,${Buffer.from(coverPhoto).toString('base64')}` 
-            : null;
+        const userData = data[0];
 
-            return res.status(200).json({
-                ...userInfo,
-                profileImage,
-                coverImage,
-            });
+        if (userData.coverPhoto) {
+            userData.coverPhoto = `${req.protocol}://${req.get('host')}/${userData.coverPhoto}`;
+        }
+        if (userData.profilePic) {
+            userData.profilePic = `${req.protocol}://${req.get('host')}/${userData.profilePic}`;
+        }
+
+        const { password, ...userInfo } = userData;
+
+        return res.status(200).json({
+            ...userInfo,
+            profileImage: userData.profilePic,
+            coverImage: userData.coverPhoto,
+        });
         })
     });
 }
 
 //API TO GET ANOTHER USER'S INFORMATION
 export const viewUserProfile = (req, res)=>{
-    //CHECK FOR JWT
     authenticateUser(req, res, () => {
-        //const user = req.user;
         const userId = req.params.id;
         const q = `SELECT 
                     u.*, 
@@ -66,18 +66,20 @@ export const viewUserProfile = (req, res)=>{
         if(data.length === 0){ 
             return res.status(404).json("User not found");
         }
-        const {coverPhoto, profilePic, password, ...userInfo} = data[0];
-        let profileImage = profilePic 
-        ? `data:image/jpeg;base64,${Buffer.from(profilePic).toString('base64')}` 
-        : null;
-        let coverImage = coverPhoto 
-            ? `data:image/jpeg;base64,${Buffer.from(coverPhoto).toString('base64')}` 
-            : null;
+        const userData = data[0];
+
+        if (userData.coverPhoto) {
+            userData.coverPhoto = `${req.protocol}://${req.get('host')}/${userData.coverPhoto}`;
+        }
+        if (userData.profilePic) {
+            userData.profilePic = `${req.protocol}://${req.get('host')}/${userData.profilePic}`;
+        }
+        const { password, ...userInfo } = userData;
 
         return res.status(200).json({
             ...userInfo,
-            profileImage,
-            coverImage,
+            profileImage: userData.profilePic,
+            coverImage: userData.coverPhoto,
         });
         })
     });
@@ -85,7 +87,6 @@ export const viewUserProfile = (req, res)=>{
  
 //API TO GET USERS
 export const viewUsers = (req, res)=>{
-    //CHECK FOR JWT
     authenticateUser(req, res, () => {
         //QUERY DB TO GET USERS
         const q = "SELECT * FROM users"

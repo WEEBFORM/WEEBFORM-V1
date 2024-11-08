@@ -53,7 +53,7 @@ export const userPosts = (req, res) => {
     authenticateUser(req, res, () => {
         const userId = req.params.id;
         
-        const q = "SELECT p.*, u.id AS userId, username, profilePic FROM posts AS p LEFT JOIN users AS u ON (u.id = p.userId) WHERE userId = ? ORDER BY createdAt DESC";
+        const q = "SELECT p.*, u.id AS userId, username, full_name, profilePic FROM posts AS p LEFT JOIN users AS u ON (u.id = p.userId) WHERE userId = ? ORDER BY createdAt DESC";
         db.query(q, [userId], (err, data) => {
             if (err) {
                 return res.status(500).json(err);
@@ -61,7 +61,19 @@ export const userPosts = (req, res) => {
             if (data.length === 0) {
                 return res.status(404).json('No posts yet..'); 
             }
-            return res.status(200).json(data);
+            const processedPosts = data.map(post => {
+                if (post.image) {
+                    post.image = `${req.protocol}://${req.get('host')}/${post.image}`;
+                }
+                if (post.video) {
+                    post.video = `${req.protocol}://${req.get('host')}/${post.video}`;
+                }
+                if (post.profilePic) {
+                    post.profilePic = `${req.protocol}://${req.get('host')}/${post.profilePic}`;
+                }
+                return post;
+            });
+            return res.status(200).json(processedPosts);
         });
     });
 };
@@ -71,11 +83,25 @@ export const userPosts = (req, res) => {
 export const followingPosts = (req, res)=>{
     authenticateUser(req, res, () => {
         const user = req.user;
-        
-        const q = "SELECT p.*, u.id AS userId, username, profilePic FROM posts AS p JOIN users AS u ON (u.id = p.userId) LEFT JOIN reach AS r ON (p.userId = r.followed) WHERE r.follower = ? OR p.userId = ? ORDER BY createdAt DESC";
+        const q = "SELECT p.*, u.id AS userId, username, full_name, profilePic FROM posts AS p JOIN users AS u ON (u.id = p.userId) LEFT JOIN reach AS r ON (p.userId = r.followed) WHERE r.follower = ? OR p.userId = ? ORDER BY createdAt DESC";
         db.query(q, [user.id, user.id], (err,data)=>{
-        if(err) return res.status(500).json(err)
-        res.status(200).json(data)
+        if(err) {
+            return res.status(500).json(err)
+        }else{
+            const processedPosts = data.map(post => {
+                if (post.image) {
+                    post.image = `${req.protocol}://${req.get('host')}/${post.image}`;
+                }
+                if (post.video) {
+                    post.video = `${req.protocol}://${req.get('host')}/${post.video}`;
+                }
+                if (post.profilePic) {
+                    post.profilePic = `${req.protocol}://${req.get('host')}/${post.profilePic}`;
+                }
+                return post;
+            });
+            return res.status(200).json(processedPosts);
+        }
         })
     }) 
 }
@@ -84,12 +110,12 @@ export const followingPosts = (req, res)=>{
 export const allPosts = (req, res) => {
     authenticateUser(req, res, () => {
       const user = req.user;
-  
       const q = `
         SELECT 
           p.*, 
           u.id AS userId, 
-          u.username, 
+          u.username,
+          full_name, 
           u.profilePic, 
           COUNT(l.id) AS likesCount
         FROM 
@@ -106,44 +132,67 @@ export const allPosts = (req, res) => {
   
       db.query(q, (err, data) => {
         if (err) return res.status(500).json(err);
-        const {image, profilePic, video, ...postData} = data[0];
-        const posts = data.map(post => {
-          const profileImage = post.profilePic 
-            ? `data:image/jpeg;base64,${Buffer.from(post.profilePic).toString('base64')}` 
-            : null;
-          const postImage = post.image 
-            ? `data:image/jpeg;base64,${Buffer.from(post.image).toString('base64')}` 
-            : null;
-          const postVideo = post.video 
-            ? `data:video/mp4;base64,${Buffer.from(post.video).toString('base64')}` 
-            : null;
-          return {
-            postData,
-            profileImage,
-            postImage,
-            postVideo,
-          };
+        const processedPosts = data.map(post => {
+            if (post.image) {
+                post.image = `${req.protocol}://${req.get('host')}/${post.image}`;
+            }
+            if (post.video) {
+                post.video = `${req.protocol}://${req.get('host')}/${post.video}`;
+            }
+            if (post.profilePic) {
+                post.profilePic = `${req.protocol}://${req.get('host')}/${post.profilePic}`;
+            }
+            return post;
         });
-        const shuffledPosts = shufflePosts(posts);
+        const shuffledPosts = shufflePosts(processedPosts);
         return res.status(200).json(shuffledPosts);
-      });
     });
-};  
+});
+};
 
 //API TO VIEW POST BASED ON CATEGORY
 export const postCategory = (req, res)=>{
     authenticateUser(req, res, () => {
         const user = req.user;
-        
-        const q = "SELECT * FROM posts AS p WHERE p.category = ? ORDER BY createdAt DESC";
+        const q = `SELECT 
+          p.*, 
+          u.id AS userId, 
+          u.username,
+          full_name, 
+          u.profilePic, 
+          COUNT(l.id) AS likesCount
+        FROM 
+          posts AS p 
+        JOIN 
+          users AS u ON u.id = p.userId 
+        LEFT JOIN 
+          likes AS l ON l.postId = p.id
+         WHERE 
+            p.category = ? 
+        GROUP BY 
+            p.id, u.id 
+        ORDER BY 
+            createdAt DESC`;
         const category = req.params.category;
         db.query(q, category, (err,data)=>{
         if(err) return res.status(500).json(err)
         if (data.length === 0) {
             return res.status(404).json("No posts found in this category.");
         }
-        const posts = shufflePosts(data);
-        return res.status(200).json(posts)
+        const processedPosts = data.map(post => {
+            if (post.image) {
+                post.image = `${req.protocol}://${req.get('host')}/${post.image}`;
+            }
+            if (post.video) {
+                post.video = `${req.protocol}://${req.get('host')}/${post.video}`;
+            }
+            if (post.profilePic) {
+                post.profilePic = `${req.protocol}://${req.get('host')}/${post.profilePic}`;
+            }
+            return post;
+        });
+
+        return res.status(200).json(processedPosts);
         })
     }) 
 }

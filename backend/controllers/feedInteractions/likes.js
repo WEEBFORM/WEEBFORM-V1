@@ -29,15 +29,13 @@ export const getLikes = (req, res)=>{
         const user = req.user;
         const postId = parseInt(req.params.postId);
         //QUERY DB TO GET LIKES
-        const q = "SELECT l.userId FROM likes AS l WHERE l.postId = ? ";
+        const q = "SELECT l.*, u.username, u.id AS userId FROM likes AS l JOIN users AS u ON (u.id = l.userId) WHERE l.postId = ? ";
 
         db.query(q, [postId], (err,data)=>{
         if(err) return res.status(500).json(err)
         if (data && data.length > 0) {
             const userId = data.map(obj => Number(obj.userId));
-            return res.status(200).json(userId);
-        } else {
-            return res.status(200).json([]);
+            return res.status(200).json({userId, data});
         }
         })
     }) 

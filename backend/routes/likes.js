@@ -8,4 +8,4 @@ router.get('/likes/:postId', getLikes)
 router.delete('/unlike/:postId', unlike)
 
 
-export default router
+export default router 

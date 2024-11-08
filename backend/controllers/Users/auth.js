@@ -70,10 +70,10 @@ export const initiateRegistration = (req, res, next) => {
                 const verificationCode = Math.floor(1000 + Math.random() * 9000);
                 const expiresAt = new Date(Date.now() + 1 * 60 * 1000);
 
-                const r = "INSERT INTO cache (`email`, `username`, `password`, `verificationCode`, `expiresAt`) VALUES (?)";
+                const r = "INSERT INTO cache (`email`, `full_name`, `password`, `verificationCode`, `expiresAt`) VALUES (?)";
                 const values = [
                     req.body.email,
-                    req.body.username,
+                    req.body.fullName,
                     req.body.password,
                     verificationCode,
                     expiresAt
@@ -108,53 +108,57 @@ export const initiateRegistration = (req, res, next) => {
 // API TO REGISTER NEW USERS
 export const register = (req, res, next) => {
     try {
-        //RETRIEVE USER INFO IN `cache`
         const verificationCode = req.body.verificationCode;
         const q = "SELECT * FROM cache WHERE verificationCode = ?";
 
         db.query(q, [verificationCode], (err, data) => {
-        if (err){
-            return res.status(500).json(err);
-        }
-        else if(data.length === 0){
-            return res.status(400).json("Verification code expired or invalid.");
-        }
-
-        const cachedData = data[0];
-        if (cachedData.verificationCode !== parseInt(verificationCode)) {
-            return res.status(400).json("Invalid verification code.");
-        }
-        // HASH PASSWORD
-        const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = bcrypt.hashSync(cachedData.password, salt);  
-        // REGISTER USER 
-        const i = "INSERT INTO users (`email`, `username`, `password`) VALUES (?)";
-        const values = [
-            cachedData.email,
-            cachedData.username, 
-            hashedPassword
-        ];
-        db.query(i, [values], (err, data) => {
             if (err) {
-                console.log(err);
+                return res.status(500).json(err);
+            } else if (data.length === 0) {
+                return res.status(400).json("Verification code expired or invalid.");
             }
-        });
-        //DELETE DATA FROM CACHE
-        const deleteQuery = "DELETE FROM cache WHERE email = ?";
-            db.query(deleteQuery, [cachedData.email], (err) => {
+            const cachedData = data[0];
+            if (cachedData.verificationCode !== verificationCode) { 
+                return res.status(400).json("Invalid verification code.");
+            }
+            const salt = bcrypt.genSaltSync(10);
+            const hashedPassword = bcrypt.hashSync(cachedData.password, salt);  
+
+            const i = "INSERT INTO users (`email`, `username`, `password`) VALUES (?)";
+            const values = [
+                cachedData.email,
+                cachedData.username, 
+                hashedPassword
+            ];
+            db.query(i, [values], (err, insertResult) => {
                 if (err) {
-                    console.error(err)
+                    return res.status(500).json(err);
                 }
-                const payload = { id: data.insertId };
-                const token = jwt.sign(payload, process.env.Secretkey);
-                res.cookie('accessToken', token, {
-                    httpOnly: true
-                }).status(200).json({ message: "User created successfully", token });
-            }); 
-    })
-    }catch(err) { 
+                const deleteQuery = "DELETE FROM cache WHERE email = ?";
+                db.query(deleteQuery, [cachedData.email], (err) => {
+                    if (err) {
+                        console.error(err);
+                        return res.status(500).json("Error deleting cache data");
+                    }
+                    const payload = { id: insertResult.insertId };
+                    const token = jwt.sign(payload, process.env.Secretkey);
+                    res.cookie('accessToken', token, {
+                        httpOnly: true
+                    }).status(200).json({ 
+                        message: "User created successfully", 
+                        token, 
+                        user: {
+                            id: insertResult.insertId, 
+                            email: cachedData.email, 
+                            full_name: cachedData.full_name
+                        } 
+                    });
+                });
+            });
+        });
+    } catch(err) { 
         console.log(err);
-        res.status(500).json('Internal server error!')
+        res.status(500).json('Internal server error!');
     };
 };
 
