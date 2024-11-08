@@ -110,7 +110,6 @@ export const register = (req, res, next) => {
     try {
         const verificationCode = req.body.verificationCode;
         const q = "SELECT * FROM cache WHERE verificationCode = ?";
-
         db.query(q, [verificationCode], (err, data) => {
             if (err) {
                 return res.status(500).json(err);
@@ -124,10 +123,10 @@ export const register = (req, res, next) => {
             const salt = bcrypt.genSaltSync(10);
             const hashedPassword = bcrypt.hashSync(cachedData.password, salt);  
 
-            const i = "INSERT INTO users (`email`, `username`, `password`) VALUES (?)";
+            const i = "INSERT INTO users (`email`, `full_name`, `password`) VALUES (?)";
             const values = [
                 cachedData.email,
-                cachedData.username, 
+                cachedData.fullName,
                 hashedPassword
             ];
             db.query(i, [values], (err, insertResult) => {
