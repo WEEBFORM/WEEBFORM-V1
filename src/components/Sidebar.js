@@ -7,6 +7,7 @@ import {
     Image,
     TextInput,
     Che,
+    ScrollView
   } from "react-native";
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
@@ -26,6 +27,7 @@ const navigation = useNavigation()
   }
   return (
     <View style={styles.container}>
+    <ScrollView>
     <View style={styles.sec1}>
         <View>
             <Image source={require('./../assets/coverphoto.png')} style={styles.pfp} />
@@ -97,6 +99,7 @@ const navigation = useNavigation()
         </View>
         </View>
     </View>
+    </ScrollView>
     </View>
   )
 }
