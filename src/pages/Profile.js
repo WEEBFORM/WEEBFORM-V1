@@ -7,18 +7,21 @@ import {
   Image,
   TextInput,
   Che,
+  StatusBar
 } from "react-native";
 import { getUserData } from "../api/auth";
 import Loading from "../components/Loading/Loading";
+import { useNavigation } from "@react-navigation/native";
 import { Buffer } from 'buffer';
 
 const Profile = () => {
+  const navigation = useNavigation()
   const [loading, setLoading] = useState(true)
   const [userData, setUserData] = useState([])
-  const [image, setImage] = useState("")
   async function getUserProfile() {
     try {
       const data = await getUserData();
+      console.log(data)
       setUserData(data);
     } catch (error) {
       console.log("fetch profile failed:", error);
@@ -33,6 +36,7 @@ const Profile = () => {
 
 
   return (
+    // <StatusBar barStyle="light-content" translucent={true} backgroundColor="transparent" />
     <View style={styles.container}>
     {
       loading ? <Loading/> : <>
@@ -45,7 +49,7 @@ const Profile = () => {
       />
     </View>
     <View style={styles.pfpCon}>
-    <Image source={{uri: userData.profileImage}} style={styles.pfp} />
+    <Image source={{uri: userData.profilePic}} style={styles.pfp} />
     <Text style={{...styles.text, fontWeight: '800', fontSize:'24px'}}>{userData.full_name}</Text>
     <Text style={{...styles.text, fontWeight: '400', fontSize:'20px'}}>{userData.username}</Text>
     </View>
@@ -72,7 +76,9 @@ const Profile = () => {
         </View>
       </View>
       <View>
-        <Text style={styles.text}></Text>
+        <Text style={styles.text} onPress={()=>{
+          navigation.navigate('Edit Profile')
+        }}>Edit profile</Text>
       </View>
     </View>
       <Text>Profile</Text>
@@ -93,9 +99,6 @@ const styles = StyleSheet.create({
   coverphoto:{
     width: '100%',
     height: '100%',
-    borderColor:'red',
-    borderWidth: 4,
-    backgroundColor:'gray',
   },
   pfpCon:{
     flexDirection: 'column',
@@ -105,7 +108,7 @@ const styles = StyleSheet.create({
     marginBottom: '7%'
   },
   pfp:{
-    borderWidth: '5px',
+    borderWidth: '2px',
     borderColor: 'black',
     width: 200,
     height: 200,

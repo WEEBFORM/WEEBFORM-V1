@@ -71,6 +71,20 @@ export const updatePrtofile = async (credentials) =>{
       });
 }
 
+export const editProfile = async (formData, id) =>{
+  try {
+    const Token = await SecureStore.getItemAsync("Token");
+    const response = await axios.put(`${baseUrl}/${id}`, formData, {
+      headers: { ...headers, Cookie: `accessToken=${Token}` }
+    });
+    console.log('true', response.data);
+    return response.data; // This will properly return the data
+  } catch (e) {
+    console.log('Failed to get user profile', e);
+    return null; // Ensure to return a value in case of an error
+  }
+}
+
 export const otp = async (credentials, navigation) =>{
       await axios
       .post(

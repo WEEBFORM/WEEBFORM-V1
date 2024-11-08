@@ -56,7 +56,7 @@ const Login = ({ navigation }) => {
     }, 3000);
   }
   
-  
+   
 
   return (
     <View style={Globalstyles.form}>

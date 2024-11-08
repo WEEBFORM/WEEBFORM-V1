@@ -2,135 +2,11 @@ import React from 'react'
 import { useState } from 'react';
 import { StyleSheet, Text, View, Image, FlatList, SafeAreaView, ImageBackground} from "react-native";
 import MorePost from './MorePost';
-import { all } from 'axios';
-import { Buffer } from 'buffer';
-const ExploreData =[
-    {
-        id: '1',
-        name: 'Shedrach',
-        username: 'Shezzy',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 33,
-        photo: true,
-        liked: true
-    },
-    {
-        id: '2',
-        name: 'Bill gates',
-        username: 'Shezzy',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 0,
-        photo: false,
-        liked: false
-    },
-    {
-        id: '3',
-        name: 'Shedrach',
-        username: 'Shezzy',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 240,
-        photo: true,
-        liked: true
-    },
-    {
-        id: '4',
-        name: 'Shedrach',
-        username: 'Shezzy',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 0,
-        photo: false,
-        liked: false
-    },
-    {
-        id: '5',
-        name: 'Bill gates',
-        username: 'Shezzy',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 100,
-        photo: true,
-        liked: true
-    },
-    {
-        id: '6',
-        name: 'Shedrach',
-        username: 'Shezzy',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 0,
-        photo: false,
-        liked: false
-    },
-]
-const NewPostData =[
-    {
-        id: '1',
-        name: 'Yaga',
-        username: 'Shezzy',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 33,
-        photo: true,
-        liked: true
-    },
-    {
-        id: '2',
-        name: 'Bill',
-        username: 'yoto',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 0,
-        photo: false,
-        liked: false
-    },
-    {
-        id: '3',
-        name: 'Shedrach',
-        username: 'Shezzy',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 240,
-        photo: true,
-        liked: true
-    },
-    {
-        id: '4',
-        name: 'Shedrach',
-        username: 'Shezzy',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 0,
-        photo: false,
-        liked: false
-    },
-    {
-        id: '5',
-        name: 'Bill gates',
-        username: 'Shezzy',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 100,
-        photo: true,
-        liked: true
-    },
-    {
-        id: '6',
-        name: 'Shedrach',
-        username: 'Shezzy',
-        following: true,
-        text: 'Catch me if you can',
-        number_of_likes: 0,
-        photo: false,
-        liked: false
-    },
-]
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
 const Photopost = ({allpost, newpost, categorypost}) => {
-    const [liked, setLiked] = useState(false)
+    const [likes, setLikes] = useState(false)
     const [more, setMore] = useState(false)
     const [explore, setExplore] = useState(true)
     const [newPost, setNewPost] = useState(false)
@@ -142,21 +18,56 @@ const Photopost = ({allpost, newpost, categorypost}) => {
         setNewPost(true)
         setExplore(false)
     }
-    function likePost(){
-        setLiked(!liked)
-        console.log('liked')
+    // function likePost(){
+    //     setLiked(!liked)
+    //     console.log('liked')
+    // }
+    async function toggleLikePost(postId) {
+        const Token = await SecureStore.getItemAsync("Token");
+        console.log('Tokennn',Token)
+        setLikes(prevLikes => ({
+            ...prevLikes,
+            [postId]: !prevLikes[postId] // Toggle like status for specific post
+        }));
+        
+        console.log(`Post ${postId} liked`);
+    
+        try {
+            const likeUrl = `https://weebform1-1dba705ec65b.herokuapp.com/like/${postId}`;
+            const unlikeUrl = `https://weebform1-1dba705ec65b.herokuapp.com/unlike/${postId}`;
+    
+            // Use the updated likes state after setting it
+            const isLiked = !likes[postId]; // Check the new like status
+            const headers = {
+                "Content-Type": "application/json",
+                'Accept': "*/*",
+                "Cache-Control": "no-cache",
+                'Connection': "keep-alive",
+                'Postman-Token': 've5465yrter546576879768uyt6756t3435',
+                // 'Cookie' : `accessToken=${await getToken()},`
+              };
+            if (isLiked) {
+                await axios.post(likeUrl, {
+                    headers: { ...headers, Cookie: `accessToken=${Token}`}
+                  });
+                console.log('post liked');
+            } else {
+                await axios.post(unlikeUrl, {
+                    headers: { ...headers, Cookie: `accessToken=${Token}` }
+                });
+                console.log('post unliked');
+            }
+        } catch (error) {
+            console.error('Error liking/unliking post:', error);
+        }
     }
+    
     function showmore(){
         setMore(!more)
         console.log('show')
     }
-    function convertBufferToUrl(imgData){
-        const imageBuffer = Buffer.from(imgData)
-        const base64Image = imageBuffer.toString('base64')
-        const imageUrl = `data:image/png;base64,${base64Image}`
-        // console.log(imageUrl)
-        return imageUrl
-    }
+    console.log('all posts')
+
     function convertDate(date){
         try{
           console.log(date)
@@ -193,12 +104,12 @@ const Photopost = ({allpost, newpost, categorypost}) => {
         <View style={styles.top}>
         <View style={styles.topLeft}>
             <View>
-                <Image style={styles.pfp} source={require('../assets/pfp.png')} />
+                <Image style={styles.pfp} source={{uri: item.profilePic}} />
             </View>
             <View style={styles.topMiddle}>
                 <View>
                     <Text style={styles.text}>{item.username}</Text>
-                    <Text style={styles.text}>@Shezzy</Text>
+                    <Text style={styles.text}>{item.tags}</Text>
                 </View>
                 <View><Text style={styles.follow}>Follow</Text></View>
             </View>
@@ -208,18 +119,27 @@ const Photopost = ({allpost, newpost, categorypost}) => {
         <View style={styles.middle}>
             <Text style={styles.maintext}>{item.description}</Text>
             <View>
-            {/* {item.photo && <Image style={styles.photo} source={require('../assets/post1.png')} />} */}
-            {item.image && <Image style={styles.photo} source={item.image=== null ? require('../assets/post1.png'): {uri: `data:image/png;base64,${base64Image}`}} />}
+            <Image 
+            // style={styles.photo} 
+            style={{width:'100%', height:200, objectFit:'cover'}}
+            source={{uri: item.image}}
+            onError={(error) => console.error('photo post error:', error.nativeEvent.error)}
+             />
             </View>
             {/* <Text style={styles.date}>{convertDate(item.createdAt)}</Text> */}
         </View>
         <View style={styles.bottom}>
-            <View style={styles.reactionCon} onTouchStart={likePost} ><Image source={liked ? require('../assets/liked.png'): require('../assets/like.png')}/><Text style={{...styles.text2, color: liked ? '#FF0808': 'white'}}>{item.number_of_likes>0 ? item.number_of_likes: 0}</Text></View>
-            <View style={styles.reactionCon}><Image source={require('../assets/comment.png')} /><Text style={styles.text2}>300</Text></View>
-            <View style={styles.reactionCon}><Image source={require('../assets/repost.png')} /><Text style={styles.text2}>300</Text></View>
-            <View style={styles.reactionCon}><Image source={require('../assets/save.png')} /><Text style={styles.text2}></Text></View>
-            <View style={styles.reactionCon}><Image source={require('../assets/share.png')} /><Text style={styles.text2}></Text></View>
-        </View>
+                            <View style={styles.reactionCon} onTouchStart={() => toggleLikePost(item.id)}>
+                                <Image source={likes[item.id] ? require('../assets/liked.png') : require('../assets/like.png')} />
+                                <Text style={{ ...styles.text2, color: likes[item.id] ? '#FF0808' : 'white' }}>
+                                    {item.number_of_likes > 0 ? item.number_of_likes : 0}
+                                </Text>
+                            </View>
+                            <View style={styles.reactionCon}><Image source={require('../assets/comment.png')} /><Text style={styles.text2}>300</Text></View>
+                            <View style={styles.reactionCon}><Image source={require('../assets/repost.png')} /><Text style={styles.text2}>300</Text></View>
+                            <View style={styles.reactionCon}><Image source={require('../assets/save.png')} /><Text style={styles.text2}></Text></View>
+                            <View style={styles.reactionCon}><Image source={require('../assets/share.png')} /><Text style={styles.text2}></Text></View>
+                        </View>
     </View>
             )}
             keyExtractor={(item)=> item.id}
@@ -253,7 +173,7 @@ const styles = StyleSheet.create({
     layout:{
         marginVertical: 0,
         position: 'relative',
-        paddingHorizontal: 20,
+        // paddingHorizontal: 20,
         // borderWidth: 3,
         borderColor: 'white'
     },
@@ -266,6 +186,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
+        paddingHorizontal: 20,
         justifyContent: 'space-between',
         paddingVertical: 10,
     },
@@ -280,7 +201,7 @@ const styles = StyleSheet.create({
     pfp:{
         width: 60,
         height: 60,
-        borderRadius: 50
+        borderRadius: 50,
     },
     text:{
         color: 'white',
@@ -305,22 +226,21 @@ const styles = StyleSheet.create({
     maintext:{
         color: 'white',
         fontSize: 18,
-        lineHeight: 22
+        lineHeight: 22,
+        paddingHorizontal: 20,
     },
     date:{
         color: 'white',
         fontSize: 10,
     },
     middle:{
-        paddingVertical: 5,
+        paddingVertical: 0,
         flexDirection: 'column',
         gap: 20
         // paddingHorizontal: 20
     }, 
     photo:{
         width: '100%',
-        borderWidth: 1,
-        borderColor: 'white'
     },
     bottom:{
         flexDirection: 'row',

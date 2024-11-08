@@ -1,12 +1,14 @@
 import React from "react";
 import { useState } from "react";
-import { StyleSheet, Text, View, SafeAreaView, TextInput } from "react-native";
+import { StyleSheet, Text, View, SafeAreaView, TextInput,  KeyboardAvoidingView, ScrollView, Platform } from "react-native";
 import { Globalstyles } from "../Styles/globalstyles";
 import ButtonComp from "../components/ButtonComp";
 import axios from 'axios';
+import Loading from "../components/Loading/Loading";
 
 
-const Otp = ({ navigation }) => {
+
+const Otp = ({ navigation }) => { 
   const otp = () => {
     navigation.navigate("Otp");
   };
@@ -17,7 +19,9 @@ const Otp = ({ navigation }) => {
   const vcode = {
     verificationCode : verificationCode
   }
-  const baseUrl = `http://192.168.1.118:8000/api/v1/user`;
+  const [loading, setLoading] = useState(false)
+  const [errorText, setErrorText] = useState('')
+  const baseUrl = `https://weebform1-1dba705ec65b.herokuapp.com/api/v1/user`;
 
   const headers = {
     "Content-Type": "application/json",
@@ -28,7 +32,10 @@ const Otp = ({ navigation }) => {
   };
 
   function createAcct(){
-    axios
+    setLoading(true);
+    setErrorText('')
+    setTimeout(()=>{
+      axios
       .post(
         `${baseUrl}/register`,
         vcode,
@@ -37,19 +44,29 @@ const Otp = ({ navigation }) => {
         }
       )
       .then((res) => {
-        console.log(res)
-        console.log('connection success')
         navigation.navigate("Main");
       })
       .catch(e => { // catch should be in lowercase
         console.log('Failed to create Account', e);
+        setLoading(false);
+        setErrorText('Failed to connect. Please try again')
       });
+    },2000)
+   
   }
 
   return (
     <View style={Globalstyles.form}>
+    <KeyboardAvoidingView
+     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+     style={{ flex: 1 }}
+     >
       <SafeAreaView>
-        <View style={styles.layout}>
+      <ScrollView>
+      {
+        loading && <Loading/>
+      }
+        <View style={{...styles.layout, opacity: loading ? '0.4': '1'}}>
           <View style={styles.headerCon}>
             <Text style={styles.header}>Email has been sent!</Text>
             <Text style={styles.headerTxt}>
@@ -70,6 +87,7 @@ const Otp = ({ navigation }) => {
               Code expires in <Text>03:33</Text>
             </Text>
           </View>
+          <Text style={styles.text} >{errorText}</Text>
           <View style={styles.btnCon}>
             <ButtonComp text="Verify" next={createAcct} />
             <Text style={{ color: "#908A8A" }}>
@@ -78,7 +96,9 @@ const Otp = ({ navigation }) => {
             </Text>
           </View>
         </View>
+        </ScrollView>
       </SafeAreaView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -127,6 +147,13 @@ const styles = StyleSheet.create({
     width: "100%",
     letterSpacing: 15,
   },
+  text:{
+    color:'white',
+    textAlign:'center',
+    marginTop: 15,
+    fontWeight:'800',
+    color:'#FF0808'
+  }
 });
 
 export default Otp;

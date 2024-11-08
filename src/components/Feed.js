@@ -21,6 +21,7 @@ const Feed = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       const posts = await getAllPosts();
+      console.log('posts', posts)
       const newposts = await getUserPostsByFollowing()
       if (posts) {
         setAllPosts(posts);
@@ -37,7 +38,7 @@ const Feed = () => {
 
 
   function openCloseSideBar(){
-    setSideBar(!sideBar)
+    setSideBar(!sideBar) 
     console.log('sidebar')
   }
   function closesidebar(){

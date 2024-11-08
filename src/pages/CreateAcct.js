@@ -6,6 +6,9 @@ import {
   SafeAreaView,
   Image,
   TextInput,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform
 } from "react-native";
 import ButtonComp from "../components/ButtonComp";
 import { Globalstyles } from "../Styles/globalstyles";
@@ -17,6 +20,7 @@ const [username, setUsername] = useState('')
 const [email, setEmail] = useState('')
 const [password, setPassword] = useState('')
 const [loading, setLoading] = useState(false)
+const [errorText, setErrorText] = useState('')
 console.log(username)
 
 function toggleLoad(cond){
@@ -31,7 +35,22 @@ const userData = {
 console.log(userData)
   // const [data, setData] = useState();
   async function createNewAcct(){
-    await createAcct(userData, navigation)
+    setLoading(true)
+    setErrorText('')
+    setTimeout(async () => {
+      navigation.navigate('Forgot your password')
+      try {
+        await createAcct(userData, navigation)
+      } catch (error) {
+        console.log("Login failed:", error);
+        if(error.status===500){
+          console.log('network error')
+        }
+      } finally {
+        setLoading(false);
+        setErrorText('Failed to create account. Please try again')
+      }
+    }, 3000);
   }
   
   const login = () => {
@@ -39,9 +58,13 @@ console.log(userData)
   };
   return (
     <View style={Globalstyles.form}>
+      <KeyboardAvoidingView
+       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+       style={{ flex: 1 }}>
       <SafeAreaView>
+      <ScrollView>
       {loading && <Loading/>}
-        <View style={styles.layout}>
+        <View style={{...styles.layout, opacity: loading ? '0.4': '1'}}>
           <View style={styles.header}>
             <Image source={require("../assets/logo2.png")} />
             <Text style={Globalstyles.formHeader}>Create Your Account</Text>
@@ -96,8 +119,10 @@ console.log(userData)
               </Text>
             </View>
           </View>
+          <View>
+            <Text style={styles.text} >{errorText}</Text>
+          </View>
           <View style={styles.signupCon}>
-          <View></View>
             <ButtonComp text="Sign up" next={createNewAcct} load={loading} toggleLoad={toggleLoad} />
             <Text
               onPress={() => {
@@ -110,7 +135,9 @@ console.log(userData)
             </Text>
           </View>
         </View>
+        </ScrollView>
       </SafeAreaView>
+      </KeyboardAvoidingView>
     </View>
   );
 };
@@ -138,6 +165,13 @@ const styles = StyleSheet.create({
     gap: 15,
     alignItems: "center",
   },
+  text:{
+    color:'white',
+    textAlign:'center',
+    marginTop: 20,
+    fontWeight:'800',
+    color:'#FF0808'
+  }
 });
 
 export default CreateAcct;

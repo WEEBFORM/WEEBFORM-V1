@@ -22,18 +22,17 @@ async function getToken(){
   };
 
 export const getAllPosts = async () => {
-    try {
-      const res = await axios.get(
-        `${baseUrl}`,
-        {
-          headers
-        }
-      );
-      return res.data;
-    } catch (e) {
-      console.log(e);
-      return null; // Or handle the error as needed
-    }
+  try {
+    const Token = await SecureStore.getItemAsync("Token");
+    const response = await axios.get(`${baseUrl}`, {
+      headers: { ...headers, Cookie: `accessToken=${Token}` }
+    });
+    console.log('true', response.data);
+    return response.data; // This will properly return the data
+  } catch (e) {
+    console.log('Failed to get user profile', e);
+    return null; // Ensure to return a value in case of an error
+  }
   };
 
 export const getUserPosts = async () => {

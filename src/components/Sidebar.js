@@ -8,8 +8,22 @@ import {
     TextInput,
     Che,
   } from "react-native";
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native';
+
 
 const Sidebar = () => {
+const navigation = useNavigation()
+  async function Logout(){
+    const token = await SecureStore.getItemAsync("Token");
+    console.log(token)
+    if(token){
+      await SecureStore.deleteItemAsync('Token')
+      navigation.navigate('Login')
+    }else{
+      console.log('no token found')
+    }
+  }
   return (
     <View style={styles.container}>
     <View style={styles.sec1}>
@@ -30,10 +44,10 @@ const Sidebar = () => {
             <Image source={require('./../assets/homeL.png')}/>
             <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '900'}}>Home</Text>
         </View>
-        <View style={styles.sec2C}>
+        {/* <View style={styles.sec2C}>
             <Image source={require('./../assets/genre.png')}/>
             <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '900'}}>All Genres</Text>
-        </View>
+        </View> */}
         <View style={styles.sec2C}>
             <Image source={require('./../assets/newss.png')}/>
             <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '900'}}>News</Text>
@@ -76,6 +90,10 @@ const Sidebar = () => {
         <View style={styles.sec2C}>
             <Image source={require('./../assets/newss.png')}/>
             <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '400'}}>Hidden Posts</Text>
+        </View>
+        <View style={styles.sec2C}>
+            <Image source={require('./../assets/newss.png')}/>
+            <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '400'}} onPress={Logout}>Logout</Text>
         </View>
         </View>
     </View>

@@ -21,7 +21,7 @@ import Textpost from "./src/components/Textpost";
 import Photopost from "./src/components/Photopost";
 import MPMore from "./src/pages/MPMore";
 import Username from "./src/pages/Username";
-// import EditProfile from "./src/pages/EditProfile";
+import EditProfile from "./src/pages/EditProfile";
 
 const Stack = createNativeStackNavigator()
 
@@ -182,7 +182,7 @@ export default function App() {
         headerBackTitleVisible: false,
         headerBackVisible:false 
       }} />
-      {/* <Stack.Screen name='EditProfile' component={EditProfile} options={{
+      <Stack.Screen name='EditProfile' component={EditProfile} options={{
         title: 'Edit Profile',
         headerStyle:{
           backgroundColor: 'black',
@@ -195,8 +195,7 @@ export default function App() {
         },
         headerBackTitleVisible: false,
         headerBackVisible:false 
-      }} /> */}
-
+      }} />
     </Stack.Navigator>
    
       {/* </NavigationContainer> */}
