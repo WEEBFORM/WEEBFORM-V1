@@ -126,7 +126,7 @@ export const register = (req, res, next) => {
             const i = "INSERT INTO users (`email`, `full_name`, `password`) VALUES (?)";
             const values = [
                 cachedData.email,
-                cachedData.fullName,
+                cachedData.full_name,
                 hashedPassword
             ];
             db.query(i, [values], (err, insertResult) => {
@@ -149,7 +149,7 @@ export const register = (req, res, next) => {
                         user: {
                             id: insertResult.insertId, 
                             email: cachedData.email, 
-                            full_name: cachedData.full_name
+                            fullName: cachedData.full_name
                         } 
                     });
                 });
