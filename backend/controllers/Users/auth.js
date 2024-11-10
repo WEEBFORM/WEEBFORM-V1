@@ -121,13 +121,15 @@ export const register = (req, res, next) => {
                 return res.status(400).json("Invalid verification code.");
             }
             const salt = bcrypt.genSaltSync(10);
-            const hashedPassword = bcrypt.hashSync(cachedData.password, salt);  
+            const hashedPassword = bcrypt.hashSync(cachedData.password, salt);
+            const defaultImage = 'uploads/default_profile.jpeg';  
 
-            const i = "INSERT INTO users (`email`, `full_name`, `password`) VALUES (?)";
+            const i = "INSERT INTO users (`email`, `full_name`, `password`, `profilePic`) VALUES (?)";
             const values = [
                 cachedData.email,
                 cachedData.full_name,
-                hashedPassword
+                hashedPassword,
+                defaultImage
             ];
             db.query(i, [values], (err, insertResult) => {
                 if (err) {
