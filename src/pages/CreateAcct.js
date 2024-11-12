@@ -38,7 +38,6 @@ console.log(userData)
     setLoading(true)
     setErrorText('')
     setTimeout(async () => {
-      navigation.navigate('Forgot your password')
       try {
         await createAcct(userData, navigation)
       } catch (error) {
