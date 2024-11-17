@@ -5,7 +5,7 @@ const router = express.Router()
 
 router.post('/create', newStore)
 router.get('/', viewStores )
-router.put('/stores/:id', editStoreDetails)
+router.put('/edit-store-details/:id', editStoreDetails)
 router.delete('/close-store/:id', closeStore)
 
 export default router

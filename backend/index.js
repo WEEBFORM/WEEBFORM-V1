@@ -6,6 +6,7 @@ import cookieParser from "cookie-parser";
 import { config } from "dotenv";
 import http from 'http';
 import { WebSocketServer } from 'ws';
+import {S3Client} from "@aws-sdk/client-s3"
 
 // ROUTES  
 import authRoute from "./routes/auth.js";

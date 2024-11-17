@@ -1,6 +1,6 @@
 import multer from "multer";
 
-const storage = multer.diskStorage({
+const storage = multer.memoryStorage({
     destination: function (req, file, cb) {
         cb(null, 'uploads/');
     },
@@ -17,7 +17,8 @@ export const cpUpload = upload.fields([
     { name: 'image', maxCount: 4 },
     { name: 'video', maxCount: 4 },
     { name: 'storyImage', maxCount: 3 },
-    { name: 'storyVideo', maxCount: 3 }
+    { name: 'storyVideo', maxCount: 3 },
+    { name: 'logoImage', maxCount: 1 },
 ]);
 
 

@@ -3,15 +3,15 @@ import {authenticateUser} from "../../middlewares/verify.mjs";
 import {cpUpload} from "../../middlewares/storage.js";
 import multer from "multer";
 import bcrypt from "bcryptjs";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import {s3, generateS3Url, s3KeyFromUrl, decodeNestedKey} from "../../middlewares/S3bucketConfig.js";
 
-const baseUrl = 'https://weebform1-1dba705ec65b.herokuapp.com'
 //API TO GET USER INFORMATION
 export const viewProfile = (req, res)=>{
     authenticateUser(req, res, () => {
         const userId = req.user.id;
-        //QUERY DB TO GET USER INFO
         const q = `SELECT 
-                    u.*, 
+                    u.*,
                     (SELECT COUNT(*) FROM reach WHERE followed = u.id) AS followerCount,
                     (SELECT COUNT(*) FROM reach WHERE follower = u.id) AS followingCount,
                     (SELECT COUNT(*) FROM posts WHERE userId = u.id) AS postsCount
@@ -19,29 +19,30 @@ export const viewProfile = (req, res)=>{
                     users AS u 
                     WHERE 
                     u.id = ?;`
-        db.query(q, [userId], (err, data)=>{
-        if(err){
-            return res.status(500).json(err)
-        }
-        if(data.length === 0){ 
-            return res.status(404).json("User not found");
-        }
-        const userData = data[0];
-
-        if (userData.coverPhoto) {
-            userData.coverPhoto = `${req.protocol}://${req.get('host')}/${userData.coverPhoto}`;
-        }
-        if (userData.profilePic) {
-            userData.profilePic = `${req.protocol}://${req.get('host')}/${userData.profilePic}`;
-        }
-
-        const { password, ...userInfo } = userData;
-
-        return res.status(200).json({
-            ...userInfo,
-            profileImage: userData.profilePic,
-            coverImage: userData.coverPhoto,
-        });
+        db.query(q, [userId], async (err, data)=>{
+            if(err){
+                return res.status(500).json(err)
+            }
+            if(data.length === 0){ 
+                return res.status(404).json("User not found");
+            }
+            const userData = data[0];
+            try {
+                if (userData.coverPhoto) {
+                    const coverPhotoKey = s3KeyFromUrl(userData.coverPhoto);
+                    userData.coverPhoto = await generateS3Url(coverPhotoKey);
+                }
+                if (userData.profilePic) {
+                    const profilePicKey = s3KeyFromUrl(userData.profilePic);
+                    userData.profilePic = await generateS3Url(profilePicKey);
+                }
+            } catch (error) {
+                console.error("Error generating S3 URLs:", error);
+            }
+            const { password, ...userInfo } = userData;
+            return res.status(200).json({
+                ...userInfo
+            });
         })
     });
 }
@@ -59,97 +60,146 @@ export const viewUserProfile = (req, res)=>{
                     users AS u 
                     WHERE 
                     u.id = ?;`
-        db.query(q, [userId], (err, data)=>{
-        if(err){
-            return res.status(500).json(err)
-        }
-        if(data.length === 0){ 
-            return res.status(404).json("User not found");
-        }
-        const userData = data[0];
-
-        if (userData.coverPhoto) {
-            userData.coverPhoto = `${req.protocol}://${req.get('host')}/${userData.coverPhoto}`;
-        }
-        if (userData.profilePic) {
-            userData.profilePic = `${req.protocol}://${req.get('host')}/${userData.profilePic}`;
-        }
-        const { password, ...userInfo } = userData;
-
-        return res.status(200).json({
-            ...userInfo,
-            profileImage: userData.profilePic,
-            coverImage: userData.coverPhoto,
-        });
+        db.query(q, [userId], async (err, data)=>{
+            if(err){
+                return res.status(500).json(err)
+            }
+            if(data.length === 0){ 
+                return res.status(404).json("User not found");
+            }
+            const userData = data[0];
+            try {
+                if (userData.coverPhoto) {
+                    const coverPhotoKey = s3KeyFromUrl(userData.coverPhoto);
+                    userData.coverPhoto = await generateS3Url(coverPhotoKey);
+                }
+                if (userData.profilePic) {
+                    const profilePicKey = s3KeyFromUrl(userData.profilePic);
+                    userData.profilePic = await generateS3Url(profilePicKey);
+                }
+            } catch (error) {
+                console.error("Error generating S3 URLs:", error);
+            }
+            const { password, ...userInfo } = userData;
+            return res.status(200).json({
+                ...userInfo,
+            });
         })
     });
 }
  
 //API TO GET USERS
-export const viewUsers = (req, res)=>{
+export const viewUsers = async (req, res)=>{
     authenticateUser(req, res, () => {
         //QUERY DB TO GET USERS
-        const q = "SELECT * FROM users"
-        db.query(q, (err, users)=>{
-        if(err){
-            return res.status(500).json(err)
-        }
-        if (users.length === 0) {
-            return res.status(404).json("No users found");
-        }
-        return res.status(200).json(users)
+        const q = `SELECT 
+                    u.*, 
+                    (SELECT COUNT(*) FROM reach WHERE followed = u.id) AS followerCount,
+                    (SELECT COUNT(*) FROM reach WHERE follower = u.id) AS followingCount,
+                    (SELECT COUNT(*) FROM posts WHERE userId = u.id) AS postsCount
+                    FROM 
+                    users AS u`
+        db.query(q, async(err, users)=>{ 
+            if(err){
+                return res.status(500).json(err)
+            }
+            if (users.length === 0) {
+                return res.status(404).json("No users found");
+            }
+            try {
+                if (userData.coverPhoto) {
+                    const coverPhotoKey = s3KeyFromUrl(userData.coverPhoto);
+                    userData.coverPhoto = await generateS3Url(coverPhotoKey);
+                }
+                if (userData.profilePic) {
+                    const profilePicKey = s3KeyFromUrl(userData.profilePic);
+                    userData.profilePic = await generateS3Url(profilePicKey);
+                }
+            } catch (error) {
+                console.error("Error generating S3 URLs:", error);
+                return res.status(200).json(users)
+            }
         })
     });
 }
 
-//API TO EDIT USER INFO
-export const editProfile = (req, res)=>{
+export const editProfile = async (req, res) => {
     authenticateUser(req, res, () => {
-        const user = req.user;
-        //QUERY DB TO EDIT USER INFO
-        cpUpload(req, res, function (err) {
-            if (err instanceof multer.MulterError) {
-                return res.status(500).json({ message: "File upload error", error: err });
-            } else if (err) {
-                return res.status(500).json({ message: "Unknown error", error: err });
-            }
-
-            // HASH PASSWORD
-            const salt = bcrypt.genSaltSync(10);
-            const hashedPassword = bcrypt.hashSync(req.body.password, salt);
-
-            // HANDLE FILE UPLOAD
-            const profilePic = req.files['profilePic'] ? req.files['profilePic'][0].path : null;
-            const coverPhoto = req.files['coverPhoto'] ? req.files['coverPhoto'][0].path : null;
-
-            if (!profilePic || !coverPhoto) {
-                return res.status(400).send('Files were not uploaded correctly.');
-            }
-
-            const q = "UPDATE users SET email = ?, full_name =?, username = ?, nationality = ?, password = ?, coverPhoto = ?, profilePic = ?, bio = ? WHERE id = ?";
-            const values = [
-               req.body.email,
-               req.body.fullName,
-               req.body.username,  
-               req.body.nationality,
-               hashedPassword,
-               coverPhoto,
-               profilePic,
-               req.body.bio,
-               user.id
-            ]; 
-            db.query(q, values, (err,data)=>{
-            if(err){
-               return res.status(500).json(err)
-            }
-            else{
-                res.status(200).json("Account updated successfully")
-            }
-            })
-        })
-
-    }) 
-}
+      const user = req.user;
+  
+      cpUpload(req, res, async (err) => {
+        if (err instanceof multer.MulterError) {
+          return res.status(500).json({ message: "File upload error", error: err });
+        } else if (err) {
+          return res.status(500).json({ message: "Unknown error", error: err });
+        }
+  
+        const salt = bcrypt.genSaltSync(10);
+        const hashedPassword = req.body.password ? bcrypt.hashSync(req.body.password, salt) : null;
+  
+        const profilePics = Array.isArray(req.files['profilePic']) ? req.files['profilePic'] : [req.files['profilePic']];
+        const coverPhotos = Array.isArray(req.files['coverPhoto']) ? req.files['coverPhoto'] : [req.files['coverPhoto']];
+  
+        const uploadedProfilePics = [];
+        const uploadedCoverPhotos = [];
+  
+        try {
+          for (const pic of profilePics) {
+            const params = {
+              Bucket: process.env.BUCKET_NAME,
+              Key: `uploads/${Date.now()}_${pic.originalname}`,
+              Body: pic.buffer,
+              ContentType: pic.mimetype,
+            };
+            const command = new PutObjectCommand(params);
+            await s3.send(command);
+            uploadedProfilePics.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`);
+          }
+  
+          for (const photo of coverPhotos) {
+            const params = {
+              Bucket: process.env.BUCKET_NAME,
+              Key: `uploads/${Date.now()}_${photo.originalname}`,
+              Body: photo.buffer,
+              ContentType: photo.mimetype,
+            };
+            const command = new PutObjectCommand(params);
+            await s3.send(command);
+            uploadedCoverPhotos.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`);
+          }
+        } catch (uploadError) {
+          console.error("Error uploading files:", uploadError);
+          return res.status(500).json({ message: "Error uploading files to S3", error: uploadError });
+        }
+  
+        const q = `
+          UPDATE users 
+          SET email = ?, full_name = ?, username = ?, nationality = ?, password = ?, coverPhoto = ?, profilePic = ?, bio = ? 
+          WHERE id = ?
+        `;
+        const values = [
+          req.body.email,
+          req.body.fullName,
+          req.body.username,
+          req.body.nationality,
+          hashedPassword,
+          uploadedCoverPhotos.length ? uploadedCoverPhotos.join(",") : null,
+          uploadedProfilePics.length ? uploadedProfilePics.join(",") : null,
+          req.body.bio,
+          user.id,
+        ];
+  
+        db.query(q, values, (err, data) => {
+          if (err) {
+            console.error("Database error:", err);
+            return res.status(500).json({ message: "Database error", error: err });
+          }
+          res.status(200).json({ message: "Account updated successfully", values, data });
+        });
+      }); 
+    });
+  };
+  
 
 //API TO DELETE ACCOUNT 
 export const deleteAccount = (req, res)=>{ 
