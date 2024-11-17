@@ -156,7 +156,7 @@ export const closeStore = (req, res) => {
         db.query(getStore, [req.params.id, user.id], async (err, data) => {
             if (err) {
                 return res.status(500).json({ message: "Database query error", error: err });
-            }
+            } 
             if (data.length === 0) {
                 return res.status(404).json({ message: "Store not found or you are not authorized to delete it." });
             }

@@ -147,7 +147,7 @@ export const editProfile = async (req, res) => {
           for (const pic of profilePics) {
             const params = {
               Bucket: process.env.BUCKET_NAME,
-              Key: `uploads/${Date.now()}_${pic.originalname}`,
+              Key: `uploads/profiles/${Date.now()}_${pic.originalname}`,
               Body: pic.buffer,
               ContentType: pic.mimetype,
             };
@@ -159,7 +159,7 @@ export const editProfile = async (req, res) => {
           for (const photo of coverPhotos) {
             const params = {
               Bucket: process.env.BUCKET_NAME,
-              Key: `uploads/${Date.now()}_${photo.originalname}`,
+              Key: `uploads/profiles/${Date.now()}_${photo.originalname}`,
               Body: photo.buffer,
               ContentType: photo.mimetype,
             };

@@ -5,7 +5,7 @@ import Welcome from "./src/pages/Welcome";
 import WelcomeOne from "./src/pages/WelcomeOne";
 import WelcomeTwo from "./src/pages/WelcomeTwo";
 import WelcomeThree from "./src/pages/WelcomeThree";
-import CreateAcct from "./src/pages/CreateAcct";
+import CreateAcct from "./src/pages/CreateAcct"; 
 import Login from "./src/pages/Login";
 import ForgotPassword from "./src/pages/ForgotPassword";
 import Otp from "./src/pages/Otp";
