@@ -11,7 +11,7 @@ import {
 import ButtonComp from "../components/ButtonComp";
 import { Globalstyles } from "../Styles/globalstyles";
 import axios from "axios";
-import { login } from "../api/auth";
+import { login } from "../api/auth"; 
 
 const Login = ({ navigation }) => {
   const create = () => {
@@ -27,7 +27,7 @@ const Login = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const userData = {
     email: email,
-    password: password
+    password: password 
   }
   console.log(userData)
   

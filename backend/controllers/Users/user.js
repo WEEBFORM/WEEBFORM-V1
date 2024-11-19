@@ -133,43 +133,51 @@ export const editProfile = async (req, res) => {
         } else if (err) {
           return res.status(500).json({ message: "Unknown error", error: err });
         }
-  
         const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = req.body.password ? bcrypt.hashSync(req.body.password, salt) : null;
+        const hashedPassword = req.body.password ? bcrypt.hashSync(req.body.password, salt) : undefined;
   
-        const profilePics = Array.isArray(req.files['profilePic']) ? req.files['profilePic'] : [req.files['profilePic']];
-        const coverPhotos = Array.isArray(req.files['coverPhoto']) ? req.files['coverPhoto'] : [req.files['coverPhoto']];
-  
-        const uploadedProfilePics = [];
-        const uploadedCoverPhotos = [];
-  
+        let profilePic = null;
+        if (req.files && req.files.profilePic && req.files.profilePic[0]) {
         try {
-          for (const pic of profilePics) {
+            const photo = req.files.profilePic[0];
             const params = {
-              Bucket: process.env.BUCKET_NAME,
-              Key: `uploads/profiles/${Date.now()}_${pic.originalname}`,
-              Body: pic.buffer,
-              ContentType: pic.mimetype,
+            Bucket: process.env.BUCKET_NAME,
+            Key: `uploads/profiles${Date.now()}_${photo.originalname}`,
+            Body: photo.buffer,
+            ContentType: photo.mimetype,
             };
             const command = new PutObjectCommand(params);
-            await s3.send(command);
-            uploadedProfilePics.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`);
-          }
-  
-          for (const photo of coverPhotos) {
-            const params = {
-              Bucket: process.env.BUCKET_NAME,
-              Key: `uploads/profiles/${Date.now()}_${photo.originalname}`,
-              Body: photo.buffer,
-              ContentType: photo.mimetype,
-            };
-            const command = new PutObjectCommand(params);
-            await s3.send(command);
-            uploadedCoverPhotos.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`);
-          }
+            const response = await s3.send(command);
+            profilePic = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
         } catch (uploadError) {
-          console.error("Error uploading files:", uploadError);
-          return res.status(500).json({ message: "Error uploading files to S3", error: uploadError });
+            console.error("Error uploading profile picture to S3:", uploadError);
+            return res.status(500).json({
+            message: "Error uploading profile picture to S3",
+            error: uploadError,
+            });
+        }
+        }
+
+        let coverPhoto = null;
+        if (req.files && req.files.coverPhoto && req.files.coverPhoto[0]) {
+        try {
+            const photo = req.files.coverPhoto[0];
+            const params = {
+            Bucket: process.env.BUCKET_NAME,
+            Key: `uploads/profiles${Date.now()}_${photo.originalname}`,
+            Body: photo.buffer,
+            ContentType: photo.mimetype,
+            };
+            const command = new PutObjectCommand(params);
+            const response = await s3.send(command);
+            coverPhoto = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
+        } catch (uploadError) {
+            console.error("Error uploading cover photo to S3:", uploadError);
+            return res.status(500).json({
+            message: "Error uploading cover photo to S3",
+            error: uploadError,
+            });
+        }
         }
   
         const q = `
@@ -182,13 +190,12 @@ export const editProfile = async (req, res) => {
           req.body.fullName,
           req.body.username,
           req.body.nationality,
-          hashedPassword,
-          uploadedCoverPhotos.length ? uploadedCoverPhotos.join(",") : null,
-          uploadedProfilePics.length ? uploadedProfilePics.join(",") : null,
+          hashedPassword || user.password,
+          profilePic,
+          coverPhoto,
           req.body.bio,
           user.id,
         ];
-  
         db.query(q, values, (err, data) => {
           if (err) {
             console.error("Database error:", err);
@@ -198,8 +205,7 @@ export const editProfile = async (req, res) => {
         });
       }); 
     });
-  };
-  
+};
 
 //API TO DELETE ACCOUNT 
 export const deleteAccount = (req, res)=>{ 
@@ -208,7 +214,7 @@ export const deleteAccount = (req, res)=>{
         //QUERY DB TO EDIT USER INFO
         const q = "DELETE FROM users WHERE id = ?"
         db.query(q, user.id, (err, data)=>{ 
-            if(err){
+            if(err){  
                 return res.status(500).json(err)
             }
             if(data.length === 0){

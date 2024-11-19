@@ -16,7 +16,6 @@ export const newPost = async (req, res) => {
             } else if (err) {
                 return res.status(500).json({ message: "Unknown error", error: err });
             }
-
             const images = req.files["image"];
             const videos = req.files["video"];
             const uploadedImageUrls = [];
@@ -403,4 +402,4 @@ const shufflePosts = (array) => {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
-};
+}; 
