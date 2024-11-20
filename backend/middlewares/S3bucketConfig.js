@@ -9,7 +9,7 @@ export const s3 = new S3Client({
         accessKeyId: process.env.ACCESS_KEY,
         secretAccessKey: process.env.SECRET_ACCESS_KEY,
     },
-});
+}); 
 
 // Helper function to generate signed URLs for S3 objects
 export const generateS3Url = async (key) => {
