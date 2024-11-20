@@ -21,7 +21,7 @@ const Profile = () => {
   async function getUserProfile() {
     try {
       const data = await getUserData();
-      console.log(data)
+      console.log('user profile', data)
       setUserData(data);
     } catch (error) {
       console.log("fetch profile failed:", error);
