@@ -42,7 +42,7 @@ app.use('/api/v1/stories', Stories);
 app.use('/api/v1/stores', Stores);
 app.use('/api/v1/communities', Communities);
 
-const port = process.env.PORT;
+const port = process.env.PORT || 3000;
 
 // HTTP SERVER
 const server = http.createServer(app);

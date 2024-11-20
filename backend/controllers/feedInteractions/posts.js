@@ -101,7 +101,6 @@ export const allPosts = async (req, res) => {
         `;
         db.query(q, async (err, data) => {
             if (err) return res.status(500).json(err);
-            // Process posts to generate signed URLs
             const processedPosts = await Promise.all(
                 data.map(async (post) => {
                     console.log("Processing post:", post);

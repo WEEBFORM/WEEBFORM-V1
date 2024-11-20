@@ -88,40 +88,49 @@ export const viewUserProfile = (req, res)=>{
     });
 }
  
-//API TO GET USERS
-export const viewUsers = async (req, res)=>{
+export const viewUsers = async (req, res) => {
     authenticateUser(req, res, () => {
-        //QUERY DB TO GET USERS
+        // QUERY DB TO GET USERS
         const q = `SELECT 
                     u.*, 
                     (SELECT COUNT(*) FROM reach WHERE followed = u.id) AS followerCount,
                     (SELECT COUNT(*) FROM reach WHERE follower = u.id) AS followingCount,
                     (SELECT COUNT(*) FROM posts WHERE userId = u.id) AS postsCount
                     FROM 
-                    users AS u`
-        db.query(q, async(err, users)=>{ 
-            if(err){
-                return res.status(500).json(err)
+                    users AS u`;
+
+        db.query(q, async (err, users) => {
+            if (err) {
+                return res.status(500).json({ message: "Database error", error: err });
             }
+
             if (users.length === 0) {
-                return res.status(404).json("No users found");
+                return res.status(404).json({ message: "No users found" });
             }
+
             try {
-                if (userData.coverPhoto) {
-                    const coverPhotoKey = s3KeyFromUrl(userData.coverPhoto);
-                    userData.coverPhoto = await generateS3Url(coverPhotoKey);
-                }
-                if (userData.profilePic) {
-                    const profilePicKey = s3KeyFromUrl(userData.profilePic);
-                    userData.profilePic = await generateS3Url(profilePicKey);
-                }
+                const allUsers = await Promise.all(
+                    users.map(async (userData) => {
+                        if (userData.coverPhoto) {
+                            const coverPhotoKey = s3KeyFromUrl(userData.coverPhoto);
+                            userData.coverPhoto = await generateS3Url(coverPhotoKey);
+                        }
+                        if (userData.profilePic) {
+                            const profilePicKey = s3KeyFromUrl(userData.profilePic);
+                            userData.profilePic = await generateS3Url(profilePicKey);
+                        }
+                        return userData;
+                    })
+                );
+                return res.status(200).json(allUsers);
             } catch (error) {
                 console.error("Error generating S3 URLs:", error);
-                return res.status(200).json(users)
+                return res.status(500).json({ message: "Error processing user data", error });
             }
-        })
+        });
     });
-}
+};
+
 
 export const editProfile = async (req, res) => {
     authenticateUser(req, res, () => {
