@@ -65,41 +65,41 @@ const server = http.createServer(app);
 //}`
 
 // WEBSOCKET SERVER
-const wss = new WebSocketServer({ server });
+// const wss = new WebSocketServer({ server });
 
-wss.on('connection', (ws, request) => {
-    const userId = request.url.slice(1);
+// wss.on('connection', (ws, request) => {
+//     const userId = request.url.slice(1);
 
-    console.log(`WebSocket connection established with user ${userId}`);
+//     console.log(`WebSocket connection established with user ${userId}`);
   
-    ws.on('message', (message) => {
-      console.log(`Received message ${message} from user ${userId}`);
+//     ws.on('message', (message) => {
+//       console.log(`Received message ${message} from user ${userId}`);
       
-      // Broadcast the message to all other connected clients
-      wss.clients.forEach((client) => {
-        if (client !== ws && client.readyState === WebSocketServer.OPEN) {
-          client.send(`User ${userId} says: ${message}`);
-        }
-      });
-    });
+//       // Broadcast the message to all other connected clients
+//       wss.clients.forEach((client) => {
+//         if (client !== ws && client.readyState === WebSocketServer.OPEN) {
+//           client.send(`User ${userId} says: ${message}`);
+//         }
+//       });
+//     });
   
-    ws.on('close', () => {
-      console.log(`WebSocket connection with user ${userId} closed`);
-    });
-    ws.send('WSS working fine')
-});
+//     ws.on('close', () => {
+//       console.log(`WebSocket connection with user ${userId} closed`);
+//     });
+//     ws.send('WSS working fine')
+// });
 
-// const IP = process.env.PUBLIC_IP;
+// // const IP = process.env.PUBLIC_IP;
 
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-  process.exit(1); // Exit and let the process manager restart the app
-});
+// process.on('uncaughtException', (err) => {
+//   console.error('Uncaught Exception:', err);
+//   process.exit(1); // Exit and let the process manager restart the app
+// });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1); // Exit and let the process manager restart the app
-});
+// process.on('unhandledRejection', (reason, promise) => {
+//   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+//   process.exit(1); // Exit and let the process manager restart the app
+// });
  
 server.listen(port, () => {
     console.log(`Server running on port ${port}`);

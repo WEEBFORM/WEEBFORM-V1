@@ -114,8 +114,7 @@ export const allPosts = async (req, res) => {
                             console.error("Error generating image URL:", error);
                             post.image = null;
                         }
-                    }
-            
+                    } 
                     if (post.video) {
                         const videoKey = s3KeyFromUrl(post.video);
                         console.log("Extracted video key:", videoKey);
