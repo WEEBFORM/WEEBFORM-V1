@@ -131,11 +131,10 @@ export const viewUsers = async (req, res) => {
     });
 };
 
-
+//EDIT USER PROFILE
 export const editProfile = async (req, res) => {
     authenticateUser(req, res, () => {
       const user = req.user;
-  
       cpUpload(req, res, async (err) => {
         if (err instanceof multer.MulterError) {
           return res.status(500).json({ message: "File upload error", error: err });
@@ -150,10 +149,10 @@ export const editProfile = async (req, res) => {
         try {
             const photo = req.files.profilePic[0];
             const params = {
-            Bucket: process.env.BUCKET_NAME,
-            Key: `uploads/profiles${Date.now()}_${photo.originalname}`,
-            Body: photo.buffer,
-            ContentType: photo.mimetype,
+                Bucket: process.env.BUCKET_NAME,
+                Key: `uploads/profiles/${Date.now()}_${photo.originalname}`,
+                Body: photo.buffer,
+                ContentType: photo.mimetype,
             };
             const command = new PutObjectCommand(params);
             const response = await s3.send(command);
@@ -173,7 +172,7 @@ export const editProfile = async (req, res) => {
             const photo = req.files.coverPhoto[0];
             const params = {
             Bucket: process.env.BUCKET_NAME,
-            Key: `uploads/profiles${Date.now()}_${photo.originalname}`,
+            Key: `uploads/profiles/${Date.now()}_${photo.originalname}`,
             Body: photo.buffer,
             ContentType: photo.mimetype,
             };
@@ -203,7 +202,7 @@ export const editProfile = async (req, res) => {
           profilePic,
           coverPhoto,
           req.body.bio,
-          user.id,
+          user.id, 
         ];
         db.query(q, values, (err, data) => {
           if (err) {

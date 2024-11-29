@@ -20,8 +20,6 @@ export const newPost = async (req, res) => {
             const videos = req.files["video"];
             const uploadedImageUrls = [];
             const uploadedVideoUrls = [];
-
-            // Upload images to S3
             if (images) {
                 for (const image of images) {
                     try {
@@ -62,16 +60,17 @@ export const newPost = async (req, res) => {
             const values = [
                 req.user.id,
                 req.body.description,
-                uploadedImageUrls.join(","), // Store as comma-separated string
+                uploadedImageUrls.join(","),
                 uploadedVideoUrls.join(","),
                 req.body.tags,
                 req.body.category,
                 moment(Date.now()).format("YYYY-MM-DD HH:mm:ss"),
             ];
-
             db.query(q, [values], (err, post) => {
                 if (err) return res.status(500).json(err);
-                res.status(200).json({ message: "Post created successfully", post, values });
+                else{
+                    res.status(200).json({ message: "Post created successfully", post, values });
+                }
             });
         });
     });
@@ -114,7 +113,7 @@ export const allPosts = async (req, res) => {
                             console.error("Error generating image URL:", error);
                             post.image = null;
                         }
-                    } 
+                    }  
                     if (post.video) {
                         const videoKey = s3KeyFromUrl(post.video);
                         console.log("Extracted video key:", videoKey);

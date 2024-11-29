@@ -11,17 +11,17 @@ export const s3 = new S3Client({
     },
 }); 
 
-// Helper function to generate signed URLs for S3 objects
+//GENERATE SIGNED S3 KEYS FOR OBJECTS
 export const generateS3Url = async (key) => {
     if (!key) return null;
     const command = new GetObjectCommand({
         Bucket: process.env.BUCKET_NAME,
         Key: key,
     });
-    return await getSignedUrl(s3, command, { expiresIn: 3600 });
+    return await getSignedUrl(s3, command);
 };
 
-// Extract S3 key from URL
+// EXTRACT S3 KEYS
 export const s3KeyFromUrl = (url) => {
     if (url && typeof url === "string") {
         const baseUrl = url.split("?")[0]; // Remove query parameters
@@ -31,10 +31,10 @@ export const s3KeyFromUrl = (url) => {
     return null;
 };
 
-// Decode nested or double-encoded keys
+// DECODE NESTED OR DOUBLE ENCODED KEYS
 export const decodeNestedKey = (key) => {
     try {
-        return decodeURIComponent(key); // Handle double encoding
+        return decodeURIComponent(key);
     } catch {
         return key;
     }

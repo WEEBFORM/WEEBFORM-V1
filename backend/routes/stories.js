@@ -1,5 +1,5 @@
 import express from "express";
-import {addStory, viewStory, deleteStory} from "../controllers/feedInteractions/stories.js"
+import {addStory, viewStory, deleteStory} from "../controllers/stories.js"
 
 const router = express.Router()
 

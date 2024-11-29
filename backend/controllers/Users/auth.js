@@ -1,54 +1,18 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
 import { db } from "../../config/connectDB.js";
+import { transporter } from "../../middlewares/mailTransportConfig.js";
 import multer from "multer";
+import {cpUpload} from "../../middlewares/storage.js";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import {s3, generateS3Url, s3KeyFromUrl, decodeNestedKey} from "../../middlewares/S3bucketConfig.js";
 import { errorHandler } from "../../middlewares/errors.mjs";
 import { config } from "dotenv";
 config();
- 
-// HANDLE MEDIA PROCESSING LOGIC
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/');
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + file.originalname);
-    }
-});
-const upload = multer({ storage: storage });
 
-const cpUpload = upload.fields([
-    { name: 'profilePic', maxCount: 1 },
-    { name: 'coverPhoto', maxCount: 1 }
-]);
-
-
-// EMAIL CONFIGURATION
-const transporter = nodemailer.createTransport({
-    host: 'smtp.titan.email', 
-    port: 587,
-    secure: false, 
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-        rejectUnauthorized: false 
-    }
-});
-
-transporter.verify((error, success) => {
-    if (error) {
-        console.error('SMTP verification failed:', error);
-    } else {
-        console.log("SMTP server is ready to take our messages");
-    }
-});
 
 //API TO INITIATE REGISTRATION
 export const initiateRegistration = (req, res, next) => {
-    
         try {
             // CHECK FOR EXISTING USERNAME OR EMAIL
             const q = "SELECT * FROM users WHERE username = ? OR email = ?";

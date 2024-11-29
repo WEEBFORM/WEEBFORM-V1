@@ -7,32 +7,31 @@ import {cpUpload} from "../middlewares/storage.js";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import {s3, generateS3Url, s3KeyFromUrl, decodeNestedKey} from "../middlewares/S3bucketConfig.js";
 
-//CREATE NEW STORE
+//CREATE NEW STORE 
 export const newStore = (req, res) => {
     authenticateUser(req, res, () => {
-        const user = req.user;
+        const user = req.user; 
         cpUpload(req, res, async function (err) {
             if (err instanceof multer.MulterError) {
                 return res.status(500).json({ message: "File upload error", error: err });
             } else if (err) { 
                 return res.status(500).json({ message: "Unknown error", error: err });
-            }
+            } 
             const checkQuery = "SELECT * FROM stores WHERE ownerId = ?";
             db.query(checkQuery, [user.id], async (err, data) => {
-                if (err) {
+                if (err) { 
                     return res.status(500).json({ message: "Database query error", error: err });
                 }
                 if (data.length) {
                     return res.status(409).json({ message: "You can only create one store" });
                 }
-                
                 let logoImage = null;
                 if (req.files && req.files.logoImage && req.files.logoImage[0]) {
                     try {
                         const photo = req.files.logoImage[0]; // Only the first file in the array
                         const params = {
                             Bucket: process.env.BUCKET_NAME,
-                            Key: `uploads/${Date.now()}_${photo.originalname}`,
+                            Key: `uploads/stores/${Date.now()}_${photo.originalname}`,
                             Body: photo.buffer,
                             ContentType: photo.mimetype,
                         };
