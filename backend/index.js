@@ -102,7 +102,7 @@ const server = http.createServer(app);
 //   process.exit(1); // Exit and let the process manager restart the app
 // });
  
-server.listen(port, () => {
+server.listen(port, '0.0.0.0', () => {
     console.log(`Server running on port ${port}`);
     // console.log(`Access the server at http://${IP}:${port}`);
 });
