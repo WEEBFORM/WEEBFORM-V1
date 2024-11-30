@@ -21,7 +21,7 @@ export const newStore = (req, res) => {
             db.query(checkQuery, [user.id], async (err, data) => {
                 if (err) { 
                     return res.status(500).json({ message: "Database query error", error: err });
-                }
+                } 
                 if (data.length) {
                     return res.status(409).json({ message: "You can only create one store" });
                 }
