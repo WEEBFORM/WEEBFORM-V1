@@ -61,7 +61,7 @@ export const Globalstyles = StyleSheet.create({
     color:'white'
   },
   formHeader:{
-    fontSize: '30px',
+    fontSize: 30,
     color:'white'
   },
   forgot:{

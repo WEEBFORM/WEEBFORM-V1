@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     flexWrap: 1
   },
   genreCon:{
-    borderWidth: '2px',
+    borderWidth: 2,
     borderColor: '#171717',
     width: 100,
     padding: 10,

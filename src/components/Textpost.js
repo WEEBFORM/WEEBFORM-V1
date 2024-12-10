@@ -63,7 +63,7 @@ const styles = StyleSheet.create({
     pfp:{
         width: 60,
         height: 60,
-        borderRadius: 50
+        borderRadius: 50,
     },
     text:{
         color: 'white',

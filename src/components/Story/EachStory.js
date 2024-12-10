@@ -23,9 +23,9 @@ const styles = StyleSheet.create({
     marginRight: 20,
   },
   imageCon:{
-    borderWidth: '3px',
+    borderWidth: 3,
     borderColor: '#EB9E71',
-    borderRadius:'50%'
+    borderRadius:50
   },
   text:{
     color: 'white',

@@ -7,18 +7,22 @@ import {
     Image,
     TextInput,
     Che,
+    ScrollView,
   } from "react-native";
 
 const Sidebar = () => {
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
+
+
+    <View >
     <View style={styles.sec1}>
         <View>
             <Image source={require('./../assets/coverphoto.png')} style={styles.pfp} />
         </View>
         <View style={styles.sec1W}>
             <Text style={styles.text}>Shedrach</Text>
-            <Text style={{...styles.text, color: '#D2D2D2', fontSize: '12'}}>(@ShedrachJitsu)</Text>
+            <Text style={{...styles.text, color: '#D2D2D2', fontSize: 12}}>(@ShedrachJitsu)</Text>
             <View style={styles.follw}>
                 <Text style={styles.text}>2 Following</Text>
                 <Text style={styles.text}>2 Followers</Text>
@@ -28,58 +32,59 @@ const Sidebar = () => {
     <View style={styles.sec2}>
         <View style={styles.sec2C}>
             <Image source={require('./../assets/homeL.png')}/>
-            <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '900'}}>Home</Text>
+            <Text style={{...styles.text, color: 'white', fontSize: 18, fontWeight: 900}}>Home</Text>
         </View>
         <View style={styles.sec2C}>
             <Image source={require('./../assets/genre.png')}/>
-            <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '900'}}>All Genres</Text>
+            <Text style={{...styles.text, color: 'white', fontSize: 18, fontWeight: 900}}>All Genres</Text>
         </View>
         <View style={styles.sec2C}>
             <Image source={require('./../assets/newss.png')}/>
-            <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '900'}}>News</Text>
+            <Text style={{...styles.text, color: 'white', fontSize: 18, fontWeight: 900}}>News</Text>
         </View>
     </View>
     <View style={styles.sec3}>
         <View style={styles.sec3T}>
             <Image source={require('../assets/postInd.png')} style={styles.ind} />
-            <Text style={{...styles.text, color: 'white', fontSize: '16px', fontWeight: '500'}}>My Library</Text>
+            <Text style={{...styles.text, color: 'white', fontSize: 16, fontWeight: 500}}>My Library</Text>
         </View>
         <View style={styles.sec3O}>
         <View style={styles.sec2C}>
             <Image source={require('./../assets/newss.png')}/>
-            <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '400'}}>Anime & Manga list</Text>
+            <Text style={{...styles.text, color: 'white', fontSize: 18, fontWeight: 400}}>Anime & Manga list</Text>
         </View>
         <View style={styles.sec2C}>
             <Image source={require('./../assets/newss.png')}/>
-            <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '400'}}>Favourites</Text>
+            <Text style={{...styles.text, color: 'white', fontSize: 18, fontWeight: 400}}>Favourites</Text>
         </View>
         <View style={styles.sec2C}>
             <Image source={require('./../assets/reccomm.png')}/>
-            <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '400'}}>Reccommendations</Text>
+            <Text style={{...styles.text, color: 'white', fontSize: 18, fontWeight: 400}}>Reccommendations</Text>
         </View>
         <View style={styles.sec2C}>
             <Image source={require('./../assets/newss.png')}/>
-            <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '400'}}>Create Marketplace</Text>
+            <Text style={{...styles.text, color: 'white', fontSize: 18, fontWeight: 400}}>Create Marketplace</Text>
         </View>
         </View>
     </View>
     <View style={styles.sec4}>
     <View style={styles.sec3T}>
             <Image source={require('../assets/postInd.png')} style={styles.ind} />
-            <Text style={{...styles.text, color: 'white', fontSize: '16px', fontWeight: '500'}}>My Library</Text>
+            <Text style={{...styles.text, color: 'white', fontSize: 16, fontWeight: 500}}>My Library</Text>
         </View>
         <View style={styles.sec3O}>
         <View style={styles.sec2C}>
             <Image source={require('./../assets/newss.png')}/>
-            <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '400'}}>Saved Posts</Text>
+            <Text style={{...styles.text, color: 'white', fontSize: 18, fontWeight: 400}}>Saved Posts</Text>
         </View>
         <View style={styles.sec2C}>
             <Image source={require('./../assets/newss.png')}/>
-            <Text style={{...styles.text, color: 'white', fontSize: '18px', fontWeight: '400'}}>Hidden Posts</Text>
+            <Text style={{...styles.text, color: 'white', fontSize: 18, fontWeight: 400}}>Hidden Posts</Text>
         </View>
         </View>
     </View>
     </View>
+    </ScrollView>
   )
 }
 
@@ -88,12 +93,12 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: '5%',
         left: '0%',
-        // borderWidth: '1px',
+      
         // borderColor: 'white',
         width: '75%',
         height: '105%',
         backgroundColor: '#101010',
-        zIndex: '2',
+        zIndex: 2,
         paddingTop: 10
     },
     text:{
@@ -104,15 +109,15 @@ const styles = StyleSheet.create({
         gap: 10,
         alignItems: 'center',
         padding: 10,
-        borderBottomWidth: '1px',
+        borderBottomWidth: 1,
         borderColor: '#2D2A2A'
     },
     pfp:{
-        borderWidth: '5px',
+        borderWidth: 5,
         borderColor: 'black',
         width: 80,
         height: 80,
-        borderRadius: '100%',
+        borderRadius: 100,
       },
       sec1W:{
         flexDirection: 'column',
@@ -129,7 +134,7 @@ const styles = StyleSheet.create({
         gap: 15,
         padding: 10,
         paddingVertical: 30,
-        borderBottomWidth: '1px',
+        borderBottomWidth: 1,
         borderColor: '#2D2A2A'
       },
       sec2C:{
@@ -143,7 +148,7 @@ const styles = StyleSheet.create({
         gap: 15,
         padding: 10,
         paddingVertical: 30,
-        borderBottomWidth: '1px'
+        borderBottomWidth: 1
       },
       sec3T:{
         flexDirection: 'row',
