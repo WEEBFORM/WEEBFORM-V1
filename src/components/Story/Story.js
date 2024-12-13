@@ -33,12 +33,12 @@ const Story = () => {
   ]
   return (
     <View style={styles.layout}>
-      <View style={styles.newStory}>
+      {/* <View style={styles.newStory}>
         <Image source={require('../../assets/story1.png')}/>
         <Text style={styles.text}>
           Your Story 
         </Text>
-        </View>
+        </View> */}
         <FlatList
           horizontal
           style={{gap: 20}}
