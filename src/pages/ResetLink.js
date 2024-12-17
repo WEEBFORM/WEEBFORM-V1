@@ -26,7 +26,7 @@ const ResetLink = ({ navigation }) => {
           <View style={styles.btnCon}>
             <Text style={{ color: "#908A8A" }}>
               Didn't receive an inbox?{" "}
-              <Text style={{ color: "#CF833F", fontSize: '20px' }}>Resend</Text>
+              <Text style={{ color: "#CF833F", fontSize: 20 }}>Resend</Text>
             </Text>
           </View>
         </View>
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   headerTxt: {
     textAlign: "center",
     color: "#908A8A",
-    fontSize: "18",
+    fontSize: 18,
   },
   inputCon: {
     padding: 15,
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderColor: "#EB9E71",
     color: "white",
-    fontSize: "20px",
+    fontSize: 20,
     width: "100%",
     letterSpacing: 15,
   },

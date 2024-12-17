@@ -32,8 +32,7 @@ const Feed = () => {
     };
     fetchPosts();
   }, []);
-  // console.log('logging', allPost)
-  // console.log('logging', await getAllPosts())
+
 
 
   function openCloseSideBar(){

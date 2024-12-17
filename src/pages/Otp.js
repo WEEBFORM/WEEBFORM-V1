@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   headerTxt: {
     textAlign: "center",
     color: "#908A8A",
-    fontSize: "18",
+    fontSize: 18,
   },
   inputCon: {
     padding: 15,
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     borderColor: "#EB9E71",
     color: "white",
-    fontSize: "20px",
+    fontSize: 20,
     width: "100%",
     letterSpacing: 15,
   },

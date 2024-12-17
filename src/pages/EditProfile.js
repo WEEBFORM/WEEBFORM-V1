@@ -127,9 +127,9 @@ const styles = StyleSheet.create({
         color: '#7E7E7E',
         padding: 5,
         backgroundColor: 'black',
-        zIndex: '20',
+        zIndex: 20,
         width: 100,
-        transform: 'translate(10px, 11px)',
+        transform: 'translate(10, 11)',
         textAlign: 'center',
 
     },

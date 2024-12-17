@@ -57,7 +57,7 @@ const EachNews = () => {
 
 const styles = StyleSheet.create({
     layout:{
-        borderWidth: '3px',
+        borderWidth: 3,
         borderColor: '#1A1A1A',
         flexDirection: 'column',
         padding: 10,
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     },
     titletext:{
         color: '#D9D9D9',
-        fontSize: '20px',
+        fontSize: 20,
         marginBottom: 3,
         fontWeight: '700'
     },

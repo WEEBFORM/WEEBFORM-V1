@@ -1,5 +1,5 @@
 import React from 'react'
-import { StyleSheet, Text, View, SafeAreaView, ImageBackground, Image} from "react-native";
+import { StyleSheet, Text, View, SafeAreaView, ImageBackground, Image, Platform} from "react-native";
 
 
 const TopNav = ({sidebar}) => {
@@ -9,8 +9,8 @@ const TopNav = ({sidebar}) => {
     <Image style={styles.images} source={require('../assets/logo.png')} />
     </View>
         <View style={styles.right}>
-        <Image source={require('../assets/notis.png')} />
-        <Image source={require('../assets/search.png')} />
+        <Image style={styles.navImg} source={require('../assets/notis.png')} />
+        <Image style={styles.navImg} source={require('../assets/search.png')} />
         <View onTouchStart={sidebar}>
         <Image source={require('../assets/menu.png')}  />
         </View>
@@ -24,6 +24,10 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        marginTop: Platform.select({
+            android: 20,
+            ios: 0,
+        })
     }, 
     right:{
         flexDirection: 'row',
@@ -40,6 +44,18 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80
     },
+    navImg: {
+        width: Platform.select({
+            android: 20,
+            ios: 20,
+
+          }),
+          height: Platform.select({
+            android: 20,
+            ios: 20,
+
+          }),
+    }
 })
 
 export default TopNav
