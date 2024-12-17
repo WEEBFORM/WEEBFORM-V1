@@ -38,7 +38,8 @@ const Textpost = () => {
 const styles = StyleSheet.create({
     layout:{
         // marginTop: 20,
-        position: 'relative'
+        position: 'relative',
+        // backgroundColor: 'red',
     },
     ind:{
         position: 'absolute',

@@ -10,7 +10,7 @@ import EachStory from '../components/Story/EachStory';
 import Menu from '../components/Menu';
 import PostOptions from '../components/PostOptions';
 import Profile from './Profile';
-import Communities from './Communities';
+import Communities from './communities/Communities';
 import News from './NewSec';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -42,7 +42,11 @@ const Home = () => {
           tabBarStyle:{
             backgroundColor:'black',
             borderTopColor: 'black',
-            paddingVertical: 3
+            paddingVertical: 3,
+            height: Platform.select({
+              ios:70,
+              android:50
+            })
           }
          }}
          >
