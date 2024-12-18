@@ -18,7 +18,7 @@ const CommunityList = ({ name, categories, members, img, time }) => {
                 source={memberIcon}
               />
 
-              <Text style={CommunityListStyles.memberText}>65444</Text>
+              <Text style={CommunityListStyles.memberText}>{members}</Text>
             </View>
           </View>
           <Text style={CommunityListStyles.description}>{categories}</Text>

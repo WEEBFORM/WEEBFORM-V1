@@ -5,7 +5,7 @@ const CommunityListStyles = StyleSheet.create({
   container: {
     height: 60,
     width: "100%",
-    // backgroundColor: "red",
+
     padding: 6,
     flexDirection: "row",
     alignItems: "center",
@@ -13,7 +13,7 @@ const CommunityListStyles = StyleSheet.create({
   },
   infoCont: {
     flexDirection: "row",
-    // alignItems: 'center',
+
     gap: 7,
   },
   groupImg: {
@@ -32,57 +32,48 @@ const CommunityListStyles = StyleSheet.create({
   },
   memberIcon: {
     height: ms(13),
-    width: ms(13),  
-    alignItems:'center',  
+    width: ms(13),
+    alignItems: "center",
   },
   memberCont: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 4,
-    alignItems:'center',
+    alignItems: "center",
     padding: 8,
     marginTop: 5,
-    // justifyContent: 'center',
+
     height: 14,
     borderRadius: 2,
-    // width: 80,
-    backgroundColor: '#101010',
 
-
+    backgroundColor: "#101010",
   },
   memberText: {
     fontSize: 9,
-    textAlign: 'center',
-    color: '#7E7C7C',
+    textAlign: "center",
+    color: "#7E7C7C",
     height: 14,
     marginTop: 3,
-
-
   },
   nammeb: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap:4,
-
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 4,
   },
   name: {
     fontSize: 13,
-    color: '#D9D9D9',
+    color: "#D9D9D9",
     fontWeight: "800",
-
   },
   description: {
     fontSize: 10,
-    fontWeight: '400',
-    color: '#999898',
-// textAlign:  'center',
+    fontWeight: "400",
+    color: "#999898",
   },
   time: {
     fontSize: 10,
-    fontWeight: '400',
-    color: '#999898',
-  }
-
-
+    fontWeight: "400",
+    color: "#999898",
+  },
 });
 
 export default CommunityListStyles;
