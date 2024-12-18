@@ -292,8 +292,7 @@ export const postCategory = (req, res)=>{
         }
         const processedPosts = await Promise.all(
             data.map(async (post) => {
-                console.log("Processing post:", post);
-        
+                console.log("Processing post:", post);      
                 if (post.image) {
                     const imageKey = s3KeyFromUrl(post.image);
                     console.log("Extracted image key:", imageKey);            
@@ -304,11 +303,9 @@ export const postCategory = (req, res)=>{
                         post.image = null;
                     }
                 }
-        
                 if (post.video) {
                     const videoKey = s3KeyFromUrl(post.video);
                     console.log("Extracted video key:", videoKey);
-        
                     try {
                         post.video = await generateS3Url(videoKey);
                     } catch (error) {
@@ -347,12 +344,11 @@ export const deletePost = (req, res) => {
                 return res.status(404).json({ message: "Post not found!" });
             }
             const { imageUrl, videoUrl } = data[0];
-            // Helper function to delete S3 objects
             const deleteS3Object = async (url) => {
                 const key = s3KeyFromUrl(url);
                 if (!key) {
                     console.error("Invalid S3 object URL:", url);
-                    return null; // Skip invalid URLs
+                    return null;
                 }
                 try {
                     const deleteCommand = new DeleteObjectCommand({
@@ -366,16 +362,12 @@ export const deletePost = (req, res) => {
                     throw new Error("Error deleting file from S3");
                 }
             };
-
-            // Step 2: Delete image and video objects if they exist
             try {
                 if (imageUrl) await deleteS3Object(imageUrl);
                 if (videoUrl) await deleteS3Object(videoUrl);
             } catch (deleteError) {
                 return res.status(500).json({ message: "Error deleting S3 objects", error: deleteError });
             }
-
-            // Step 3: Delete the post from the database
             const deletePostQuery = "DELETE FROM posts WHERE id = ? AND userId = ?";
             db.query(deletePostQuery, [req.params.id, user.id], (err, result) => {
                 if (err) {
@@ -390,8 +382,9 @@ export const deletePost = (req, res) => {
         });
     });
 };
-//RELEVANT FUNCTIONS
 
+
+//RELEVANT FUNCTIONS
 // FUNCTION TO SHUFFLE POSTS
 const shufflePosts = (array) => {
     for (let i = array.length - 1; i > 0; i--) {

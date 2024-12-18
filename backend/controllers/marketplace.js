@@ -28,7 +28,7 @@ export const newStore = (req, res) => {
                 let logoImage = null;
                 if (req.files && req.files.logoImage && req.files.logoImage[0]) {
                     try {
-                        const photo = req.files.logoImage[0]; // Only the first file in the array
+                        const photo = req.files.logoImage[0];
                         const params = {
                             Bucket: process.env.BUCKET_NAME,
                             Key: `uploads/stores/${Date.now()}_${photo.originalname}`,
@@ -70,10 +70,9 @@ export const newStore = (req, res) => {
     });
 };
  
-//API TO VIEW STORE
+//API TO VIEW ALL STORES
 export const viewStores = (req, res)=>{
     authenticateUser(req, res, () => {
-        const user = req.user;
         //QUERY DB TO GET STORE
         const q = "SELECT * FROM stores";
         db.query(q, (err, store)=>{

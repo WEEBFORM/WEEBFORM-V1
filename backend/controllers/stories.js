@@ -7,7 +7,6 @@ import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3
 import {s3, generateS3Url, s3KeyFromUrl, decodeNestedKey} from "../middlewares/S3bucketConfig.js";
 
 //API TO CREATE NEW STORY
-//API TO CREATE NEW STORY
 export const addStory = (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
@@ -21,7 +20,6 @@ export const addStory = (req, res) => {
             const storyVideos = req.files['storyVideos'];
             const storyImageUrls = [];
             const storyVideoUrls = [];
-
             if (storyImages) {
                 for (const image of storyImages) {
                     try {
@@ -40,7 +38,6 @@ export const addStory = (req, res) => {
                     }
                 }
             }
-
             if (storyVideos) {
                 for (const video of storyVideos) {
                     try {
@@ -70,12 +67,11 @@ export const addStory = (req, res) => {
 
             db.query(q, [values], (err, data) => {
                 if (err) return res.status(500).json(err);
-                res.status(200).json({ message: "Story added successfully" });
+                res.status(200).json({ message: "Story added successfully", data });
             });
         });
     });
 };
-
 
 //API TO VIEW STORIES
 export const viewStory = (req, res) => {
@@ -121,20 +117,54 @@ export default function deleteOldData() {
 setInterval(deleteOldData, 24 * 60 * 60 * 1000);  
 
 //API TO DELETE STORY
-export const deleteStory = (req, res)=>{
+export const deleteStory = (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
-        const storyId = req.params.storyId
-        const q = "DELETE FROM stories WHERE id = ? AND userId = ?";
-        db.query(q, [storyId, user.id], (err,data)=>{
-        if(err) {
-            return res.status(500).json(err)
-        }
-        if(data){
-            res.status(200).json("Story deleted succesfully")
-        }else{
-            res.status(409).json("You can only delete your own story")
-        }
-        })
-    }) 
-}
+        const storyId = req.params.id
+        const getStory = "SELECT storyImage AS imageUrl, storyVideo AS videoUrl FROM stories WHERE id = ? AND userId = ?";
+        db.query(getStory, [storyId, user.id], async (err, data) => {
+            if (err) {
+                return res.status(500).json({ message: "Database query error", error: err });
+            }
+            if (data.length === 0) {
+                return res.status(404).json({ message: "Story not found!" });
+            }
+            const { imageUrl, videoUrl } = data[0];
+            const deleteS3Object = async (url) => {
+                const key = s3KeyFromUrl(url);
+                if (!key) {
+                    console.error("Invalid S3 object URL:", url);
+                    return null;
+                }
+                try {
+                    const deleteCommand = new DeleteObjectCommand({
+                        Bucket: process.env.BUCKET_NAME,
+                        Key: key,
+                    });
+                    await s3.send(deleteCommand);
+                    console.log("S3 object deleted successfully:", key);
+                } catch (s3Error) {
+                    console.error("Error deleting S3 object:", s3Error);
+                    throw new Error("Error deleting file from S3");
+                }
+            };
+            try {
+                if (imageUrl) await deleteS3Object(imageUrl);
+                if (videoUrl) await deleteS3Object(videoUrl);
+            } catch (deleteError) {
+                return res.status(500).json({ message: "Error deleting S3 objects", error: deleteError });
+            }
+            const deletestoriesQuery = "DELETE FROM stories WHERE id = ? AND userId = ?";
+            db.query(deletestoriesQuery, [req.params.id, user.id], (err, result) => {
+                if (err) {
+                    return res.status(500).json({ message: "Database deletion error", error: err });
+                }
+                if (result.affectedRows > 0) {
+                    return res.status(200).json({ message: "stories deleted successfully." });
+                } else {
+                    return res.status(403).json({ message: "You can only delete your own stories." });
+                }
+            });
+        });
+    });
+};
