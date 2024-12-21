@@ -42,12 +42,12 @@ const Marketplace = ({navigation}) => {
         <Text style={styles.text}>Anime Merchandise</Text>
         <View>
           <ImageBackground style={styles.imgBack} source={require('./../assets/mp1.png')}>
-              <View style={styles.visit}><Text style={{fontSize: '20', color: 'white'}}>Visit Store</Text><Image source={require('./../assets/genre.png')}/></View>
+              <View style={styles.visit}><Text style={{fontSize: 20, color: 'white'}}>Visit Store</Text><Image source={require('./../assets/genre.png')}/></View>
           </ImageBackground>
         </View>
       </View>
       <View style={styles.special}>
-        <Text style={{color: 'white', fontSize: '25' }}>Special Collections</Text>
+        <Text style={{color: 'white', fontSize: 25 }}>Special Collections</Text>
         <Text style={styles.seeAll} onPress={more} >SEE ALL</Text>
         <FlatList
           horizontal
@@ -63,7 +63,7 @@ const Marketplace = ({navigation}) => {
         />
       </View>
       <View style={styles.special}>
-        <Text style={{color: 'white', fontSize: '25' }}>Popular Collections</Text>
+        <Text style={{color: 'white', fontSize: 25 }}>Popular Collections</Text>
         <Text style={styles.seeAll} onPress={pmore}>SEE ALL</Text>
         <FlatList
           horizontal

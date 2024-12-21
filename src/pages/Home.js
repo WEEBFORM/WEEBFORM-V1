@@ -1,5 +1,5 @@
 import React from 'react'
-import { StyleSheet, Text, View,Image, SafeAreaView, ImageBackground, ScrollView} from "react-native";
+import { StyleSheet, Text, View,Image, SafeAreaView, ImageBackground, ScrollView, Platform} from "react-native";
 import { Globalstyles } from '../Styles/globalstyles';
 import Nav from '../components/Nav';
 import TopNav from '../components/TopNav';
@@ -10,7 +10,7 @@ import EachStory from '../components/Story/EachStory';
 import Menu from '../components/Menu';
 import PostOptions from '../components/PostOptions';
 import Profile from './Profile';
-import Communities from './Communities';
+import Communities from './communities/Communities';
 import News from './NewSec';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -42,7 +42,11 @@ const Home = () => {
           tabBarStyle:{
             backgroundColor:'black',
             borderTopColor: 'black',
-            paddingVertical: 10
+            paddingVertical: 3,
+            height: Platform.select({
+              ios:70,
+              android:50
+            })
           }
          }}
          >
@@ -50,7 +54,11 @@ const Home = () => {
     tabBarIcon:({focused})=>{
       return <View style={styles.iconLayout}>
         <Image source={require('../assets/home.png')} resizeMode='contain' style={{
-          tintColor: focused ? '#CF833F': 'white'
+          tintColor: focused ? '#CF833F': 'white',
+          width: Platform.select({
+            ios:30,
+            android:20
+          })
         }} />
       </View>
     }
@@ -60,6 +68,10 @@ const Home = () => {
       return <View style={styles.iconLayout}>
         <Image source={require('../assets/comm.png')} resizeMode='contain' style={{
           tintColor: focused ? '#CF833F': 'white',
+          width: Platform.select({
+            ios:30,
+            android:20
+          })
         }} />
       </View>
     }
@@ -69,6 +81,10 @@ const Home = () => {
       return <View style={styles.iconLayout}>
         <Image source={require('../assets/upload.png')} resizeMode='contain' style={{
           tintColor: focused ? '#CF833F': 'white',
+          width: Platform.select({
+            ios:30,
+            android:20
+          })
         }} />
       </View>
     }
@@ -77,7 +93,11 @@ const Home = () => {
     tabBarIcon:({focused})=>{
       return <View style={styles.iconLayout}>
         <Image source={require('../assets/newss.png')} resizeMode='contain' style={{
-          tintColor: focused ? '#CF833F': 'white'
+          tintColor: focused ? '#CF833F': 'white',
+          width: Platform.select({
+            ios:30,
+            android:20
+          })
         }} />
       </View>
     }
@@ -86,7 +106,11 @@ const Home = () => {
     tabBarIcon:({focused})=>{
       return <View style={styles.iconLayout}>
         <Image source={require('../assets/shopping.png')} resizeMode='contain' style={{
-          tintColor: focused ? '#CF833F': 'white'
+          tintColor: focused ? '#CF833F': 'white',
+          width: Platform.select({
+            ios:30,
+            android:20
+          })
         }} />
       </View>
     }
@@ -96,6 +120,10 @@ const Home = () => {
       return <View style={styles.iconLayout}>
         <Image source={require('../assets/user.png')} resizeMode='contain' style={{
           tintColor: focused ? '#CF833F': 'white',
+          width: Platform.select({
+            ios:30,
+            android:20
+          })
         }} />
       </View>
     }

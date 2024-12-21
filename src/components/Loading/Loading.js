@@ -42,7 +42,7 @@ const style = StyleSheet.create({
         bottom: '0',
         width: '100%',
         height: '100%',
-        zIndex: '40',
+        zIndex: 40,
     },
     image:{
         objectFit: 'contain',

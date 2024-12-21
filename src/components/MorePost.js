@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     section:{
         padding: 20,
         flexDirection: 'row',
-        borderWidth: '6px',
+        borderWidth: 6,
         borderColor: '#121212',
         justifyContent: 'space-between',
         alignItems: 'center',

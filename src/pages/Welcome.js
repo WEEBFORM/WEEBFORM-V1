@@ -21,9 +21,9 @@ const Welcome = ({navigation}) => {
       // const token = await getToken()
       const token = true
         if(token){
-          navigation.replace('Home')
+          navigation.navigate('Main')
         }else{
-          navigation.replace('Home')
+          navigation.navigate('Main')
         }
         }, 3000)
   }, [])
@@ -40,7 +40,7 @@ const style = StyleSheet.create({
         flex: 1,
         backgroundColor: '#CF833F', 
         alignItems: 'center',
-        border: '2px solid black',
+        // border: '2 solid black',
         // backgroundColor: '#A54A15',
         justifyContent: 'center'
     },

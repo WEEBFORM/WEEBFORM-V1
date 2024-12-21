@@ -7,7 +7,7 @@ const EachStory = ({name, pictures, viewed}) => {
   return (
     <View>
         <View style={styles.layout}>
-        <Image style={viewed ? styles.imageCon: ''} source={require('../../assets/story1.png')} />
+        <Image style={viewed ? styles.imageCon :  styles.viewed } source={require('../../assets/story1.png')} />
         <Text style={styles.text}>
           {name}
         </Text>
@@ -23,13 +23,19 @@ const styles = StyleSheet.create({
     marginRight: 20,
   },
   imageCon:{
-    borderWidth: '3px',
+    borderWidth: 3,
+    height: 60,
+    width:60,
     borderColor: '#EB9E71',
-    borderRadius:'50%'
+    borderRadius:50
   },
   text:{
     color: 'white',
     textAlign: 'center'
+  },
+  viewed: {
+    height: 60,
+    width:60,
   }
 })
 

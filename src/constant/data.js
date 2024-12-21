@@ -1,0 +1,42 @@
+export const communityData = [
+    {
+      id: "1",
+      name: "Geraaime",
+      categories: "Geran community",
+      members: "25",
+      img: require('../assets/com1.png'),
+      time: "1:36 AM",
+    },
+    {
+      id: "2",
+      name: "Vintagee",
+      categories: "Vinna community",
+      members: "980",
+      img: require('../assets/com2.png'),
+      time: "12:00 PM",
+    },
+    {
+      id: "3",
+      name: "Geranime",
+      categories: "Habile Community",
+      members: "670",
+      img: require('../assets/com3.png'), 
+      time: "9:02 PM",
+    },
+    {
+      id: "4",
+      name: "Akatsuki",
+      categories: "Ree community",
+      members: "34",
+      img: require('../assets/com4.png'),
+      time: "8:15 PM",
+    },
+    {
+      id: "5",
+      name: "Magmi",
+      categories: "Geran community",
+      members: "201",
+      img: require('../assets/com5.png'),
+      time: "7:36 AM",
+    },
+  ];
