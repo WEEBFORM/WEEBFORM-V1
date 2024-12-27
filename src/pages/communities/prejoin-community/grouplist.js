@@ -318,41 +318,37 @@ const GroupList = () => {
             />
             <GapComponent height={ms(18)} />
             <Text
-               style={{
+              style={{
                 color: "#838383",
                 fontWeight: "300",
                 fontSize: 15,
                 marginTop: 5,
               }}
-            
-            >An admin must approve your request</Text>
- <GapComponent height={ms(28)} />
-            <TouchableOpacity
-            style={{
-                backgroundColor: '#EB9E71',
-                padding: 10,
-                alignItems: 'center',
-                height: 46,
-                width: '100%',
-                borderRadius: 35,
-
-
-
-            }}
             >
-                <Text
-                      style={{
-                        color: "#101010",
-                        fontWeight: "600",
-                        fontSize: 15,
-                        marginTop: 5,
-                        textAlign: 'center',
-                        
-                      }}
-                >
-                    Request to join
-                </Text>
-
+              An admin must approve your request
+            </Text>
+            <GapComponent height={ms(28)} />
+            <TouchableOpacity
+              style={{
+                backgroundColor: "#EB9E71",
+                padding: 10,
+                alignItems: "center",
+                height: 46,
+                width: "100%",
+                borderRadius: 35,
+              }}
+            >
+              <Text
+                style={{
+                  color: "#101010",
+                  fontWeight: "600",
+                  fontSize: 15,
+                  marginTop: 5,
+                  textAlign: "center",
+                }}
+              >
+                Request to join
+              </Text>
             </TouchableOpacity>
           </Container>
         </Container>
