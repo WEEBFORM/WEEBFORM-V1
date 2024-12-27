@@ -69,8 +69,7 @@ const AllTab = () => {
         <Container>
           <TextInput
             placeholder="Community name"
-            placeholderTextColor={'#767676'}
-            
+            placeholderTextColor={"#767676"}
             style={CommunityStyles.nameInput}
           />
           <Text style={CommunityStyles.maxText}>Max length is 50</Text>
@@ -78,9 +77,9 @@ const AllTab = () => {
           <GapComponent height={ms(10)} />
           <TextInput
             placeholder="Short intro (Optional)"
-            placeholderTextColor={'#767676'}
-            multiline={true} // Enables multiple lines for a text area
-           textAlignVertical="top"
+            placeholderTextColor={"#767676"}
+            multiline={true} 
+            textAlignVertical="top"
             style={CommunityStyles.introInput}
           />
           <Text style={CommunityStyles.maxText}>Max length is 150</Text>
@@ -88,7 +87,6 @@ const AllTab = () => {
           <TouchableOpacity style={CommunityStyles.createBtn}>
             <Text style={CommunityStyles.createText}>Create Community</Text>
           </TouchableOpacity>
-
         </Container>
       </RBSheet>
     </View>

@@ -21,6 +21,9 @@ import Textpost from "./src/components/Textpost";
 import Photopost from "./src/components/Photopost";
 import MPMore from "./src/pages/MPMore";
 import Username from "./src/pages/Username";
+import JoinCommunity from './src/pages/communities/join-community';
+import PreJoin from './src/pages/communities/prejoin-community';
+import GroupList from './src/pages/communities/prejoin-community/grouplist';
 // import EditProfile from "./src/pages/EditProfile";
 
 const Stack = createNativeStackNavigator()
@@ -182,6 +185,51 @@ export default function App() {
         headerBackTitleVisible: false,
         headerBackVisible:false 
       }} />
+
+<Stack.Screen name='JoinCommunity' component={JoinCommunity} options={{
+        title: 'Forgotpasswordmail',
+        headerStyle:{
+          backgroundColor: 'transparent',
+        },
+        headerTintColor: 'white',
+        headerTransparent: true ,
+        headerShown: false,
+        headerTitleStyle: {
+          fontSize: 20
+        },
+        headerBackTitleVisible: false,
+        headerBackVisible:false 
+      }} />
+
+<Stack.Screen name='PreJoin' component={PreJoin}  options={{
+        title: 'Forgotpasswordmail',
+        headerStyle:{
+          backgroundColor: 'transparent',
+        },
+        headerTintColor: 'white',
+        headerTransparent: true ,
+        headerShown: false,
+        headerTitleStyle: {
+          fontSize: 20
+        },
+        headerBackTitleVisible: false,
+        headerBackVisible:false 
+      }}  />
+
+<Stack.Screen name='GroupList' component={GroupList}  options={{
+        title: 'Forgotpasswordmail',
+        headerStyle:{
+          backgroundColor: 'transparent',
+        },
+        headerTintColor: 'white',
+        headerTransparent: true ,
+        headerShown: false,
+        headerTitleStyle: {
+          fontSize: 20
+        },
+        headerBackTitleVisible: false,
+        headerBackVisible:false 
+      }}  />
       {/* <Stack.Screen name='EditProfile' component={EditProfile} options={{
         title: 'Edit Profile',
         headerStyle:{
