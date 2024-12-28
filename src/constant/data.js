@@ -4,7 +4,7 @@ export const communityData = [
       name: "Geraaime",
       categories: "Geran community",
       members: 25,
-      img: require('../assets/com1.png'),
+      img: require('../assets/pic1.png'),
       time: "1:36 AM",
     },
     {
@@ -12,7 +12,7 @@ export const communityData = [
       name: "Vintagee",
       categories: "Vinna community",
       members: 980,
-      img: require('../assets/com2.png'),
+      img: require('../assets/pic2.png'),
       time: "12:00 PM",
     },
     {
@@ -20,7 +20,7 @@ export const communityData = [
       name: "Geranime",
       categories: "Habile Community",
       members: 670,
-      img: require('../assets/com3.png'), 
+      img: require('../assets/pic3.png'), 
       time: "9:02 PM",
     },
     {
@@ -28,7 +28,7 @@ export const communityData = [
       name: "Akatsuki",
       categories: "Ree community",
       members: 34,
-      img: require('../assets/com4.png'),
+      img: require('../assets/pic4.png'),
       time: "8:15 PM",
     },
     {
@@ -36,7 +36,7 @@ export const communityData = [
       name: "Magmi",
       categories: "Geran community",
       members: 201,
-      img: require('../assets/com5.png'),
+      img: require('../assets/pic5.png'),
       time: "7:36 AM",
     },
     {
@@ -44,7 +44,7 @@ export const communityData = [
         name: "Magmi",
         categories: "Geran community",
         members: "201",
-        img: require('../assets/com5.png'),
+        img: require('../assets/pic5.png'),
         time: "7:36 AM",
       },
       {
@@ -52,7 +52,7 @@ export const communityData = [
         name: "Magmi",
         categories: "Geran community",
         members: 201,
-        img: require('../assets/com2.png'),
+        img: require('../assets/pic2.png'),
         time: "7:36 AM",
       },
       {
@@ -60,7 +60,7 @@ export const communityData = [
         name: "Magmi",
         categories: "Geran community",
         members: 121,
-        img: require('../assets/com3.png'), 
+        img: require('../assets/pic3.png'), 
         time: "7:36 AM",
       },
       {
@@ -68,7 +68,7 @@ export const communityData = [
         name: "Magmi",
         categories: "Geran community",
         members: 201,
-        img: require('../assets/com5.png'),
+        img: require('../assets/pic4.png'),
         time: "7:36 AM",
       },
   ];

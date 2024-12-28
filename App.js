@@ -24,6 +24,7 @@ import Username from "./src/pages/Username";
 import JoinCommunity from './src/pages/communities/join-community';
 import PreJoin from './src/pages/communities/prejoin-community';
 import GroupList from './src/pages/communities/prejoin-community/grouplist';
+import NotificationPage from './src/pages/notification';
 // import EditProfile from "./src/pages/EditProfile";
 
 const Stack = createNativeStackNavigator()
@@ -217,6 +218,21 @@ export default function App() {
       }}  />
 
 <Stack.Screen name='GroupList' component={GroupList}  options={{
+        title: 'Forgotpasswordmail',
+        headerStyle:{
+          backgroundColor: 'transparent',
+        },
+        headerTintColor: 'white',
+        headerTransparent: true ,
+        headerShown: false,
+        headerTitleStyle: {
+          fontSize: 20
+        },
+        headerBackTitleVisible: false,
+        headerBackVisible:false 
+      }}  />
+
+<Stack.Screen name='NotificationPage' component={NotificationPage}  options={{
         title: 'Forgotpasswordmail',
         headerStyle:{
           backgroundColor: 'transparent',

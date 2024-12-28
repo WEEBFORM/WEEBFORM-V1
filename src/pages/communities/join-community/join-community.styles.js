@@ -26,7 +26,9 @@ const JoinCommunityStyles = StyleSheet.create({
     top: '50%',
     transform: [{translateY: -12}],
   },
-  title: {},
+  title: {
+    
+  },
   title2: {
     // backgroundColor: 'red',
     width: 260,
