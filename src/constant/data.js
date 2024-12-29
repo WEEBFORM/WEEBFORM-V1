@@ -73,7 +73,44 @@ export const communityData = [
       },
   ];
 
-
+export const notificationData = [
+  {
+    id: 1,
+    img: require('../assets/pic4.png'),
+    text: 'Purity Girl is now following you',
+    time: "1w",
+    
+  },
+  {
+    id:2,
+    img: require('../assets/pic2.png'),
+    text: 'Boss Lady Commented on your post',
+    time: "5d",
+    
+  },
+  {
+    id: 4,
+    img: require('../assets/pic1.png'),
+    text: 'Shezzy Reviewd Your comment',
+    time: "4mo",
+    
+  },
+  {
+    id: 3,
+    img: require('../assets/pic4.png'),
+    text: 'Purity Girl Liked Your post',
+    time: "4mo",
+    
+  },
+  {
+    id: 5,
+    img: require('../assets/pic3.png'),
+    text: 'Buka commented on Your post',
+    time: "5mo",
+    
+  },
+ 
+]
 
 
 

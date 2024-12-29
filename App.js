@@ -25,6 +25,7 @@ import JoinCommunity from './src/pages/communities/join-community';
 import PreJoin from './src/pages/communities/prejoin-community';
 import GroupList from './src/pages/communities/prejoin-community/grouplist';
 import NotificationPage from './src/pages/notification';
+import UsersProfile from './src/pages/profile';
 // import EditProfile from "./src/pages/EditProfile";
 
 const Stack = createNativeStackNavigator()
@@ -246,6 +247,26 @@ export default function App() {
         headerBackTitleVisible: false,
         headerBackVisible:false 
       }}  />
+
+
+<Stack.Screen name='UsersProfile' component={UsersProfile}  options={{
+        title: 'Forgotpasswordmail',
+        headerStyle:{
+          backgroundColor: 'transparent',
+        },
+        headerTintColor: 'white',
+        headerTransparent: true ,
+        headerShown: false,
+        headerTitleStyle: {
+          fontSize: 20
+        },
+        headerBackTitleVisible: false,
+        headerBackVisible:false 
+      }}  />
+
+
+
+
       {/* <Stack.Screen name='EditProfile' component={EditProfile} options={{
         title: 'Edit Profile',
         headerStyle:{
