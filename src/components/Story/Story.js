@@ -1,36 +1,49 @@
 import React from 'react'
 import { StyleSheet, Text, View, SafeAreaView, ImageBackground, Image, FlatList} from "react-native";
 import EachStory from './EachStory';
+import { useNavigation } from '@react-navigation/native';
 
 
 const Story = () => {
+  const navigation = useNavigation();
   const storyData = [
     {
       name: 'Adaugo',
-      pictures: '', 
+      pictures: require('../../assets/story2.png'), 
       viewed: true,
     }, 
     {
       name: 'Mmezierim',
-      pictures: '', 
+      pictures: require('../../assets/story3.png'), 
       viewed: false,
     },
     {
       name: 'Daniel',
-      pictures: '', 
+      pictures: require('../../assets/story4.png'), 
       viewed: true,
     },
     {
       name: 'Julie',
-      pictures: '', 
+      pictures: require('../../assets/story5.png'), 
       viewed: false,
     },
     {
       name: 'Shezzy',
-      pictures: '', 
+      pictures: require('../../assets/story6.png'), 
       viewed: true,
     },
+    {
+      name: 'Emma',
+      pictures: require('../../assets/story7.png'), 
+      viewed: false,
+    },
   ]
+
+  const openStory = (index) => {
+    navigation.navigate("StoryViewer", { storyData, currentIndex: index });
+  };
+
+
   return (
     <View style={styles.layout}>
       {/* <View style={styles.newStory}>
@@ -43,10 +56,12 @@ const Story = () => {
           horizontal
           style={{gap: 20}}
           data={storyData}
-          renderItem={({item})=>(
-                <EachStory
+          renderItem={({item, index})=>(
+              <EachStory
               name={item.name}
               viewed={item.viewed}
+              pictures={item.pictures}
+              onPress={() => openStory(index)}
             />
           )}
           showsHorizontalScrollIndicator={false}

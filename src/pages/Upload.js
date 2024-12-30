@@ -68,47 +68,59 @@ const Upload = ({ navigation }) => {
               style={{
                 width: 109,
                 height: 64,
-                borderRadius:6,
-                backgroundColor: '#101010',
-                alignItems: 'center',
-                justifyContent: 'space-evenly'
+                borderRadius: 6,
+                backgroundColor: "#101010",
+                alignItems: "center",
+                justifyContent: "space-evenly",
               }}
               onPress={() => ImagePicker.launchCameraAsync()}
             >
-              <Image source={cameraIcon} style={{
-                width: 20,
-                height: 20,
-              }} />
+              <Image
+                source={cameraIcon}
+                style={{
+                  width: 20,
+                  height: 20,
+                }}
+              />
 
-              <Text style={{
-                color: '#FFFFFF',
-                fontSize: 12,
-                fontWeight: "400",
-
-              }}>Camera</Text>
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: 12,
+                  fontWeight: "400",
+                }}
+              >
+                Camera
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-               style={{
+              style={{
                 width: 109,
                 height: 64,
-                borderRadius:6,
-                backgroundColor: '#101010',
-                alignItems: 'center',
-                justifyContent: 'space-evenly'
+                borderRadius: 6,
+                backgroundColor: "#101010",
+                alignItems: "center",
+                justifyContent: "space-evenly",
               }}
               onPress={() => navigation.navigate("AddText")}
             >
-               <Image source={textIcon} style={{
-                width: 20,
-                height: 20,
-              }} />
+              <Image
+                source={textIcon}
+                style={{
+                  width: 20,
+                  height: 20,
+                }}
+              />
 
-              <Text style={{
-                color: '#FFFFFF',
-                fontSize: 12,
-                fontWeight: "400",
-
-              }}>Text</Text>
+              <Text
+                style={{
+                  color: "#FFFFFF",
+                  fontSize: 12,
+                  fontWeight: "400",
+                }}
+              >
+                Text
+              </Text>
             </TouchableOpacity>
           </View>
 

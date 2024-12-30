@@ -28,6 +28,7 @@ import NotificationPage from './src/pages/notification';
 import UsersProfile from './src/pages/profile';
 // import EditProfile from './src/pages/profile/editProfile';
 import EditProfile from "./src/pages/EditProfile";
+import StoryViewer from './src/components/Story/StoryViewer';
 
 const Stack = createNativeStackNavigator()
 
@@ -265,6 +266,20 @@ export default function App() {
         headerBackVisible:false 
       }}  />
 
+<Stack.Screen name='StoryViewer' component={StoryViewer}  options={{
+        title: 'Forgotpasswordmail',
+        headerStyle:{
+          backgroundColor: 'transparent',
+        },
+        headerTintColor: 'white',
+        headerTransparent: true ,
+        headerShown: false,
+        headerTitleStyle: {
+          fontSize: 20
+        },
+        headerBackTitleVisible: false,
+        headerBackVisible:false 
+      }}  />
 {/* <Stack.Screen name='EditProfile' component={EditProfile}  options={{
         title: 'Forgotpasswordmail',
         headerStyle:{
