@@ -2,11 +2,13 @@ import { View, Text, Image, TouchableOpacity } from "react-native";
 import React from "react";
 import Container from "../ui/container";
 import CommunityListStyles from "./communityList.styles";
+import { useNavigation } from "@react-navigation/native";
 
 const CommunityList = ({ name, categories, members, img, time }) => {
   const memberIcon = require("../../assets/members.png");
+  const navigation = useNavigation()
   return (
-    <TouchableOpacity style={CommunityListStyles.container}>
+    <TouchableOpacity onPress={() => navigation.navigate('JoinCommunity')} style={CommunityListStyles.container}>
       <View style={CommunityListStyles.infoCont}>
         <Image style={CommunityListStyles.groupImg} source={img} />
         <View style={CommunityListStyles.nameCont}>
@@ -18,7 +20,7 @@ const CommunityList = ({ name, categories, members, img, time }) => {
                 source={memberIcon}
               />
 
-              <Text style={CommunityListStyles.memberText}>65444</Text>
+              <Text style={CommunityListStyles.memberText}>{members}</Text>
             </View>
           </View>
           <Text style={CommunityListStyles.description}>{categories}</Text>

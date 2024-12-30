@@ -7,9 +7,13 @@ import {
   Image,
   TextInput,
   Che,
+  TouchableOpacity,
 } from "react-native";
+import GapComponent from "../components/gap-component";
+import { useNavigation } from "@react-navigation/native";
 
 const Profile = () => {
+  const navigation = useNavigation()
   return (
     <View style={styles.container}>
     <View style={styles.top}>
@@ -42,9 +46,33 @@ const Profile = () => {
           <Text style={{...styles.text, fontWeight: 500, fontSize:14}}>Comments</Text>
         </View>
       </View>
-      <View>
-        <Text style={styles.text}></Text>
-      </View>
+
+      <GapComponent height={20} />
+    <TouchableOpacity
+    onPress={() => navigation.navigate('EditProfile')}
+              style={{
+                backgroundColor: "#CF833F",
+                width: "90%",
+                height: 63,
+                borderRadius: 35,
+                padding: 10,
+                alignItems: "center",
+                marginLeft: "auto",
+                marginRight: "auto",
+              }}
+            >
+              <Text
+                style={{
+                  textAlign: "center",
+                  marginTop: "auto",
+                  marginBottom: "auto",
+                  fontSize: 16,
+                  fontWeight: "600",
+                }}
+              >
+               Edit Profile
+              </Text>
+            </TouchableOpacity>
     </View>
       <Text>Profile</Text>
     </View>
@@ -57,7 +85,7 @@ const styles = StyleSheet.create({
     flex: 1, 
   },
   top:{
-    height: '40%'
+    height: '30%'
   }, 
   coverphoto:{
     width: '100%',

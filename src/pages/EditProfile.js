@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
         backgroundColor: 'black',
         zIndex: 20,
         width: 100,
-        transform: 'translate(10, 11)',
+        // transform: 'translate(10, 11)',
         textAlign: 'center',
 
     },
