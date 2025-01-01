@@ -1,0 +1,5 @@
+ANdriod to IOS differences 
+
+buttons, 
+border radius, 
+gap 
