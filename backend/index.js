@@ -43,65 +43,69 @@ app.use('/api/v1/stories', Stories);
 app.use('/api/v1/stores', Stores);
 app.use('/api/v1/communities', Communities);
 
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 8001;
 
 // HTTP SERVER
 const server = http.createServer(app);
 
-//LOAD BALANCING
-//`if (cluster.isPrimary) {
-  //const CPUNum = os.cpus().length;
-  //console.log(`Primary ${process.pid} is running`);
 
-  //for (let i = 0; i < CPUNum; i++) {
-      //cluster.fork();
- // }
-  //cluster.on('exit', (worker, code, signal) => {
-      //console.log(`Worker ${worker.process.pid} died. Starting a new worker...`);
-    //  cluster.fork();
-  //});
-
-//} else {
-      //console.log(`Worker ${process.pid} started, server running on port ${port}`);
-//}`
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  console.log(`Request handled by worker ${process.pid}`);
+  next();
+});
 
 // WEBSOCKET SERVER
-// const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ server });
+wss.on('connection', (ws, request) => {
+    const userId = request.url.slice(1);
 
-// wss.on('connection', (ws, request) => {
-//     const userId = request.url.slice(1);
-
-//     console.log(`WebSocket connection established with user ${userId}`);
+    console.log(`WebSocket connection established with user ${userId}`);
   
-//     ws.on('message', (message) => {
-//       console.log(`Received message ${message} from user ${userId}`);
+    ws.on('message', (message) => {
+      console.log(`Received message ${message} from user ${userId}`);
       
-//       // Broadcast the message to all other connected clients
-//       wss.clients.forEach((client) => {
-//         if (client !== ws && client.readyState === WebSocketServer.OPEN) {
-//           client.send(`User ${userId} says: ${message}`);
-//         }
-//       });
-//     });
+      // Broadcast the message to all other connected clients
+      wss.clients.forEach((client) => {
+        if (client !== ws && client.readyState === WebSocketServer.OPEN) {
+          client.send(`User ${userId} says: ${message}`);
+        }
+      });
+    });
   
-//     ws.on('close', () => {
-//       console.log(`WebSocket connection with user ${userId} closed`);
-//     });
-//     ws.send('WSS working fine')
-// });
-
-// // const IP = process.env.PUBLIC_IP;
-
-// process.on('uncaughtException', (err) => {
-//   console.error('Uncaught Exception:', err);
-//   process.exit(1); // Exit and let the process manager restart the app
-// });
-
-// process.on('unhandledRejection', (reason, promise) => {
-//   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-//   process.exit(1); // Exit and let the process manager restart the app
-// });
- 
-server.listen(port, '0.0.0.0', () => {
-    console.log(`Server running on port ${port}`);
+    ws.on('close', () => {
+      console.log(`WebSocket connection with user ${userId} closed`);
+    });
+    ws.send('WSS working fine')
 });
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+if (cluster.isPrimary) {
+  const numCPUs = os.cpus().length;
+
+  console.log(`Primary ${process.pid} is running`);
+  for (let i = 0; i < numCPUs; i++) {
+    cluster.fork();
+  }
+
+  cluster.on('exit', (worker, code, signal) => {
+    console.log(`Worker ${worker.process.pid} died`);
+    cluster.fork();
+  });
+
+  server.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+  });
+
+} else {
+  console.log(`Worker ${process.pid} started`);
+}
+ 
