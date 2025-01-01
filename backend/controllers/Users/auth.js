@@ -153,9 +153,7 @@ export const login = (req, res) => {
         const token = jwt.sign({ id: data[0].id }, process.env.Secretkey);
         res.cookie("accessToken", token, {
             httpOnly: true
-        }).status(200).json({ message: "User Logged in successfully", token, others }); 
-        console.log(`Worker ${process.pid} started`);
-        
+        }).status(200).json({ message: "A User Logged in successfully", token, others });
     }); 
 };
 
