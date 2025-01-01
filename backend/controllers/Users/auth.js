@@ -154,6 +154,8 @@ export const login = (req, res) => {
         res.cookie("accessToken", token, {
             httpOnly: true
         }).status(200).json({ message: "User Logged in successfully", token, others }); 
+        console.log(`Worker ${process.pid} started`);
+        
     }); 
 };
 
