@@ -5,7 +5,7 @@ config();
 
 export const s3 = new S3Client({
     region: process.env.BUCKET_REGION,
-    credentials: {
+    credentials: { 
         accessKeyId: process.env.ACCESS_KEY,
         secretAccessKey: process.env.SECRET_ACCESS_KEY,
     },
@@ -15,16 +15,16 @@ export const s3 = new S3Client({
 export const generateS3Url = async (key) => {
     if (!key) return null;
     const command = new GetObjectCommand({
-        Bucket: process.env.BUCKET_NAME,
+        Bucket: process.env.BUCKET_NAME, 
         Key: key,
     });
-    return await getSignedUrl(s3, command);
+    return await getSignedUrl(s3, command); 
 };
 
 // EXTRACT S3 KEYS
 export const s3KeyFromUrl = (url) => {
     if (url && typeof url === "string") {
-        const baseUrl = url.split("?")[0]; // Remove query parameters
+        const baseUrl = url.split("?")[0];
         const key = baseUrl.replace(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/`, "");
         return key || null;
     }
