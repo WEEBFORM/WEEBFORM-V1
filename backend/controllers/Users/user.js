@@ -5,6 +5,7 @@ import multer from "multer";
 import bcrypt from "bcryptjs";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import {s3, generateS3Url, s3KeyFromUrl, decodeNestedKey} from "../../middlewares/S3bucketConfig.js";
+import { executeQuery } from "../../middlewares/dbExecute.js";
 
 
 //API TO EDIT USER INFO
@@ -17,7 +18,7 @@ export const editProfile = async (req, res) => {
             } else if (err) {
                 return res.status(500).json({ message: "Unknown error", error: err });
             }
-            const salt = bcrypt.genSaltSync(10);
+            const salt = bcrypt.genSaltSync(10); 
             const hashedPassword = req.body.password ? bcrypt.hashSync(req.body.password, salt) : undefined;
             let profilePic = { url: null, key: null };
             if (req.files && req.files.profilePic && req.files.profilePic[0]) {
@@ -67,37 +68,37 @@ export const editProfile = async (req, res) => {
                     });
                 }
             }
-
-            const q = `
-                UPDATE users 
-                SET email = ?, full_name = ?, username = ?, nationality = ?, password = ?, coverPhoto = ?, profilePic = ?, bio = ? 
-                WHERE id = ?
-            `;
+            const defaultProfilePicKey = process.env.DEFAULT_PROFILE_PIC_KEY;
+            const defaultCoverPhotoKey = process.env.DEFAULT_COVER_PHOTO_KEY;
+    
             const values = [
                 req.body.email,
                 req.body.fullName,
                 req.body.username,
                 req.body.nationality,
                 hashedPassword || user.password,
-                coverPhoto.url,
-                profilePic.url,
+                coverPhoto.url || await generateS3Url(defaultCoverPhotoKey),
+                profilePic.url || await generateS3Url(defaultProfilePicKey),
                 req.body.bio,
                 user.id,
             ];
 
-            db.query(q, values, (err, data) => {
-                if (err) {
-                    console.error("Database error:", err);
-                    return res.status(500).json({ message: "Database error", error: err });
-                }
+            const updatedUser = await executeQuery(`
+                UPDATE users 
+                SET email = ?, full_name = ?, username = ?, nationality = ?, password = ?, coverPhoto = ?, profilePic = ?, bio = ? 
+                WHERE id = ?
+            `, values);
+            if (!updatedUser) {
+                console.error("Database error:", err);
+                return res.status(500).json({ message: "Database error", error: err });
+            }
 
-                res.status(200).json({
-                    message: "Account updated successfully",
-                    profilePic,
-                    coverPhoto,
-                    values,
-                    data,
-                });
+            res.status(200).json({
+                message: "Account updated successfully",
+                profilePic,
+                coverPhoto,
+                values,
+                updatedUser,
             });
         });
     });
