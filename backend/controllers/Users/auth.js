@@ -26,7 +26,7 @@ export const initiateRegistration = async (req, res) => {
         }
 
         const verificationCode = Math.floor(1000 + Math.random() * 9000);
-        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
         await executeQuery(
             "INSERT INTO cache (email, full_name, password, verificationCode, expiresAt) VALUES (?)",
@@ -128,25 +128,43 @@ export const login = async (req, res) => {
         const { username, email, password } = req.body;
         const searchField = username ? "username" : "email";
         const searchValue = username || email;
+        
+        // Fetch user from DB
         const users = await executeQuery(
             `SELECT * FROM users WHERE ${searchField} = ?`,
             [searchValue]
         );
+        
         if (!users.length) {
-            return res.status(404).json("Username or email not found!");
+            return res.status(404).json({ message: "Username or email not found!" });
         }
+        
         const user = users[0];
-        if (!bcrypt.compareSync(password, user.password)) {
-            return res.status(400).json("Wrong password");
+        
+        // Compare passwords asynchronously
+        const passwordMatch = await bcrypt.compare(password, user.password);
+        if (!passwordMatch) {
+            return res.status(400).json({ message: "Wrong password" });
         }
-        const token = jwt.sign({ id: user.id }, process.env.Secretkey);
-        res.cookie("accessToken", token, { httpOnly: true });
-        viewProfile(req, res);
+        
+        // Generate JWT token
+        const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY, { expiresIn: '3d' });
+        res.cookie("accessToken", token, { 
+            httpOnly: false,
+            sameSite: 'None',
+            secure: true,  
+            path: "/",  
+            maxAge: 3 * 24 * 60 * 60 * 1000 
+        }).status(200).json({
+            message: "User logged in successfully", user 
+        });
+        
     } catch (err) {
         console.error(err);
-        res.status(500).json("Internal server error");
+        res.status(500).json({ message: "Internal server error" });
     }
 };
+
 
 // LOGOUT
 export const logout = (req, res) => {

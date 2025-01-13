@@ -4,8 +4,7 @@ import moment from "moment";
 import { cpUpload } from "../../middlewares/storage.js";
 import multer from "multer";
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import {s3, generateS3Url, s3KeyFromUrl, decodeNestedKey} from "../../middlewares/S3bucketConfig.js"
-
+import { s3, generateS3Url, s3KeyFromUrl, decodeNestedKey } from "../../middlewares/S3bucketConfig.js";
 
 // API TO CREATE NEW POST
 export const newPost = async (req, res) => {
@@ -13,62 +12,44 @@ export const newPost = async (req, res) => {
         cpUpload(req, res, async (err) => {
             if (err instanceof multer.MulterError) {
                 return res.status(500).json({ message: "File upload error", error: err });
-            } else if (err) {
+            } else if (err) { 
                 return res.status(500).json({ message: "Unknown error", error: err });
             }
-            const images = req.files["image"];
-            const videos = req.files["video"];
-            const uploadedImageUrls = [];
-            const uploadedVideoUrls = [];
-            if (images) {
-                for (const image of images) {
+
+            const media = req.files["media"];
+            const uploadedMediaUrls = [];
+
+            if (media) {
+                for (const file of media) {
                     try {
                         const params = {
                             Bucket: process.env.BUCKET_NAME,
-                            Key: `uploads/posts/${Date.now()}_${image.originalname}`,
-                            Body: image.buffer,
-                            ContentType: image.mimetype,
+                            Key: `uploads/posts/${Date.now()}_${file.originalname}`,
+                            Body: file.buffer,
+                            ContentType: file.mimetype,
                         };
                         const command = new PutObjectCommand(params);
                         await s3.send(command);
-                        uploadedImageUrls.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`);
+                        uploadedMediaUrls.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`);
                     } catch (uploadError) {
-                        console.error("Error uploading image:", uploadError);
-                        return res.status(500).json({ message: "Error uploading image to S3", error: uploadError });
+                        console.error("Error uploading media:", uploadError);
+                        return res.status(500).json({ message: "Error uploading media to S3", error: uploadError });
                     }
                 }
             }
-            if (videos) {
-                for (const video of videos) {
-                    try {
-                        const params = {
-                            Bucket: process.env.BUCKET_NAME,
-                            Key: `uploads/posts/${Date.now()}_${video.originalname}`,
-                            Body: video.buffer,
-                            ContentType: video.mimetype,
-                        };
-                        const command = new PutObjectCommand(params);
-                        await s3.send(command);
-                        uploadedVideoUrls.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`);
-                    } catch (uploadError) {
-                        console.error("Error uploading video:", uploadError);
-                        return res.status(500).json({ message: "Error uploading video to S3", error: uploadError });
-                    }
-                }
-            }
-            const q = "INSERT INTO posts (`userId`, `description`, `image`, `video`, `tags`, `category`, `createdAt`) VALUES (?)";
+
+            const q = "INSERT INTO posts (`userId`, `description`, `media`, `tags`, `category`, `createdAt`) VALUES (?)";
             const values = [
                 req.user.id,
                 req.body.description,
-                uploadedImageUrls.join(","),
-                uploadedVideoUrls.join(","),
+                uploadedMediaUrls.join(","),
                 req.body.tags,
                 req.body.category,
                 moment(Date.now()).format("YYYY-MM-DD HH:mm:ss"),
             ];
             db.query(q, [values], (err, post) => {
                 if (err) return res.status(500).json(err);
-                else{
+                else {
                     res.status(200).json({ message: "Post created successfully", post, values });
                 }
             });
@@ -103,48 +84,35 @@ export const allPosts = async (req, res) => {
             const processedPosts = await Promise.all(
                 data.map(async (post) => {
                     console.log("Processing post:", post);
-            
-                    if (post.image) {
-                        const imageKey = s3KeyFromUrl(post.image);
-                        console.log("Extracted image key:", imageKey);            
+
+                    if (post.media) {
+                        const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
                         try {
-                            post.image = await generateS3Url(imageKey);
+                            post.media = await Promise.all(mediaKeys.map(generateS3Url));
                         } catch (error) {
-                            console.error("Error generating image URL:", error);
-                            post.image = null;
-                        }
-                    }  
-                    if (post.video) {
-                        const videoKey = s3KeyFromUrl(post.video);
-                        console.log("Extracted video key:", videoKey);
-            
-                        try {
-                            post.video = await generateS3Url(videoKey);
-                        } catch (error) {
-                            console.error("Error generating video URL:", error);
-                            post.video = null;
+                            console.error("Error generating media URLs:", error);
+                            post.media = null;
                         }
                     }
                     if (post.profilePic) {
                         const profileKey = s3KeyFromUrl(post.profilePic);
-                        console.log("Extracted profilePic key:", profileKey);        
                         try {
                             post.profilePic = await generateS3Url(profileKey);
                         } catch (error) {
                             console.error("Error generating profilePic URL:", error);
                             post.profilePic = null;
                         }
-                    }           
+                    }
                     return post;
                 })
-            );            
+            );
             res.status(200).json(processedPosts);
         });
     });
 };
 
-//API TO VIEW POST IN USER PROFILE 
-export const userPosts = async(req, res) => {
+// API TO VIEW POST IN USER PROFILE
+export const userPosts = async (req, res) => {
     authenticateUser(req, res, () => {
         const userId = req.params.id;
         const q = `SELECT 
@@ -170,99 +138,81 @@ export const userPosts = async(req, res) => {
             u.profilePic
         ORDER BY 
             p.createdAt DESC;`;
-        db.query(q, [userId], async(err, data) => {
+        db.query(q, [userId], async (err, data) => {
             if (err) {
                 return res.status(500).json(err);
             }
             if (data.length === 0) {
-                return res.status(404).json('No posts yet..'); 
+                return res.status(404).json('No posts yet..');
             }
             const processedPosts = await Promise.all(
-                data.map(async (post) => {         
-                    if (post.image) {
-                        const imageKey = s3KeyFromUrl(post.image);            
+                data.map(async (post) => {
+                    if (post.media) {
+                        const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
                         try {
-                            post.image = await generateS3Url(imageKey);
+                            post.media = await Promise.all(mediaKeys.map(generateS3Url));
                         } catch (error) {
-                            console.error("Error generating image URL:", error);
-                            post.image = null;
-                        }
-                    }           
-                    if (post.video) {
-                        const videoKey = s3KeyFromUrl(post.video);            
-                        try {
-                            post.video = await generateS3Url(videoKey);
-                        } catch (error) {
-                            console.error("Error generating video URL:", error);
-                            post.video = null;
+                            console.error("Error generating media URLs:", error);
+                            post.media = null;
                         }
                     }
                     if (post.profilePic) {
-                        const profileKey = s3KeyFromUrl(post.profilePic);        
+                        const profileKey = s3KeyFromUrl(post.profilePic);
                         try {
                             post.profilePic = await generateS3Url(profileKey);
                         } catch (error) {
                             console.error("Error generating profilePic URL:", error);
                             post.profilePic = null;
                         }
-                    }           
+                    }
                     return post;
                 })
-            );            
+            );
             res.status(200).json(processedPosts);
         });
     });
 };
 
-//API TO VIEW POSTS BASED ON FOLLOWING
-export const followingPosts = async(req, res)=>{
+// API TO VIEW POSTS BASED ON FOLLOWING
+export const followingPosts = async (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
         const q = "SELECT p.*, u.id AS userId, username, full_name, profilePic FROM posts AS p JOIN users AS u ON (u.id = p.userId) LEFT JOIN reach AS r ON (p.userId = r.followed) WHERE r.follower = ? OR p.userId = ? ORDER BY createdAt DESC";
-        db.query(q, [user.id, user.id], async(err,data)=>{
-        if(err) {
-            return res.status(500).json(err)
-        }else{
-            const processedPosts = await Promise.all(
-                data.map(async (post) => {
-                    if (post.image) {
-                        const imageKey = s3KeyFromUrl(post.image);           
-                        try {
-                            post.image = await generateS3Url(imageKey);
-                        } catch (error) {
-                            console.error("Error generating image URL:", error);
-                            post.image = null;
+        db.query(q, [user.id, user.id], async (err, data) => {
+            if (err) {
+                return res.status(500).json(err);
+            } else {
+                const processedPosts = await Promise.all(
+                    data.map(async (post) => {
+                        if (post.media) {
+                            const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
+                            try {
+                                post.media = await Promise.all(mediaKeys.map(generateS3Url));
+                            } catch (error) {
+                                console.error("Error generating media URLs:", error);
+                                post.media = null;
+                            }
                         }
-                    }           
-                    if (post.video) {
-                        const videoKey = s3KeyFromUrl(post.video);
-                        try {
-                            post.video = await generateS3Url(videoKey);
-                        } catch (error) {
-                            console.error("Error generating video URL:", error);
-                            post.video = null;
+                        if (post.profilePic) {
+                            const profileKey = s3KeyFromUrl(post.profilePic);
+                            try {
+                                post.profilePic = await generateS3Url(profileKey);
+                            } catch (error) {
+                                console.error("Error generating profilePic URL:", error);
+                                post.profilePic = null;
+                            }
                         }
-                    }
-                    if (post.profilePic) {
-                        const profileKey = s3KeyFromUrl(post.profilePic);        
-                        try {
-                            post.profilePic = await generateS3Url(profileKey);
-                        } catch (error) {
-                            console.error("Error generating profilePic URL:", error);
-                            post.profilePic = null;
-                        }
-                    }           
-                    return post;
-                })
-            );            
-            res.status(200).json(processedPosts);
-        }
-        })
-    }) 
-} 
+                        return post;
+                    })
+                );
+                res.status(200).json(processedPosts);
+            }
+        });
+    });
+};
 
-//API TO VIEW POST BASED ON CATEGORY
-export const postCategory = (req, res)=>{
+// API TO VIEW POST BASED ON CATEGORY
+export const postCategory = (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
         const q = `SELECT 
@@ -285,57 +235,44 @@ export const postCategory = (req, res)=>{
         ORDER BY 
             createdAt DESC`;
         const category = req.params.category;
-        db.query(q, category, async (err,data)=>{
-        if(err) return res.status(500).json(err)
-        if (data.length === 0) {
-            return res.status(404).json("No posts found in this category.");
-        }
-        const processedPosts = await Promise.all(
-            data.map(async (post) => {
-                console.log("Processing post:", post);      
-                if (post.image) {
-                    const imageKey = s3KeyFromUrl(post.image);
-                    console.log("Extracted image key:", imageKey);            
-                    try {
-                        post.image = await generateS3Url(imageKey);
-                    } catch (error) {
-                        console.error("Error generating image URL:", error);
-                        post.image = null;
+        db.query(q, category, async (err, data) => {
+            if (err) return res.status(500).json(err);
+            if (data.length === 0) {
+                return res.status(404).json("No posts found in this category.");
+            }
+            const processedPosts = await Promise.all(
+                data.map(async (post) => {
+                    if (post.media) {
+                        const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
+                        try {
+                            post.media = await Promise.all(mediaKeys.map(generateS3Url));
+                        } catch (error) {
+                            console.error("Error generating media URLs:", error);
+                            post.media = null;
+                        }
                     }
-                }
-                if (post.video) {
-                    const videoKey = s3KeyFromUrl(post.video);
-                    console.log("Extracted video key:", videoKey);
-                    try {
-                        post.video = await generateS3Url(videoKey);
-                    } catch (error) {
-                        console.error("Error generating video URL:", error);
-                        post.video = null;
+                    if (post.profilePic) {
+                        const profileKey = s3KeyFromUrl(post.profilePic);
+                        try {
+                            post.profilePic = await generateS3Url(profileKey);
+                        } catch (error) {
+                            console.error("Error generating profilePic URL:", error);
+                            post.profilePic = null;
+                        }
                     }
-                }
-                if (post.profilePic) {
-                    const profileKey = s3KeyFromUrl(post.profilePic);
-                    console.log("Extracted profilePic key:", profileKey);        
-                    try {
-                        post.profilePic = await generateS3Url(profileKey);
-                    } catch (error) {
-                        console.error("Error generating profilePic URL:", error);
-                        post.profilePic = null;
-                    }
-                }           
-                return post;
-            })
-        );
-        return res.status(200).json(processedPosts);
-        })
-    }) 
-}
+                    return post;
+                })
+            );
+            return res.status(200).json(processedPosts);
+        });
+    });
+};
 
-//API TO DELETE POST
+// API TO DELETE POST
 export const deletePost = (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
-        const getPost = "SELECT image AS imageUrl, video AS videoUrl FROM posts WHERE id = ? AND userId = ?";
+        const getPost = "SELECT media AS mediaUrl FROM posts WHERE id = ? AND userId = ?";
         db.query(getPost, [req.params.id, user.id], async (err, data) => {
             if (err) {
                 return res.status(500).json({ message: "Database query error", error: err });
@@ -343,7 +280,7 @@ export const deletePost = (req, res) => {
             if (data.length === 0) {
                 return res.status(404).json({ message: "Post not found!" });
             }
-            const { imageUrl, videoUrl } = data[0];
+            const { mediaUrl } = data[0];
             const deleteS3Object = async (url) => {
                 const key = s3KeyFromUrl(url);
                 if (!key) {
@@ -363,8 +300,12 @@ export const deletePost = (req, res) => {
                 }
             };
             try {
-                if (imageUrl) await deleteS3Object(imageUrl);
-                if (videoUrl) await deleteS3Object(videoUrl);
+                if (mediaUrl) {
+                    const mediaUrls = mediaUrl.split(",");
+                    for (const url of mediaUrls) {
+                        await deleteS3Object(url);
+                    }
+                }
             } catch (deleteError) {
                 return res.status(500).json({ message: "Error deleting S3 objects", error: deleteError });
             }
@@ -383,8 +324,7 @@ export const deletePost = (req, res) => {
     });
 };
 
-
-//RELEVANT FUNCTIONS
+// RELEVANT FUNCTIONS
 // FUNCTION TO SHUFFLE POSTS
 const shufflePosts = (array) => {
     for (let i = array.length - 1; i > 0; i--) {
@@ -392,4 +332,4 @@ const shufflePosts = (array) => {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
-}; 
+};

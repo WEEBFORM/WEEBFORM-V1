@@ -1,14 +1,18 @@
-import {db} from "../../config/connectDB.js";
-import {authenticateUser} from "../../middlewares/verify.mjs";
-import {cpUpload} from "../../middlewares/storage.js";
-import multer from "multer";
-import bcrypt from "bcryptjs";
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import {s3, generateS3Url, s3KeyFromUrl, decodeNestedKey} from "../../middlewares/S3bucketConfig.js";
+import sharp from 'sharp';
+import multer from 'multer';
+import bcrypt from 'bcryptjs';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { db } from "../../config/connectDB.js";
+import { authenticateUser } from "../../middlewares/verify.mjs";
+import { cpUpload } from "../../middlewares/storage.js";
+import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
 import { executeQuery } from "../../middlewares/dbExecute.js";
 
+const resizeImage = async (buffer, width, height) => {
+    return await sharp(buffer).resize(width, height).toBuffer();
+};
 
-//API TO EDIT USER INFO
+// API TO EDIT USER INFO
 export const editProfile = async (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
@@ -18,17 +22,20 @@ export const editProfile = async (req, res) => {
             } else if (err) {
                 return res.status(500).json({ message: "Unknown error", error: err });
             }
-            const salt = bcrypt.genSaltSync(10); 
+
+            const salt = bcrypt.genSaltSync(10);
             const hashedPassword = req.body.password ? bcrypt.hashSync(req.body.password, salt) : undefined;
             let profilePic = { url: null, key: null };
+
             if (req.files && req.files.profilePic && req.files.profilePic[0]) {
                 try {
                     const photo = req.files.profilePic[0];
+                    const resizedBuffer = await resizeImage(photo.buffer, 300, 300);
                     const key = `uploads/profiles/${Date.now()}_${photo.originalname}`;
                     const params = {
                         Bucket: process.env.BUCKET_NAME,
                         Key: key,
-                        Body: photo.buffer,
+                        Body: resizedBuffer,
                         ContentType: photo.mimetype,
                     };
                     const command = new PutObjectCommand(params);
@@ -44,15 +51,17 @@ export const editProfile = async (req, res) => {
                     });
                 }
             }
+
             let coverPhoto = { url: null, key: null };
             if (req.files && req.files.coverPhoto && req.files.coverPhoto[0]) {
                 try {
                     const photo = req.files.coverPhoto[0];
+                    const resizedBuffer = await resizeImage(photo.buffer, 800, 450); // Resize to mobile-friendly size
                     const key = `uploads/profiles/${Date.now()}_${photo.originalname}`;
                     const params = {
                         Bucket: process.env.BUCKET_NAME,
                         Key: key,
-                        Body: photo.buffer,
+                        Body: resizedBuffer,
                         ContentType: photo.mimetype,
                     };
                     const command = new PutObjectCommand(params);
@@ -68,12 +77,13 @@ export const editProfile = async (req, res) => {
                     });
                 }
             }
+
             const defaultProfilePicKey = process.env.DEFAULT_PROFILE_PIC_KEY;
             const defaultCoverPhotoKey = process.env.DEFAULT_COVER_PHOTO_KEY;
-    
+
             const values = [
                 req.body.email,
-                req.body.fullName,
+                req.body.full_name,
                 req.body.username,
                 req.body.nationality,
                 hashedPassword || user.password,
@@ -81,8 +91,7 @@ export const editProfile = async (req, res) => {
                 profilePic.url || await generateS3Url(defaultProfilePicKey),
                 req.body.bio,
                 user.id,
-            ];
-
+            ];  
             const updatedUser = await executeQuery(`
                 UPDATE users 
                 SET email = ?, full_name = ?, username = ?, nationality = ?, password = ?, coverPhoto = ?, profilePic = ?, bio = ? 
@@ -103,6 +112,7 @@ export const editProfile = async (req, res) => {
         });
     });
 };
+
 
 //API TO GET USER INFORMATION
 export const viewProfile = (req, res)=>{
@@ -229,7 +239,7 @@ export const viewUsers = async (req, res) => {
     });
 };
 
-
+ 
 //API TO DELETE ACCOUNT 
 export const deleteAccount = async (req, res) => {
     authenticateUser(req, res, async () => {
@@ -268,10 +278,11 @@ export const deleteAccount = async (req, res) => {
                 }
                 res.clearCookie("accessToken", {
                     secure: true,
-                    sameSite: "none",
+                    sameSite: "none", 
                 });
                 return res.status(200).json("Account has been deleted successfully");
             });
         });
     });
 };
+  

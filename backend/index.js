@@ -25,11 +25,15 @@ import Communities from "./routes/Community/community.js";
 const app = express();
 
 // MIDDLEWARES AND CONTROLLERS
-app.use(express.json());
-app.use(cors());
-app.use(cookieParser());
+app.use(express.json({ limit: '10mb' }));
+app.use(cookieParser({ limit: '10mb', extended: true }));
 app.use('/uploads', express.static('uploads'));
 app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: 'http://localhost:3001',
+  methods: 'GET,POST,PUT,DELETE', 
+  credentials: true,  
+}));
 config();
 app.use('/api/v1/user', authRoute);
 app.use('/api/v1/user', Users);
@@ -88,6 +92,8 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
   process.exit(1);
 });
+
+
 if (cluster.isPrimary) {
   const numCPUs = os.cpus().length;
 
@@ -97,7 +103,7 @@ if (cluster.isPrimary) {
   }
 
   cluster.on('exit', (worker, code, signal) => {
-    console.log(`Worker ${worker.process.pid} died`);
+    // console.log(`Worker ${worker.process.pid} died`);
     cluster.fork();
   });
 
@@ -105,6 +111,6 @@ if (cluster.isPrimary) {
     console.log(`Server running on port ${port}`);
   });
 } else {
-  console.log(`Worker ${process.pid} started`);
+  // console.log(`Worker ${process.pid} started`);
 }
  

@@ -14,12 +14,11 @@ export const cpUpload = upload.fields([
     { name: 'profilePic', maxCount: 1 },
     { name: 'coverPhoto', maxCount: 1 },
     { name: 'groupIcon', maxCount: 1 },
-    { name: 'image', maxCount: 4 },
-    { name: 'video', maxCount: 4 },
+    { name: 'media', maxCount: 4 },
     { name: 'storyImage', maxCount: 3 },
     { name: 'storyVideo', maxCount: 3 },
     { name: 'logoImage', maxCount: 1 },
 ]);
 
 
-export default storage;
+export default storage;  

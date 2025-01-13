@@ -71,21 +71,59 @@ export const newStore = (req, res) => {
 };
  
 //API TO VIEW ALL STORES
-export const viewStores = (req, res)=>{
+export const viewStores = async (req, res) => {
     authenticateUser(req, res, () => {
-        //QUERY DB TO GET STORE
-        const q = "SELECT * FROM stores";
-        db.query(q, (err, store)=>{
-        if(err) return res.status(500).json(err)
-        //SHUFFLE STORES  
-        if (store.length === 0) {
-            return res.status(404).json("No Stores available yet ..");
-        } 
-        const stores = shuffleStores(store);
-        return res.status(200).json(stores)
-        })
-    })  
-};
+      const q = `
+        SELECT 
+          s.*, 
+          u.username AS ownerUsername, 
+          u.profilePic AS ownerProfilePic
+        FROM 
+          stores AS s
+        JOIN 
+          users AS u ON u.id = s.ownerId
+      `;
+  
+      db.query(q, async (err, data) => {
+        if (err) return res.status(500).json(err);
+  
+        const processedStores = await Promise.all(
+          data.map(async (store) => {
+            console.log("Processing store:", store);
+  
+            if (store.logoImage) {
+              const imageKey = s3KeyFromUrl(store.logoImage);
+              console.log("Extracted image key:", imageKey);
+  
+              try {
+                store.logoImage = await generateS3Url(imageKey);
+              } catch (error) { 
+                console.error("Error generating image URL:", error);
+                store.logoImage = null;
+              }
+            } 
+  
+            if (store.ownerProfilePic) {
+              const profileKey = s3KeyFromUrl(store.ownerProfilePic);
+              console.log("Extracted owner profilePic key:", profileKey);
+  
+              try {
+                store.ownerProfilePic = await generateS3Url(profileKey);
+              } catch (error) {
+                console.error("Error generating owner profilePic URL:", error);
+                store.ownerProfilePic = null;
+              }
+            }
+  
+            return store;
+          })
+        );
+  
+        res.status(200).json(processedStores);
+      });
+    });
+  };
+  
 
 //API TO EDIT STORE INFO/DATA
 export const editStoreDetails = async(req, res)=>{
