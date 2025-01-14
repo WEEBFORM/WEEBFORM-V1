@@ -15,7 +15,7 @@ export const newPost = async (req, res) => {
             } else if (err) { 
                 return res.status(500).json({ message: "Unknown error", error: err });
             }
-
+ 
             const media = req.files["media"];
             const uploadedMediaUrls = [];
 
