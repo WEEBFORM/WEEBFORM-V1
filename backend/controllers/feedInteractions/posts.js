@@ -83,8 +83,6 @@ export const allPosts = async (req, res) => {
             if (err) return res.status(500).json(err);
             const processedPosts = await Promise.all(
                 data.map(async (post) => {
-                    console.log("Processing post:", post);
-
                     if (post.media) {
                         const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
                         try {
@@ -117,7 +115,7 @@ export const userPosts = async (req, res) => {
         const userId = req.params.id;
         const q = `SELECT 
             p.*, 
-            u.id AS userId, 
+            u.id AS userId,
             u.username, 
             u.full_name, 
             u.profilePic, 

@@ -9,7 +9,7 @@ router.get('/following/:id', followingPosts)
 router.get('/:category', postCategory)
 router.get('/', allPosts)
 
-router.delete('/:id', deletePost)
+router.delete('/:id', deletePost) 
 
 
 export default router

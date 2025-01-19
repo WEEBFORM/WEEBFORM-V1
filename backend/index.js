@@ -21,6 +21,7 @@ import Comments from "./routes/comments.js";
 import Replies from "./routes/commentReplies.js";
 import Stores from "./routes/marketplace.js";
 import Communities from "./routes/Community/community.js";
+import News from "./routes/news.js";
 
 const app = express();
 
@@ -38,7 +39,8 @@ config();
 app.use('/api/v1/user', authRoute);
 app.use('/api/v1/user', Users);
 app.use('/api/v1/user', forgottenPasswordRoute); 
-app.use('/api/v1/posts/', postRoute);  
+app.use('/api/v1/posts/', postRoute); 
+app.use('/api/v1/news-content', News); 
 app.use('/api/v1/reach/', followRoute);
 app.use(Likes);
 app.use('/api/v1/comments', Comments);

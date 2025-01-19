@@ -1,70 +1,226 @@
-import {db} from "../../../config/connectDB.js"
-import {authenticateUser} from "../../../middlewares/verify.mjs"
-import moment from "moment"
-import {cpUpload} from "../../../middlewares/storage.js";
+import { db } from "../../../config/connectDB.js";
+import { authenticateUser } from "../../../middlewares/verify.mjs";
+import moment from "moment";
+import { cpUpload } from "../../../middlewares/storage.js";
 import multer from "multer";
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { s3, generateS3Url, s3KeyFromUrl } from "../../../middlewares/S3bucketConfig.js";
 
-//API TO CREATE NEW COMMUNITY
+// API TO CREATE NEW COMMUNITY
 export const createCommunity = (req, res) => {
-    // CHECK FOR JWT
     authenticateUser(req, res, () => {
-        const user = req.user;
-        cpUpload(req, res, function (err) {
+        cpUpload(req, res, async (err) => {
             if (err instanceof multer.MulterError) {
                 return res.status(500).json({ message: "File upload error", error: err });
             } else if (err) {
                 return res.status(500).json({ message: "Unknown error", error: err });
             }
-            // CHECK FOR EXISTING COMMUNITY
-            const check = "SELECT * FROM communities WHERE title = ?";
-            const title = req.body.title;
-            db.query(check, title, (err, data) =>{
-                if (data && data.length){
-                    return res.status(401).json('Community exists')
-                }
-            })
-            //DP/LOGO UPLOAD
-            const groupIcon = req.files['groupIcon'] ? req.files['groupIcon'][0].path : null;
 
-            if (!groupIcon) {
-                return res.status(400).send('Error uploading community Image');
+            const user = req.user;
+            const title = req.body.title;
+
+            // Check if community already exists
+            const checkQuery = "SELECT * FROM communities WHERE title = ?";
+            db.query(checkQuery, title, (err, data) => {
+                if (data && data.length) {
+                    return res.status(401).json("Community exists");
+                }
+            });
+
+            // Upload group icon to S3
+            const groupIconFile = req.files["groupIcon"] ? req.files["groupIcon"][0] : null;
+            let groupIconUrl = null;
+
+            if (groupIconFile) {
+                try {
+                    const params = {
+                        Bucket: process.env.BUCKET_NAME,
+                        Key: `uploads/communities/${Date.now()}_${groupIconFile.originalname}`,
+                        Body: groupIconFile.buffer,
+                        ContentType: groupIconFile.mimetype,
+                    };
+                    const command = new PutObjectCommand(params);
+                    await s3.send(command);
+                    groupIconUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
+                } catch (uploadError) {
+                    console.error("Error uploading group icon:", uploadError);
+                    return res.status(500).json({ message: "Error uploading group icon", error: uploadError });
+                }
             }
-            const description = `Welcome to ${req.body.title}'s Official Community on Weebform.`
-            // QUERY DB TO CREATE NEW COMMUNITY
-            const q = "INSERT INTO communities (`creatorId`, `title`, `description`, `groupIcon`, `createdAt`) VALUES (?)";
+
+            if (!groupIconUrl) {
+                return res.status(400).json("Error uploading community image");
+            }
+
+            const description = `Welcome to ${req.body.title}'s Official Community on Weebform.`;
+
+            // Create community
+            const createQuery = "INSERT INTO communities (`creatorId`, `title`, `description`, `groupIcon`, `createdAt`) VALUES (?)";
             const values = [
                 user.id,
                 req.body.title,
                 description,
-                groupIcon,
+                groupIconUrl,
                 moment(Date.now()).format("YYYY-MM-DD HH:mm:ss")
-            ];      
-            db.query(q, [values], (err, data) => {
-                if (err) return res.status(500).json(err);
-            
+            ];
+
+            db.query(createQuery, [values], (err, data) => {
+                if (err) {
+                    return (err);
+                }
                 const communityId = data.insertId;
-            
-                //CREATE COMMUNITY GROUPS BY DEFAULT
-                const groups = [
-                    { title: "Announcements", communityId, groupIcon: "uploads/default group icons/announcements-icon.png" },
-                    { title: "General Discussion", communityId, groupIcon: "uploads/default group icons/general-discussion-icon.png" },
-                    { title: "Feed", communityId, groupIcon: "uploads/default group icons/feedback-icon.jpeg" }
+
+                // Create default groups
+                const defaultGroups = [
+                    { title: "Announcements", groupIcon: "uploads/default group icons/announcements-icon.png" },
+                    { title: "General Discussion", groupIcon: "uploads/default group icons/general-discussion-icon.png" },
+                    { title: "Feed", groupIcon: "uploads/default group icons/feedback-icon.jpeg" }
                 ];
-            
-                const insertGroups = "INSERT INTO `groups` (`title`, `communityId`, `groupIcon`, `createdAt`) VALUES ?";
-                const groupValues = groups.map(group => [group.title, group.communityId, group.groupIcon, moment(Date.now()).format("YYYY-MM-DD HH:mm:ss")]);
-            
-                db.query(insertGroups, [groupValues], (err) => {
+
+                const groupsQuery = "INSERT INTO `groups` (`title`, `communityId`, `groupIcon`, `createdAt`) VALUES ?";
+                const groupValues = defaultGroups.map(group => [
+                    group.title,
+                    communityId,
+                    group.groupIcon,
+                    moment(Date.now()).format("YYYY-MM-DD HH:mm:ss")
+                ]);
+
+                db.query(groupsQuery, [groupValues], (err) => {
                     if (err) {
                         console.error("Error creating groups:", err);
                         return res.status(500).json({ message: "Community created, but failed to create groups." });
                     }
                     res.status(200).json({ message: "Community and default groups successfully created." });
                 });
-            });            
+            });
         });
     });
 };
+
+// API TO VIEW JOINED COMMUNITIES
+export const yourCommunities = (req, res) => {
+    authenticateUser(req, res, () => {
+        const userId = req.user.id;
+
+        const query = `
+            SELECT c.id, c.title, c.description, c.groupIcon, c.createdAt, cm.comId, cm.memberId 
+            FROM members cm 
+            JOIN communities c ON cm.comId = c.id 
+            WHERE cm.memberId = ?;
+        `;
+
+        db.query(query, [userId], async (err, data) => {
+            if (err) return res.status(500).json(err);
+
+            if (!data || data.length === 0) {
+                return res.status(404).json("You haven't joined a community.");
+            }
+
+            const processedCommunities = await Promise.all(
+                data.map(async (community) => {
+                    if (community.groupIcon) {
+                        try {
+                            const groupIconKey = s3KeyFromUrl(community.groupIcon);
+                            community.groupIcon = await generateS3Url(groupIconKey);
+                        } catch (error) {
+                            console.error("Error generating group icon URL:", error);
+                            community.groupIcon = null;
+                        }
+                    }
+                    return community;
+                })
+            ); 
+
+            res.status(200).json(processedCommunities);
+        });
+    });
+};
+
+// API TO VIEW ALL COMMUNITIES
+export const communities = (req, res) => {
+    authenticateUser(req, res, () => {
+        const query = `
+            SELECT 
+                c.*, 
+                (SELECT COUNT(*) FROM members WHERE comId = c.id) AS memberCount 
+            FROM 
+                communities AS c 
+            ORDER BY 
+                c.createdAt ASC
+        `;
+
+        db.query(query, async (err, data) => {
+            if (err) return res.status(500).json(err);
+
+            const processedCommunities = await Promise.all(
+                data.map(async (community) => {
+                    if (community.groupIcon) {
+                        try {
+                            const groupIconKey = s3KeyFromUrl(community.groupIcon);
+                            community.groupIcon = await generateS3Url(groupIconKey);
+                        } catch (error) {
+                            console.error("Error generating group icon URL:", error);
+                            community.groupIcon = null;
+                        }
+                    }
+                    return community;
+                })
+            );   
+
+            // Shuffle communities before returning
+            const shuffled = processedCommunities.sort(() => Math.random() - 0.5);
+            res.status(200).json(shuffled);
+        });
+    });
+};
+
+//API TO VIEW SPECIFIC COMMUNITY
+export const getCommunityDetails = (req, res) => {
+    authenticateUser(req, res, () => {
+        const communityId = req.params.id;
+
+        if (!communityId) {
+            return res.status(400).json({ error: "Community ID is required." });
+        }
+
+        const query = `
+            SELECT 
+                c.*, 
+                (SELECT COUNT(*) FROM members WHERE comId = c.id) AS memberCount 
+            FROM 
+                communities AS c 
+            WHERE 
+                c.id = ?
+        `;
+
+        db.query(query, [communityId], async (err, data) => {
+            if (err) {
+                console.error("Error fetching community details:", err);
+                return res.status(500).json(err);
+            }
+
+            if (data.length === 0) {
+                return res.status(404).json({ error: "Community not found." });
+            }
+
+            const community = data[0];
+
+            // Process group icon if present
+            if (community.groupIcon) {
+                try {
+                    const groupIconKey = s3KeyFromUrl(community.groupIcon);
+                    community.groupIcon = await generateS3Url(groupIconKey);
+                } catch (error) {
+                    console.error("Error generating group icon URL:", error);
+                    community.groupIcon = null;
+                }
+            }
+
+            res.status(200).json(community);
+        });
+    });
+};
+
 
 // JOIN COMMUNITY
 export const joinCommunity = (req, res) => {
@@ -80,7 +236,7 @@ export const joinCommunity = (req, res) => {
                 return res.status(500).json(err);
             }
             if (results.length > 0) {
-                return res.status(409).json({ message: "You are already a member of this community." });
+                return res.status(409).send("You are already a member of this community.");
             }
             // QUERY DB TO INSERT INTO COMMUNITY MEMBERS TABLE
             const joinCommunityQuery = "INSERT INTO members (`comId`, `memberId`) VALUES (?, ?)";
@@ -105,39 +261,6 @@ export const joinCommunity = (req, res) => {
         })
     });
 };
-
-//API TO VIEW JOINED COMMUNITIES
-export const yourCommunities = (req, res) => {
-    authenticateUser(req, res, () => {
-        const userId = req.user.id;
-        //QUERY DB TO GET POSTS
-        const joined = "SELECT c.id, c.title, c.description, c.groupIcon, c.createdAt, cm.comId, cm.memberId FROM members cm JOIN communities c ON cm.comId = c.id WHERE cm.memberId = ?;"
-        
-        db.query(joined, [userId], (err, data) => {
-            if (err) {
-                return res.status(500).json(err);
-            }if (data.lenght === 0){
-                res.status(404).json("You haven't joined a community.. ")
-            }
-                return res.status(200).json(data);
-        });
-    });
-};
-
-//API TO VIEW ALL COMMUNITIES
-export const communities = (req, res)=>{
-    authenticateUser(req, res, () => {
-        const user = req.user;
-        //QUERY DB TO GET ALL EXISTING COMMUNITIES
-        const q = "SELECT * FROM communities ORDER BY createdAt ASC";
-        db.query(q, (err,data)=>{
-        if(err) return res.status(500).json(err)
-        //SHUFFLE COMMUNITIES
-        const random = shuffleComs(data);
-        return res.status(200).json(random)
-        })
-    }) 
-}
 
 // LEAVE COMMUNITY
 export const exitCommunity = (req, res) => {
@@ -170,21 +293,66 @@ export const exitCommunity = (req, res) => {
     });
 };
 
-//API TO DELETE COMMUNITY
-export const deleteCommunity = (req, res)=>{
+// API TO DELETE COMMUNITY
+export const deleteCommunity = (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
-        //QUERY DB TO DELETE COMMUNITY
-        const q = "DELETE FROM communities WHERE id = ? AND creatorId = ?";
-        db.query(q, [req.params.id, user.id], (err,data)=>{
-        if(err) return res.status(500).json(err);
-        if(data.affectedRows > 0){
-            res.status(200).json("Community deleted succesfully")
-        }else{
-            return res.status(403).json('Community not found!')
-        }
-        })
-    }) 
+
+        // Step 1: Retrieve community and associated group icons
+        const getCommunity = "SELECT groupIcon FROM communities WHERE id = ? AND creatorId = ?";
+        db.query(getCommunity, [req.params.id, user.id], async (err, data) => {
+            if (err) {
+                return res.status(500).json({ message: "Database query error", error: err });
+            }
+            if (data.length === 0) {
+                return res.status(404).json({ message: "Community not found!" });
+            }
+
+            const { groupIcon } = data[0];
+
+            // Function to delete S3 object
+            const deleteS3Object = async (url) => {
+                const key = s3KeyFromUrl(url);
+                if (!key) {
+                    console.error("Invalid S3 object URL:", url);
+                    return null;
+                }
+                try {
+                    const deleteCommand = new DeleteObjectCommand({
+                        Bucket: process.env.BUCKET_NAME,
+                        Key: key,
+                    });
+                    await s3.send(deleteCommand);
+                    console.log("S3 object deleted successfully:", key);
+                } catch (s3Error) {
+                    console.error("Error deleting S3 object:", s3Error);
+                    throw new Error("Error deleting file from S3");
+                }
+            };
+
+            // Step 2: Delete groupIcon from S3
+            try {
+                if (groupIcon) {
+                    await deleteS3Object(groupIcon); 
+                }
+            } catch (deleteError) {
+                return res.status(500).json({ message: "Error deleting S3 objects", error: deleteError });
+            }
+
+            // Step 3: Delete the community from the database
+            const deleteCommunityQuery = "DELETE FROM communities WHERE id = ? AND creatorId = ?";
+            db.query(deleteCommunityQuery, [req.params.id, user.id], (err, result) => {
+                if (err) {
+                    return res.status(500).json({ message: "Database deletion error", error: err });
+                }
+                if (result.affectedRows > 0) {
+                    return res.status(200).json({ message: "Community deleted successfully." });
+                } else {
+                    return res.status(403).json({ message: "You can only delete your own community." });
+                }
+            });
+        });
+    });
 };
 
 //RELEVANT FUNCTIONS
