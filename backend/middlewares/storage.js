@@ -15,8 +15,8 @@ export const cpUpload = upload.fields([
     { name: 'coverPhoto', maxCount: 1 },
     { name: 'groupIcon', maxCount: 1 },
     { name: 'media', maxCount: 4 },
-    { name: 'storyImage', maxCount: 3 },
-    { name: 'storyVideo', maxCount: 3 },
+    { name: 'storyImages', maxCount: 3 },
+    { name: 'storyVideos', maxCount: 3 },
     { name: 'logoImage', maxCount: 1 },
 ]);
 

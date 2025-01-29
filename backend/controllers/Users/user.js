@@ -90,7 +90,7 @@ export const editProfile = async (req, res) => {
                 coverPhoto.url || await generateS3Url(defaultCoverPhotoKey),
                 profilePic.url || await generateS3Url(defaultProfilePicKey),
                 req.body.bio,
-                user.id,
+                user.id, 
             ];  
             const updatedUser = await executeQuery(`
                 UPDATE users 

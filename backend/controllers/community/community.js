@@ -1,16 +1,16 @@
-import { db } from "../../../config/connectDB.js";
-import { authenticateUser } from "../../../middlewares/verify.mjs";
+import { db } from "../../config/connectDB.js";
+import { authenticateUser } from "../../middlewares/verify.mjs";
 import moment from "moment";
-import { cpUpload } from "../../../middlewares/storage.js";
+import { cpUpload } from "../../middlewares/storage.js";
 import multer from "multer";
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { s3, generateS3Url, s3KeyFromUrl } from "../../../middlewares/S3bucketConfig.js";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
 
-// API TO CREATE NEW COMMUNITY
+// API TO CREATE NEW COMMUNITY 
 export const createCommunity = (req, res) => {
     authenticateUser(req, res, () => {
         cpUpload(req, res, async (err) => {
-            if (err instanceof multer.MulterError) {
+            if (err instanceof multer.MulterError) { 
                 return res.status(500).json({ message: "File upload error", error: err });
             } else if (err) {
                 return res.status(500).json({ message: "Unknown error", error: err });
@@ -72,9 +72,9 @@ export const createCommunity = (req, res) => {
 
                 // Create default groups
                 const defaultGroups = [
-                    { title: "Announcements", groupIcon: "uploads/default group icons/announcements-icon.png" },
-                    { title: "General Discussion", groupIcon: "uploads/default group icons/general-discussion-icon.png" },
-                    { title: "Feed", groupIcon: "uploads/default group icons/feedback-icon.jpeg" }
+                    { title: "General discussions", groupIcon: "uploads/default group icons/announcements-icon.png" },
+                    { title: "Posts", groupIcon: "uploads/default group icons/general-discussion-icon.png" },
+                    { title: "Spoilers", groupIcon: "uploads/default group icons/feedback-icon.jpeg" }
                 ];
 
                 const groupsQuery = "INSERT INTO `groups` (`title`, `communityId`, `groupIcon`, `createdAt`) VALUES ?";
@@ -101,14 +101,12 @@ export const createCommunity = (req, res) => {
 export const yourCommunities = (req, res) => {
     authenticateUser(req, res, () => {
         const userId = req.user.id;
-
         const query = `
             SELECT c.id, c.title, c.description, c.groupIcon, c.createdAt, cm.comId, cm.memberId 
             FROM members cm 
             JOIN communities c ON cm.comId = c.id 
             WHERE cm.memberId = ?;
         `;
-
         db.query(query, [userId], async (err, data) => {
             if (err) return res.status(500).json(err);
 
@@ -130,7 +128,6 @@ export const yourCommunities = (req, res) => {
                     return community;
                 })
             ); 
-
             res.status(200).json(processedCommunities);
         });
     });
@@ -183,7 +180,7 @@ export const getCommunityDetails = (req, res) => {
             return res.status(400).json({ error: "Community ID is required." });
         }
 
-        const query = `
+        const communityQuery = `
             SELECT 
                 c.*, 
                 (SELECT COUNT(*) FROM members WHERE comId = c.id) AS memberCount 
@@ -193,19 +190,31 @@ export const getCommunityDetails = (req, res) => {
                 c.id = ?
         `;
 
-        db.query(query, [communityId], async (err, data) => {
+        const groupsQuery = `
+            SELECT 
+                g.id, 
+                g.title, 
+                g.groupIcon, 
+                g.createdAt 
+            FROM 
+                \`groups\` AS g 
+            WHERE 
+                g.communityId = ?
+        `;
+
+        db.query(communityQuery, [communityId], async (err, communityData) => {
             if (err) {
                 console.error("Error fetching community details:", err);
                 return res.status(500).json(err);
             }
 
-            if (data.length === 0) {
+            if (communityData.length === 0) {
                 return res.status(404).json({ error: "Community not found." });
             }
 
-            const community = data[0];
+            const community = communityData[0];
 
-            // Process group icon if present
+            // Process group icon for the community
             if (community.groupIcon) {
                 try {
                     const groupIconKey = s3KeyFromUrl(community.groupIcon);
@@ -216,7 +225,33 @@ export const getCommunityDetails = (req, res) => {
                 }
             }
 
-            res.status(200).json(community);
+            // Fetch groups related to the community
+            db.query(groupsQuery, [communityId], async (groupErr, groupsData) => {
+                if (groupErr) {
+                    console.error("Error fetching groups:", groupErr);
+                    return res.status(500).json(groupErr);
+                }
+
+                const processedGroups = await Promise.all(
+                    groupsData.map(async (group) => {
+                        if (group.groupIcon) {
+                            try {
+                                const groupIconKey = s3KeyFromUrl(group.groupIcon);
+                                group.groupIcon = await generateS3Url(groupIconKey);
+                            } catch (error) {
+                                console.error("Error generating group icon URL for group:", error);
+                                group.groupIcon = null;
+                            }
+                        }
+                        return group;
+                    })
+                );
+
+                // Attach groups to the community response
+                community.groups = processedGroups;
+
+                res.status(200).json(community);
+            });
         });
     });
 };
@@ -266,35 +301,56 @@ export const joinCommunity = (req, res) => {
 export const exitCommunity = (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
-
-        // Get the community ID from the request parameters
         const comId = req.params.id;
 
-        // QUERY DB TO DELETE FROM MEMBERS TABLE
-        const exit = "DELETE FROM `members` WHERE id = ? AND memberId = ?";
+        if (!comId) {
+            return res.status(400).json({ message: "Community ID is required." });
+        }
 
-        db.query(exit, [comId, user.id], (err, data) => {
-            if (err) {
-                return res.status(500).json(err);
+        // Check if the user is a member of the community
+        const membershipCheckQuery = `
+            SELECT u.username, c.title 
+            FROM members m
+            JOIN users u ON m.memberId = u.id
+            JOIN communities c ON m.comId = c.id
+            WHERE m.memberId = ? AND m.comId = ?
+        `;
+
+        db.query(membershipCheckQuery, [user.id, comId], (checkErr, checkResult) => {
+            if (checkErr) {
+                console.error("Error checking membership:", checkErr);
+                return res.status(500).json({ message: "Database error", error: checkErr });
             }
-            const users = "SELECT u.username, c.title FROM members m JOIN users u ON m.memberId = u.id JOIN communities c ON m.comId = c.id WHERE m.memberId = ? AND m.comId = ?";
-            db.query(users, [user.id, comId], (err, result) => {
-                if (err) {
-                    return res.status(500).json(err);
+
+            if (checkResult.length === 0) {
+                return res.status(404).json({ message: "Membership not found or invalid community." });
+            }
+
+            const username = checkResult[0].username;
+            const communityTitle = checkResult[0].title;
+
+            // Delete membership record
+            const exitQuery = "DELETE FROM `members` WHERE comId = ? AND memberId = ?";
+            db.query(exitQuery, [comId, user.id], (exitErr, exitResult) => {
+                if (exitErr) {
+                    console.error("Error exiting community:", exitErr);
+                    return res.status(500).json({ message: "Error leaving community", error: exitErr });
                 }
-                if (result.length === 0) {
-                    return res.status(404).json("Community not found");
+
+                if (exitResult.affectedRows === 0) {
+                    return res.status(404).json({ message: "You are not a member of this community." });
                 }
-                const username = result[0].username;
-                const community = result[0].title;
-                return res.status(200).json(`${username} has left the community: ${community}`);
-            });
+
+                return res
+                    .status(200)
+                    .json({ message: `${username} has successfully left the community: ${communityTitle}` });
+            }); 
         });
     });
-};
+}; 
 
 // API TO DELETE COMMUNITY
-export const deleteCommunity = (req, res) => {
+export const deleteCommunity = (req, res) => { 
     authenticateUser(req, res, () => {
         const user = req.user;
 

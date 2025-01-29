@@ -1,48 +1,50 @@
-import {db} from "../../config/connectDB.js"
-import {authenticateUser} from "../../middlewares/verify.mjs"
+import { db } from "../../config/connectDB.js";
+import { authenticateUser } from "../../middlewares/verify.mjs";
 
 //API TO LIKE POST
-export const like = (req, res)=>{
+export const like = (req, res) => {
     //CHECK FOR JWT
     authenticateUser(req, res, () => {
         const user = req.user;
         const postId = parseInt(req.params.postId);
-       //QUERY DB TO LIKE POST
-        const q = "INSERT INTO likes (userId, postId) VALUES(?, ?)"
-        const values = [ 
+        //QUERY DB TO LIKE POST
+        const q = "INSERT INTO likes (userId, postId) VALUES(?, ?)";
+        const values = [
             user.id,
             postId
-        ]
-        db.query(q, values, (err, data)=>{
-        if(err) {
-            return res.status(500).json(err)
-        }
-        return res.status(200).json("liked post")
-        })
+        ];
+        db.query(q, values, (err, data) => {
+            if (err) {
+                return res.status(500).json(err);
+            }
+            return res.status(200).json("liked post");
+        });
     });
 
-}
+};
 
 //API TO GET LIKES
-export const getLikes = (req, res)=>{
+export const getLikes = (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
         const postId = parseInt(req.params.postId);
         //QUERY DB TO GET LIKES
-        const q = "SELECT l.*, u.username, u.id AS userId FROM likes AS l JOIN users AS u ON (u.id = l.userId) WHERE l.postId = ? ";
+         const q = "SELECT l.*, u.username, u.id AS userId FROM likes AS l JOIN users AS u ON (u.id = l.userId) WHERE l.postId = ? ";
 
-        db.query(q, [postId], (err,data)=>{
-        if(err) return res.status(500).json(err)
-        if (data && data.length > 0) {
-            const userId = data.map(obj => Number(obj.userId));
-            return res.status(200).json({userId, data});
-        }
-        })
-    }) 
-}
+        db.query(q, [postId], (err, data) => {
+            if (err) return res.status(500).json(err);
+            if (data && data.length > 0) {
+                const userId = data.map(obj => Number(obj.userId));
+                return res.status(200).json({ userId, data });
+            } else {
+                return res.status(200).json({ userId: [], data:[] }); // Return empty array if no likes
+            }
+        });
+    });
+};
 
 //API TO UNLIKE POST
-export const unlike = (req, res)=>{
+export const unlike = (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
         const postId = req.params.postId;
@@ -52,15 +54,14 @@ export const unlike = (req, res)=>{
         //QUERY DB TO UNLIKE POST
         const q = "DELETE FROM likes WHERE postId = ? AND userId = ? ";
         const values = [
-            postId, 
+            postId,
             user.id
-        ]
-        db.query(q, values, (err, data)=>{
+        ];
+        db.query(q, values, (err, data) => {
             if (err) {
                 return res.status(500).json(err);
             }
-            const userId = req.body.followed
-                return res.status(200).json({ message: `Unliked post`});
-       })
-    }) 
-}
+                return res.status(200).json({ message: `Unliked post` });
+        });
+    });
+}; 

@@ -12,10 +12,10 @@ export const newPost = async (req, res) => {
         cpUpload(req, res, async (err) => {
             if (err instanceof multer.MulterError) {
                 return res.status(500).json({ message: "File upload error", error: err });
-            } else if (err) { 
+            } else if (err) {
                 return res.status(500).json({ message: "Unknown error", error: err });
             }
- 
+
             const media = req.files["media"];
             const uploadedMediaUrls = [];
 
@@ -60,26 +60,38 @@ export const newPost = async (req, res) => {
 // API TO VIEW ALL POSTS
 export const allPosts = async (req, res) => {
     authenticateUser(req, res, () => {
+        const user = req.user;
+        const searchTerm = req.query.searchTerm || ''; // Get search term from query
         const q = `
             SELECT 
                 p.*, 
                 u.id AS userId, 
                 u.username, 
                 u.full_name, 
-                u.profilePic, 
-                COUNT(l.id) AS likesCount
+                u.profilePic,
+                COUNT(DISTINCT l.id) AS likeCount,
+                 COUNT(DISTINCT c.id) AS commentCount,
+                CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
             FROM 
                 posts AS p
             JOIN 
                 users AS u ON u.id = p.userId
             LEFT JOIN 
-                likes AS l ON l.postId = p.id
+               likes AS l ON l.postId = p.id
+             LEFT JOIN 
+              comments AS c ON c.postId = p.id
+            LEFT JOIN
+               likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+            WHERE
+               u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?
             GROUP BY 
                 p.id, u.id
             ORDER BY 
                 p.createdAt DESC
         `;
-        db.query(q, async (err, data) => {
+         const searchValue = `%${searchTerm}%`
+
+        db.query(q, [user.id, user.id, searchValue, searchValue, searchValue ], async (err, data) => {
             if (err) return res.status(500).json(err);
             const processedPosts = await Promise.all(
                 data.map(async (post) => {
@@ -104,7 +116,9 @@ export const allPosts = async (req, res) => {
                     return post;
                 })
             );
-            res.status(200).json(processedPosts);
+            
+            const shuffledPosts = shufflePosts(processedPosts); // Shuffle the posts
+            res.status(200).json(shuffledPosts); // Return shuffled posts
         });
     });
 };
@@ -113,21 +127,30 @@ export const allPosts = async (req, res) => {
 export const userPosts = async (req, res) => {
     authenticateUser(req, res, () => {
         const userId = req.params.id;
-        const q = `SELECT 
+        const user = req.user;
+        const searchTerm = req.query.searchTerm || ''; // Get search term from query
+         const q = `SELECT 
             p.*, 
             u.id AS userId,
             u.username, 
             u.full_name, 
             u.profilePic, 
-            COUNT(l.id) AS likesCount
+             COUNT(DISTINCT l.id) AS likeCount,
+              COUNT(DISTINCT c.id) AS commentCount,
+            CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
         FROM 
             posts AS p
         JOIN 
             users AS u ON u.id = p.userId
         LEFT JOIN 
             likes AS l ON l.postId = p.id
+            LEFT JOIN
+               comments AS c ON c.postId = p.id
+         LEFT JOIN
+               likes AS l2 ON l2.postId = p.id AND l2.userId = ?
         WHERE 
             u.id = ?
+            AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
         GROUP BY 
             p.id, 
             u.id, 
@@ -136,7 +159,8 @@ export const userPosts = async (req, res) => {
             u.profilePic
         ORDER BY 
             p.createdAt DESC;`;
-        db.query(q, [userId], async (err, data) => {
+          const searchValue = `%${searchTerm}%`
+        db.query(q, [user.id, user.id, userId, searchValue, searchValue, searchValue], async (err, data) => {
             if (err) {
                 return res.status(500).json(err);
             }
@@ -166,7 +190,8 @@ export const userPosts = async (req, res) => {
                     return post;
                 })
             );
-            res.status(200).json(processedPosts);
+           const shuffledPosts = shufflePosts(processedPosts);
+            res.status(200).json(shuffledPosts);
         });
     });
 };
@@ -175,8 +200,37 @@ export const userPosts = async (req, res) => {
 export const followingPosts = async (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
-        const q = "SELECT p.*, u.id AS userId, username, full_name, profilePic FROM posts AS p JOIN users AS u ON (u.id = p.userId) LEFT JOIN reach AS r ON (p.userId = r.followed) WHERE r.follower = ? OR p.userId = ? ORDER BY createdAt DESC";
-        db.query(q, [user.id, user.id], async (err, data) => {
+        const searchTerm = req.query.searchTerm || ''; // Get search term from query
+        const q = `
+            SELECT 
+                p.*, 
+                u.id AS userId, 
+                u.username, 
+                u.full_name, 
+                u.profilePic,
+                COUNT(DISTINCT l.id) AS likeCount,
+                 COUNT(DISTINCT c.id) AS commentCount,
+                CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
+            FROM 
+                posts AS p
+            JOIN 
+                users AS u ON u.id = p.userId
+            LEFT JOIN 
+               likes AS l ON l.postId = p.id
+             LEFT JOIN 
+              comments AS c ON c.postId = p.id
+            LEFT JOIN
+               likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+             LEFT JOIN reach AS r ON (p.userId = r.followed)
+                WHERE (r.follower = ? OR p.userId = ?)
+                 AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
+            GROUP BY 
+                p.id, u.id
+            ORDER BY 
+                p.createdAt DESC
+        `;
+        const searchValue = `%${searchTerm}%`
+        db.query(q, [user.id,user.id, user.id, user.id, searchValue, searchValue, searchValue], async (err, data) => {
             if (err) {
                 return res.status(500).json(err);
             } else {
@@ -203,7 +257,8 @@ export const followingPosts = async (req, res) => {
                         return post;
                     })
                 );
-                res.status(200).json(processedPosts);
+              const shuffledPosts = shufflePosts(processedPosts);
+                res.status(200).json(shuffledPosts);
             }
         });
     });
@@ -213,27 +268,37 @@ export const followingPosts = async (req, res) => {
 export const postCategory = (req, res) => {
     authenticateUser(req, res, () => {
         const user = req.user;
-        const q = `SELECT 
+         const searchTerm = req.query.searchTerm || ''; // Get search term from query
+          const q = `
+          SELECT 
           p.*, 
           u.id AS userId, 
           u.username,
           full_name, 
           u.profilePic, 
-          COUNT(l.id) AS likesCount
+           COUNT(DISTINCT l.id) AS likeCount,
+              COUNT(DISTINCT c.id) AS commentCount,
+              CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
         FROM 
           posts AS p 
         JOIN 
           users AS u ON u.id = p.userId 
         LEFT JOIN 
           likes AS l ON l.postId = p.id
+           LEFT JOIN
+               comments AS c ON c.postId = p.id
+        LEFT JOIN
+               likes AS l2 ON l2.postId = p.id AND l2.userId = ?
          WHERE 
             p.category = ? 
+            AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
         GROUP BY 
             p.id, u.id 
         ORDER BY 
             createdAt DESC`;
         const category = req.params.category;
-        db.query(q, category, async (err, data) => {
+        const searchValue = `%${searchTerm}%`
+        db.query(q, [user.id,user.id, category, searchValue, searchValue, searchValue ], async (err, data) => {
             if (err) return res.status(500).json(err);
             if (data.length === 0) {
                 return res.status(404).json("No posts found in this category.");
@@ -261,7 +326,8 @@ export const postCategory = (req, res) => {
                     return post;
                 })
             );
-            return res.status(200).json(processedPosts);
+              const shuffledPosts = shufflePosts(processedPosts);
+            return res.status(200).json(shuffledPosts);
         });
     });
 };

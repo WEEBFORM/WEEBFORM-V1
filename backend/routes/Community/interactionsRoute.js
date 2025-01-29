@@ -1,13 +1,16 @@
 import express from "express";
-import {createCommunity, communities, exitCommunity, deleteCommunity} from "../../controllers/communityInteractions/community.js";
+import { deleteCommunityPost, fetchCommunityPosts, newCommunityPost } from "../../controllers/community/interactions/feed.js";
+import { fetchGroupMessages, editMessage, deleteMessage, uploadMessageMedia, uploadSingle } from "../../controllers/community/interactions/messages.js";
+import authenticateUser from "../../middlewares/verify.mjs";
 
 const router = express.Router();
 
-router.post('/create', createCommunity);
-router.get('/', communities );
-//router.get('/', yourCommunities );
-router.post('/join/:id', joinCommunity);
-router.delete('/joined/:id', exitCommunity)
-router.delete('/:id', deleteCommunity);
+router.post('/:id/new-post', newCommunityPost);
+router.get('/:id/community-feed', fetchCommunityPosts );
+router.get('/:groupId', fetchGroupMessages );
+router.post("/messages/upload", authenticateUser, uploadSingle, uploadMessageMedia);
+router.put('/messages/:messageId', editMessage );
+router.delete('/messages/:messageId', deleteMessage );
+router.delete('/community-feed/:id', deleteCommunityPost);
 
 export default router
