@@ -8,4 +8,4 @@ router.get('/:postId', getComment)
 router.delete('/:commentId', deleteComment)
 
 
-export default router
+export default router  

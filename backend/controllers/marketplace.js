@@ -44,8 +44,8 @@ export const newStore = (req, res) => {
                     }
                 }
                 const insertQuery = `
-                    INSERT INTO stores (ownerId, label, description, logoImage, category, created) 
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO stores (ownerId, label, description, logoImage, category, web_link, created) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 `;
                 const values = [
                     user.id,
@@ -53,6 +53,7 @@ export const newStore = (req, res) => {
                     req.body.description,
                     logoImage,
                     req.body.category,
+                    req.body.web_link,
                     moment(Date.now()).format("YYYY-MM-DD HH:mm:ss"),
                 ];
                 db.query(insertQuery, values, (err, data) => {
@@ -104,9 +105,7 @@ export const viewStores = async (req, res) => {
             } 
   
             if (store.ownerProfilePic) {
-              const profileKey = s3KeyFromUrl(store.ownerProfilePic);
-              console.log("Extracted owner profilePic key:", profileKey);
-  
+              const profileKey = s3KeyFromUrl(store.ownerProfilePic); 
               try {
                 store.ownerProfilePic = await generateS3Url(profileKey);
               } catch (error) {
@@ -123,8 +122,59 @@ export const viewStores = async (req, res) => {
       });
     });
   };
-  
 
+//API TO VIEW A SINGLE STORE
+export const viewSingleStore = async(req, res)=>{
+authenticateUser(req, res, async()=>{
+    const storeId = req.params.id;
+    const q = `
+    SELECT
+        s.*,
+        u.username AS ownerUsername,
+        u.profilePic AS ownerProfilePic
+    FROM 
+        stores AS s 
+    JOIN
+        users AS u ON u.id = s.ownerId
+    WHERE s.id = ?
+    `;
+
+    db.query(q, [storeId] , async(err, data) => {
+    if (err) return res.status(500).json(err);
+
+        if(data.length === 0){
+            return res.status(404).json({message: 'Store not found'});
+        }
+
+    const store = data[0]
+
+        if (store.logoImage) {
+            const imageKey = s3KeyFromUrl(store.logoImage);
+
+            try {
+            store.logoImage = await generateS3Url(imageKey);
+            } catch (error) {
+            console.error("Error generating image URL:", error);
+            store.logoImage = null;
+            }
+        }
+
+        if (store.ownerProfilePic) {
+            const profileKey = s3KeyFromUrl(store.ownerProfilePic);
+
+            try {
+            store.ownerProfilePic = await generateS3Url(profileKey);
+            } catch (error) {
+            console.error("Error generating owner profilePic URL:", error);
+            store.ownerProfilePic = null;
+            }
+        }
+        res.status(200).json(store);
+
+    })
+})
+}
+  
 //API TO EDIT STORE INFO/DATA
 export const editStoreDetails = async(req, res)=>{
     authenticateUser(req, res, () => {
@@ -197,11 +247,11 @@ export const closeStore = (req, res) => {
                 return res.status(404).json({ message: "Store not found or you are not authorized to delete it." });
             }
             const logoImageUrl = data[0].logoImage;
-            if (logoImageUrl) {
+            if (logoImageUrl) {  
                 const logoImageKey = s3KeyFromUrl(logoImageUrl);
                 if (!logoImageKey) {
                     return res.status(400).json({ message: "Invalid S3 object URL", url: logoImageUrl });
-                }
+                } 
                 try {
                     const deleteCommand = new DeleteObjectCommand({
                         Bucket: process.env.BUCKET_NAME,

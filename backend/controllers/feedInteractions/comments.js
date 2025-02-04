@@ -16,7 +16,7 @@ export const addComment = (req, res)=>{
             req.body.gifs,
             user.id,
             postId,
-            moment(Date.now()).format("YYYY-MM-DD HH:MM:SS")
+            moment(Date.now()).format("YYYY-MM-DDHH:MM:SS")
         ]
         db.query(q, [values], (err,data)=>{
         if(err) return res.status(500).json(err)
@@ -29,9 +29,9 @@ export const addComment = (req, res)=>{
 export const getComment = (req, res)=>{
     authenticateUser(req, res, () => {
         const user = req.user;
-        const postId = req.params.postId
+        const postId = req.params.postId 
         //QUERY DB TO GET COMMENTS
-        const q = "SELECT c.*, u.id AS userId, username, profilePic FROM comments AS c JOIN users AS u ON (u.id = c.userId) JOIN posts AS p ON (p.id = c.postId) WHERE c.postId = ?";
+        const q = "SELECT c.*, u.id AS userId, username, full_name, profilePic FROM comments AS c JOIN users AS u ON (u.id = c.userId) JOIN posts AS p ON (p.id = c.postId) WHERE c.postId = ?";
         db.query(q, postId, (err,data)=>{
         if(err) return res.status(500).json(err)
         else{

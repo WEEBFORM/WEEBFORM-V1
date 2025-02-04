@@ -35,7 +35,7 @@ export const viewReply = (req, res)=>{
         const user = req.user;
         const commentId = req.params.commentId
         //QUERY DB TO GET COMMENTS
-        const q = "SELECT r.*, u.id AS userId, username, profilePic FROM replies AS r JOIN users AS u ON (u.id = r.userId) JOIN comments AS c ON (c.id = r.commentId) WHERE r.commentId = ?";
+        const q = "SELECT r.*, u.id AS userId, username, full_name, profilePic FROM replies AS r JOIN users AS u ON (u.id = r.userId) JOIN comments AS c ON (c.id = r.commentId) WHERE r.commentId = ?";
         db.query(q, commentId, (err,data)=>{
         if(err) return res.status(500).json(err)
         res.status(200).json(data)

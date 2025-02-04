@@ -27,7 +27,10 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(cors({
-  origin: 'http://localhost:3001',
+  origin: [
+    'http://localhost:3001', 
+    'http://172.20.10.2:3001'
+  ],
   methods: 'GET,POST,PUT,DELETE',
   credentials: true,
 }));
@@ -62,11 +65,11 @@ if (cluster.isPrimary) {
   cluster.on('exit', (worker) => {
     console.log(`Worker ${worker.process.pid} died, spawning a new one.`);
     cluster.fork();
-  });
-
+  }); 
+ 
   server.listen(port, () => {
     console.log(`Server running on port ${port}`);
-  });
+  }); 
 } else {
   console.log(`Worker ${process.pid} started`);
 }
