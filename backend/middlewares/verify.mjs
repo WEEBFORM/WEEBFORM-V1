@@ -1,7 +1,7 @@
 import { verifyToken } from './utils.js';
 
 export function authenticateUser(req, res, next) {
-  const token = req.cookies.accessToken || req.headers.accessToken;
+  const token = req.cookies.accessToken;
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized - No token provided' });
   }

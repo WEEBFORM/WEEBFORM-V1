@@ -29,10 +29,11 @@ app.use(cookieParser());
 app.use(cors({
   origin: [
     'http://localhost:3001', 
-    'http://172.20.10.2:3001'
+    'http://16.171.138.45'
   ],
   methods: 'GET,POST,PUT,DELETE', 
   credentials: true,
+  allowedHeaders: 'Content-Type, Authorization',
 }));
 
 config();
