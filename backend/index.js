@@ -29,7 +29,7 @@ app.use(cookieParser());
 app.use(cors({
   origin: [
     'http://localhost:3001', 
-    'http://16.171.138.45'
+    'http://16.171.138.45:8000'
   ],
   methods: 'GET,POST,PUT,DELETE', 
   credentials: true,
