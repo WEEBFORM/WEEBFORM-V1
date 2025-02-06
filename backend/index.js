@@ -28,8 +28,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(cors({
   origin: [
-    'http://localhost:3001', 
-    'http://16.171.138.45:8000'
+    'http://localhost:3001'
   ],
   methods: 'GET,POST,PUT,DELETE', 
   credentials: true,
