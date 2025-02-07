@@ -155,7 +155,7 @@ export const login = async (req, res) => {
             secure: true,  
             path: "/",  
             maxAge: 3 * 24 * 60 * 60 * 1000 
-        }).status(200).json({
+        }).status(200).json({ 
             message: "User logged in successfully", user 
         });
          
