@@ -2,35 +2,19 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import bcrypt from "bcryptjs";
 import { db } from '../../config/connectDB.js';
+import { transporter } from '../../middlewares/mailTransportConfig.js'; // Import the configured transporter
 
-// EMAIL CONFIGURATION
-const transporter = nodemailer.createTransport({
-    host: 'smtp.titan.email', 
-    port: 587,
-    secure: false, 
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-        rejectUnauthorized: false 
-    }
-});
-
-transporter.verify((error, success) => {
-    if (error) {
-        console.error('SMTP verification failed:',  error);
-    } else {
-        //console.log("SMTP server is ready to take our messages");
-    }
-});
+// EMAIL CONFIGURATION (Now in mailTransportConfig.js)
+// const transporter = nodemailer.createTransport({ ... }); // No longer needed here
+// transporter.verify(...); // No longer needed here
 
 
-export const forgotPassword = (req, res) => {
+export const forgotPassword = (req, res) => { 
     const findEmail = "SELECT * FROM users WHERE `email` = ?";
     const email = req.body.email;
     db.query(findEmail, [email], (err, results) => {
         if (err) {
+            console.error("Error finding user:", err); 
             return res.status(500).send('Error occurred while finding the user.');
         }
         if (results.length === 0) {
@@ -38,31 +22,46 @@ export const forgotPassword = (req, res) => {
         }
         const user = results[0];
         const token = crypto.randomBytes(20).toString('hex');
-        const resetPasswordExpires = Date.now() + 2 * 60 * 60;
+        const resetPasswordExpires = new Date(Date.now() + 2 * 60 * 60 * 1000);
 
         const updateToken = "UPDATE users SET resetPasswordToken = ?, resetPasswordExpires = ? WHERE email = ?";
-        
+
         db.query(updateToken, [token, resetPasswordExpires, email], (err) => {
             if (err) {
-                return res.status(500).send('Error occurred while updating the user with the reset token.'); 
+                console.error("Error updating token:", err);
+                return res.status(500).send('Error occurred while updating the user with the reset token.');
             }
+
+            const resetLink = `https://beta.weebform.com/reset/${token}`;  //Use https.  Also, make sure your frontend handles this route
 
             const mailOptions = {
                 to: user.email,
                 from: process.env.EMAIL_USER,
-                subject: 'Password Reset',
-                text: `You are receiving this because you (or someone else) have requested the reset of the password for your account.\n\n` +
-                      `Please click on the following link, or paste this into your browser to complete the process:\n\n` +
-                      `http://weebform.com/reset/${token}\n\n` +
-                      `If you did not request this, please ignore this email and your password will remain unchanged.\n`
+                subject: 'WEEBFORM - Password Reset Request',
+                html: `
+                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #000000;">
+                    <div style="text-align: center; margin-bottom: 20px; padding: 0px 40px 0px 40px">
+                        <img src="https://weebform.com/wp-content/uploads/2024/12/cropped-43b3193e-814b-4a9d-a367-daa917d5ddb5-300x300.jpg" alt="WEEBFORM Logo" style="max-width: 150px;">
+                    </div>
+                    <h2>Hello,</h2>
+                    <p>You are receiving this because you (or someone else) has requested a password reset for your WEEBFORM account.</p>
+                    <p>Please click the following link to reset your password.  This link will expire in 2 hours:</p>
+                    <p><a href="${resetLink}" style="color: #CF833F; text-decoration: none;">Reset Your Password</a></p>
+                    <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+                    <p>Best regards,</p>
+                    <p>The WEEBFORM Team</p>
+                </div>
+            `,
             };
 
-            transporter.sendMail(mailOptions, (err) => {
+            transporter.sendMail(mailOptions, (err, info) => {
                 if (err) {
-                    return res.status(500).send('Error occurred while sending the email.', err);
+                    console.error("Error sending email:", err);
+                    return res.status(500).send(`Error occurred while sending the reset email. ${err.message}`); // Include more detail
                 }
 
-                res.status(200).send(`An email has been sent to ${user.email} with further instructions.`);
+                console.log("Email sent:", info.messageId);
+                res.status(200).send(`A password reset email has been sent to ${user.email}. Please check your inbox.`);
             });
         });
     });
@@ -72,29 +71,71 @@ export const forgotPassword = (req, res) => {
 export const resetPassword = (req, res) => {
     const { token } = req.params;
     const { password } = req.body;
-  
-    const findToken = "SELECT * FROM users WHERE resetPasswordToken = ?";
+
+    const findToken = "SELECT * FROM users WHERE resetPasswordToken = ? AND resetPasswordExpires > ?"; // Check expiration
+
     db.query(findToken, [token, Date.now()], (err, result) => {
-      if (err) {
-        return res.status(500).send('Server error.');
-      }
-  
-      if (result.length === 0) {
-        return res.status(400).send('Password reset token is invalid or has expired.');
-      }
-  
-      const user = result[0];
-      const salt = bcrypt.genSaltSync(10);
-        const hashedPassword = bcrypt.hashSync(req.body.password, salt);
-      const updatePassword = `UPDATE users SET password = ?, resetPasswordToken = NULL, resetPasswordExpires = NULL WHERE email = ?`;
-  
-      db.query(updatePassword, [hashedPassword, user.email], (err) => {
         if (err) {
-          return res.status(500).send('Error updating the password.');
+            console.error("Error finding token:", err);
+            return res.status(500).send('Server error while validating the reset token.');
         }
-  
-        res.status(200).send('Password has been successfully reset.');
-      });
+
+        if (result.length === 0) {
+            return res.status(400).send('Password reset token is invalid or has expired.');
+        }
+
+        const user = result[0];
+
+        bcrypt.genSalt(10, (err, salt) => {
+            if (err) {
+                console.error("Error generating salt:", err);
+                return res.status(500).send('Server error during password hashing.');
+            }
+
+            bcrypt.hash(password, salt, (err, hashedPassword) => {
+                if (err) {
+                    console.error("Error hashing password:", err);
+                    return res.status(500).send('Server error during password hashing.');
+                }
+
+                const updatePassword = `UPDATE users SET password = ?, resetPasswordToken = NULL, resetPasswordExpires = NULL WHERE email = ?`;
+
+                db.query(updatePassword, [hashedPassword, user.email], (err) => {
+                    if (err) {
+                        console.error("Error updating password:", err);
+                        return res.status(500).send('Error updating the password in the database.');
+                    }
+
+                    // Send confirmation email
+                    const mailOptions = {
+                        to: user.email,
+                        from: process.env.EMAIL_USER,
+                        subject: 'WEEBFORM - Password Successfully Reset',
+                        html: `
+                            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #000000;">
+                                <div style="text-align: center; margin-bottom: 20px; padding: 0px 40px 0px 40px">
+                                    <img src="https://weebform.com/wp-content/uploads/2024/12/cropped-43b3193e-814b-4a9d-a367-daa917d5ddb5-300x300.jpg" alt="WEEBFORM Logo" style="max-width: 150px;">
+                                </div>
+                                <h2>Hello,</h2>
+                                <p>Your password for your WEEBFORM account has been successfully reset.</p>
+                                <p>If you did not initiate this password reset, please contact us immediately.</p>
+                                <p>Best regards,</p>
+                                <p>The WEEBFORM Team</p>
+                            </div>
+                        `,
+                    };
+
+                    transporter.sendMail(mailOptions, (err, info) => {
+                        if (err) {
+                            console.error("Error sending confirmation email:", err);
+                            return res.status(500).send('Password has been successfully reset, but there was an error sending the confirmation email.');
+                        }
+
+                        console.log("Confirmation email sent:", info.messageId);
+                        res.status(200).send('Password has been successfully reset. A confirmation email has been sent to your address.');
+                    });
+                });
+            });
+        });
     });
-  };
-  
+};

@@ -28,11 +28,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(cookieParser());
 app.use(cors({
   origin: [
-    'http://localhost:3001'
+    'http://localhost:3001',
+    "https://beta.weebform.com"
   ],
-  methods: 'GET,POST,PUT,DELETE', 
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true,
-  allowedHeaders: 'Content-Type, Authorization',
+  allowedHeaders: ["Content-Type", "Authorization", "Cache-Control"],
 }));
 
 config();
@@ -50,7 +51,7 @@ app.use('/api/v1/news-content', News);
 app.use('/api/v1/communities', Communities);
 app.use('/api/v1/communities/groups', CommunityGroupActions);
 
-const port = process.env.PORT || 8001;
+const port = process.env.PORT || 8001;  
 const server = http.createServer(app);
 
 // Initialize WebSocket functionality
