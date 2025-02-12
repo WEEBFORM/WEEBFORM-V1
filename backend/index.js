@@ -73,7 +73,7 @@ initializeSpoilersSocket(server);
 app.set('trust proxy', true);
 
 if (cluster.isPrimary) {
-  const numCPUs = os.cpus(1);
+  const numCPUs = os.cpus().length;
   
   // Fork workers
   for (let i = 0; i < numCPUs; i++) {
