@@ -49,7 +49,7 @@ export const initiateRegistration = async (req, res) => {
                     <div style="text-align: center; margin: 20px 0;">
                         <span style="font-size: 28px; font-weight: bold; color: #CF833F;">${verificationCode}</span>
                     </div>
-                    <p>This code will expire in <strong>5 minutes</strong>, so be sure to use it soon!</p>
+                    <p>This code will expire in <strong>10 minutes</strong>, so be sure to use it soon!</p>
                     <p>If you have any questions or need support, feel free to reach out to us.</p>
                     <p>Enjoy your journey through <strong>WEEBFORM</strong>!</p>
                     <p>Best regards,</p>
@@ -104,7 +104,7 @@ export const register = async (req, res) => {
 
         await executeQuery("DELETE FROM cache WHERE email = ?", [email]);
 
-        const token = jwt.sign({ id: insertResult.insertId }, process.env.Secretkey);
+        const token = jwt.sign({ id: insertResult.insertId }, process.env.SECRET_KEY);
         res.cookie("accessToken", token, { httpOnly: true }).status(200).json({
             message: "User created successfully",
             token,

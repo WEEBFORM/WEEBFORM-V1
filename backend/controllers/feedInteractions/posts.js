@@ -103,7 +103,7 @@ export const allPosts = async (req, res) => {
                             console.error("Error generating media URLs:", error);
                             post.media = null;
                         }
-                    }
+                    } 
                     if (post.profilePic) {
                         const profileKey = s3KeyFromUrl(post.profilePic);
                         try {
