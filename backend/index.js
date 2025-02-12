@@ -31,7 +31,7 @@ app.use(cors({
     'http://localhost:3001',
     "https://beta.weebform.com"
   ],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  methods: ["GET", "HEAD","POST", "PATCH","PUT", "DELETE", "OPTIONS"],
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization", "Cache-Control"],
 }));
