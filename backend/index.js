@@ -58,7 +58,7 @@ const server = http.createServer(app);
 initializeMessageSocket(server);
 
 if (cluster.isPrimary) {
-  const numCPUs = os.cpus(1);
+  const numCPUs = os.cpus().length;
   for (let i = 0; i < numCPUs; i++) { 
     cluster.fork();
   }
