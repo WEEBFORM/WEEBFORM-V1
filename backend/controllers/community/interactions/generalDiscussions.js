@@ -1,4 +1,3 @@
-//Backend
 import { Server } from "socket.io";
 import moment from "moment";
 import { db } from "../../../config/connectDB.js";
@@ -10,7 +9,10 @@ import { s3, generateS3Url, s3KeyFromUrl } from "../../../middlewares/S3bucketCo
 export const initializeMessageSocket = (server) => {
     const io = new Server(server, {
         cors: {
-            origin: "http://localhost:3001",
+            origin: [
+                'http://localhost:3001',
+                "https://beta.weebform.com"
+              ],
             credentials: true,
         },
     });
