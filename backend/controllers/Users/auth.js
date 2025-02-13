@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import geoip from 'geoip-lite';
 import { transporter } from "../../middlewares/mailTransportConfig.js";
 import { viewProfile } from "./user.js";
 import { generateS3Url } from "../../middlewares/S3bucketConfig.js";
@@ -128,42 +129,78 @@ export const login = async (req, res) => {
         const { username, email, password } = req.body;
         const searchField = username ? "username" : "email";
         const searchValue = username || email;
-        
+
         // Fetch user from DB
         const users = await executeQuery(
             `SELECT * FROM users WHERE ${searchField} = ?`,
             [searchValue]
         );
-        
+
         if (!users.length) {
             return res.status(404).json({ message: "Username or email not found!" });
         }
-        
+
         const user = users[0];
-        
+
         // Compare passwords asynchronously
         const passwordMatch = await bcrypt.compare(password, user.password);
         if (!passwordMatch) {
             return res.status(400).json({ message: "Wrong password" });
         }
-        
+
+        // Fetch device and location information
+        const userAgent = req.headers['user-agent']; // Get device info from the request
+        const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress; // Get client IP
+        const geo = geoip.lookup(ip); // Get geolocation data
+        const location = geo ? `${geo.city}, ${geo.region}, ${geo.country}` : "Unknown location";
+
         // Generate JWT token
         const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY, { expiresIn: '3d' });
+
         res.cookie("accessToken", token, { 
             httpOnly: false,
             sameSite: 'None',
-            secure: true,  
+            secure: true,
             path: "/",  
             maxAge: 3 * 24 * 60 * 60 * 1000 
         }).status(200).json({ 
             message: "User logged in successfully", user 
         });
-         
+        const loginTime = new Date().toLocaleString(); // Get current date and time
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: user.email,
+            subject: "New Login Notification",
+            html: `
+                <div style="text-align: center; margin-bottom: 20px; padding: 0px 40px 0px 40px">
+                    <img src="https://weebform.com/wp-content/uploads/2024/12/cropped-43b3193e-814b-4a9d-a367-daa917d5ddb5-300x300.jpg" alt="WEEBFORM Logo" style="max-width: 150px;">
+                </div>
+                <p>Hi ${user.username},</p>
+                <p>There was a recent login to your account with the following details:</p>
+                <ul>
+                    <li><strong>Date and Time:</strong> ${loginTime}</li>
+                    <li><strong>Device:</strong> ${userAgent}</li>
+                    <li><strong>Location:</strong> ${location}</li>
+                </ul>
+                <p>If this wasn't you, please contact us immediately at <a style="color: #CF833F;" href="mailto:contact@weebform.com">contact@weebform.com</a>.</p>
+                <p>Thank you,<br>The Weebform Team</p>
+            `
+        };
+
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.error("Error sending email:", error);
+            } else {
+                console.log("Email sent:", info.response);
+            }
+        });
+        
     } catch (err) {
-        console.error(err);    
+        console.error(err);
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
 
 
 // LOGOUT
