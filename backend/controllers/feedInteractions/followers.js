@@ -1,106 +1,118 @@
-import {db} from "../../config/connectDB.js"
-import {authenticateUser} from "../../middlewares/verify.mjs"
+import { db } from "../../config/connectDB.js";
+import { authenticateUser } from "../../middlewares/verify.mjs";
+import NodeCache from 'node-cache';
+const followerCache = new NodeCache({ stdTTL: 300 }); // Cache followers for 5 minutes
 
 //API TO FOLLOW USER
-export const followUser = (req, res)=>{
-    //CHECK FOR JWT
-    authenticateUser(req, res, () => {
-        const user = req.user;
+export const followUser = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
         const followed = parseInt(req.params.followed);
-        if (!followed) {
-            return res.status(400).json("Missing followed user ID");
+        if (!Number.isInteger(followed)) {
+            return res.status(400).json("Invalid followed user ID");
         }
-        if(followed === user.id) {
+        if (followed === userId) {
             return res.status(409).json("Cannot follow yourself");
         }
-        // QUERY DB TO CHECK IF USER ALREADY FOLLOWED
         const q = "SELECT * FROM reach WHERE followed = ? AND follower = ?";
-        const checkValues = [followed, user.id];
-        db.query(q, checkValues, (err, data) => {
-        if (err) {
-            return res.status(500).json(err);
-            }
-            if (data.length > 0) {
-            return res.status(409).json("You are already following this user");
-            }
-           //QUERY DB TO FOLLOW USER
-            const q = "INSERT INTO reach (followed, follower) VALUES(?, ?)"
-            const values = [
-                followed, 
-                user.id
-            ]
-            db.query(q, values, (err,data)=>{
-            if(err) {
-                return res.status(500).json(err)
-            }
-            if(data.length === 0){
-                return res.status(404).json("User does not exist");
-            }
-            return res.status(200).json("Following user")
-            })
-        });
+        const checkValues = [followed, userId];
+         try{
+                const [existingFollow] = await db.promise().query(q, checkValues);
+                if (existingFollow && existingFollow.length > 0) {
+                    return res.status(409).json("You are already following this user");
+                }
+            //QUERY DB TO FOLLOW USER
+             const insertQuery = "INSERT INTO reach (followed, follower) VALUES(?, ?)";
+            const values = [followed, userId];
+           await db.promise().query(insertQuery, values)
+              followerCache.flushAll()
+           return res.status(200).json("Following user");
+        }catch (err){
+             console.error("Follow User error:", err);
+            return res.status(500).json({ message: "Failed to follow user", error: err.message });
+        }
     });
 }
 
 //API TO GET FOLLOWERS
-export const getFollowers = (req, res)=>{
-    authenticateUser(req, res, () => {
-        const user = req.user;
-        //QUERY DB TO GET FOLOWERS
-        const q = "SELECT r.follower FROM reach AS r WHERE r.followed = ? ";
+export const getFollowers = async (req, res)=>{
+    authenticateUser(req, res, async () => {
+         const userId = req.user.id;
+         let cacheKey = `followers:${userId}`;
+             try {
+                let cachedData = followerCache.get(cacheKey);
+                  if (cachedData) {
+                      return res.status(200).json(cachedData);
+                  }
 
-        db.query(q, [user.id], (err,data)=>{
-        if(err) return res.status(500).json(err)
-        if (data && data.length > 0) {
-            const follower = data.map(obj => Number(obj.follower));
-            return res.status(200).json(follower);
-        } else {
-            return res.status(200).json([]);
+                    const q = "SELECT r.follower FROM reach AS r WHERE r.followed = ? ";
+                  const [data] = await db.promise().query(q, [userId]);
+                    if (data && data.length > 0) {
+                        const follower = data.map(obj => Number(obj.follower));
+                        followerCache.set(cacheKey, follower);
+                        return res.status(200).json(follower);
+                    } else {
+                        return res.status(200).json([]);
+                    }
+        }catch(err){
+            console.error("Error fetching followers:", err);
+            return res.status(500).json({ message: "Failed to get followers", error: err.message });
         }
-        })
     }) 
 }
 
 //API TO GET FOLLOWING
-export const getFollowing = (req, res)=>{
-    authenticateUser(req, res, () => {
-        const user = req.user;
-        //QUERY DB TO GET FOLLOWING USERS
-        const q = "SELECT r.followed FROM reach AS r WHERE r.follower = ? ";
-        db.query(q, user.id, (err,data)=>{
-        if(err) return res.status(500).json(err)
-        if (data && data.length > 0) {
-            const followed = data.map(obj => Number(obj.followed));
-            return res.status(200).json(followed);
-        }else{
-            res.status(404).json(
-                'Not following anyone yet'
-            )
+export const getFollowing = async (req, res)=>{
+    authenticateUser(req, res, async () => {
+        const userId = req.params.userId;
+
+           if (!Number.isInteger(Number(userId))) {
+                return res.status(400).json({ message: "Invalid userId" });
+             }
+             let cacheKey = `following:${userId}`;
+                  try{
+                    let cachedData = followerCache.get(cacheKey);
+                         if (cachedData) {
+                              return res.status(200).json(cachedData);
+                          }
+                   const q = "SELECT r.followed FROM reach AS r WHERE r.follower = ? ";
+                   const [data] = await db.promise().query(q, userId);
+                    if (data && data.length > 0) {
+                         const followed = data.map(obj => Number(obj.followed));
+                         followerCache.set(cacheKey, followed);
+                         return res.status(200).json(followed);
+                     }else{
+                          res.status(404).json(
+                               'Not following anyone yet'
+                         )
+                     }
+               }catch(err){
+                   console.error("Error fetching following:", err);
+                return res.status(500).json({ message: "Failed to get following users", error: err.message });
         }
-        })
     }) 
 }
 
 //API TO UNFOLLOW USERS
-export const unfollowUser = (req, res)=>{
-    authenticateUser(req, res, () => {
-        const user = req.user;
+export const unfollowUser = async (req, res)=>{
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
         const followed = req.params.followed;
-        if (!followed) {
-            return res.status(400).json("Missing followed user ID");
-        }
-        //QUERY DB TO REMOVE FROM FOLLOWERS
+         if (!Number.isInteger(Number(followed))) {
+                return res.status(400).json({ message: "Invalid followed" });
+             }
         const q = "DELETE FROM reach WHERE followed = ? AND follower = ? ";
         const values = [
             followed, 
-            user.id
-        ]
-        db.query(q, values, (err, data)=>{
-            if (err) {
-                return res.status(500).json(err);
-            }
-            const userId = req.body.followed
-                return res.status(200).json({ message: `Unfollowed user${followed}` });
-       })
+            userId
+        ];
+       try{
+             await db.promise().query(q, values);
+             followerCache.flushAll()
+                 return res.status(200).json({ message: `Unfollowed user${followed}` });
+       }catch(err){
+             console.error("Unfollow user error:", err);
+            return res.status(500).json({ message: "Failed to unfollow user", error: err.message });
+        }
     }) 
 }

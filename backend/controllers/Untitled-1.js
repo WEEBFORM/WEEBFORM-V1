@@ -7,11 +7,11 @@ import { config } from "dotenv";
 config();
 
 const DEFAULT_EXPIRATION = 5 * 60 * 1000; // 5 minutes
-
+ 
 // Utility to execute queries with async/await
 const executeQuery = async (query, params) => {
     return db.promise().query(query, params);
-};
+}; 
 
 // API TO INITIATE REGISTRATION
 export const initiateRegistration = async (req, res) => {

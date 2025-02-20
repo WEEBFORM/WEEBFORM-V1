@@ -15,7 +15,6 @@ export const createCommunity = (req, res) => {
             } else if (err) {
                 return res.status(500).json({ message: "Unknown error", error: err });
             }
-
             const user = req.user;
             const title = req.body.title;
 
@@ -72,8 +71,8 @@ export const createCommunity = (req, res) => {
 
                 // Create default groups
                 const defaultGroups = [
-                    { title: "General discussions", groupIcon: "uploads/default group icons/announcements-icon.png" },
-                    { title: "Posts", groupIcon: "uploads/default group icons/general-discussion-icon.png" },
+                    { title: "General discussion", groupIcon: "uploads/default group icons/announcements-icon.png" },
+                    { title: "Feed", groupIcon: "uploads/default group icons/general-discussion-icon.png" },
                     { title: "Spoilers", groupIcon: "uploads/default group icons/feedback-icon.jpeg" }
                 ];
 

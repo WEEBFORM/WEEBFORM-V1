@@ -2,11 +2,14 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import geoip from 'geoip-lite';
 import { transporter } from "../../middlewares/mailTransportConfig.js";
-import { viewProfile } from "./user.js";
 import { generateS3Url } from "../../middlewares/S3bucketConfig.js";
-import {executeQuery} from "../../middlewares/dbExecute.js"
+import { executeQuery } from "../../middlewares/dbExecute.js";
 import { config } from "dotenv";
-config(); 
+import NodeCache from 'node-cache';
+
+config();
+
+const userCache = new NodeCache({ stdTTL: 300 }); // Cache user data for 5 minutes
 
 // INITIATE REGISTRATION
 export const initiateRegistration = async (req, res) => {
@@ -16,7 +19,7 @@ export const initiateRegistration = async (req, res) => {
             "SELECT * FROM users WHERE username = ? OR email = ?",
             [username, email]
         );
-        
+
         if (existingUsers.length) {
             const existingWeeb = [];
             existingUsers.forEach(user => {
@@ -57,13 +60,13 @@ export const initiateRegistration = async (req, res) => {
                     <p><strong>The WEEBFORM Team</strong></p>
                     <hr style="border: 0; height: 1px; background-color: #ccc; margin: 20px 0;">
                     <p style="font-size: 14px; color: #777;">
-                        P.S. Stay tuned for exciting features and updates by subscribing to our newsletter on our website: 
+                        P.S. Stay tuned for exciting features and updates by subscribing to our newsletter on our website:
                         <a href="https://weebform.com" style="color: #CF833F; text-decoration: none;">weebform.com</a>.
                     </p>
                 </div>
             `,
         };
-        
+
         transporter.sendMail(mailOptions, (error) => {
             if (error) {
                 console.error('Error sending email:', error);
@@ -130,17 +133,23 @@ export const login = async (req, res) => {
         const searchField = username ? "username" : "email";
         const searchValue = username || email;
 
-        // Fetch user from DB
-        const users = await executeQuery(
-            `SELECT * FROM users WHERE ${searchField} = ?`,
-            [searchValue]
-        );
+        //Check userCache
+        let user = userCache.get(searchValue);
 
-        if (!users.length) {
-            return res.status(404).json({ message: "Username or email not found!" });
+        if (!user){
+             // Fetch user from DB
+             const users = await executeQuery(
+                `SELECT * FROM users WHERE ${searchField} = ?`,
+                [searchValue]
+            );
+
+            if (!users.length) {
+                return res.status(404).json({ message: "Username or email not found!" });
+            }
+           user = users[0];
+            userCache.set(searchValue, user)
+
         }
-
-        const user = users[0];
 
         // Compare passwords asynchronously
         const passwordMatch = await bcrypt.compare(password, user.password);
@@ -157,14 +166,14 @@ export const login = async (req, res) => {
         // Generate JWT token
         const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY, { expiresIn: '3d' });
 
-        res.cookie("accessToken", token, { 
+        res.cookie("accessToken", token, {
             httpOnly: false,
             sameSite: 'None',
             secure: true,
-            path: "/",  
-            maxAge: 3 * 24 * 60 * 60 * 1000 
-        }).status(200).json({ 
-            message: "User logged in successfully", user 
+            path: "/",
+            maxAge: 3 * 24 * 60 * 60 * 1000
+        }).status(200).json({
+            message: "User logged in successfully", user
         });
         const loginTime = new Date().toLocaleString(); // Get current date and time
         const mailOptions = {
@@ -194,7 +203,7 @@ export const login = async (req, res) => {
                 console.log("Email sent:", info.response);
             }
         });
-        
+
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Internal server error" });

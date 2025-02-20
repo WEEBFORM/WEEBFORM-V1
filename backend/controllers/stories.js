@@ -5,6 +5,26 @@ import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3, generateS3Url, s3KeyFromUrl } from "../middlewares/S3bucketConfig.js";
 import { cpUpload } from "../middlewares/storage.js";
 
+// Utility function for deleting S3 objects
+const deleteS3Object = async (url) => {
+  const key = s3KeyFromUrl(url);
+  if (!key) {
+    console.warn("Invalid S3 object URL, skipping deletion:", url); // Use warn for non-critical issues
+    return;
+  }
+  try {
+    const deleteCommand = new DeleteObjectCommand({
+      Bucket: process.env.BUCKET_NAME,
+      Key: key,
+    });
+    await s3.send(deleteCommand);
+    console.log("S3 object deleted successfully:", key);
+  } catch (s3Error) {
+    console.error("Error deleting S3 object:", key, s3Error);
+    throw s3Error; // Re-throw to be caught in the calling function
+  }
+};
+
 // API TO CREATE NEW STORY
 export const addStory = (req, res) => {
   authenticateUser(req, res, () => {
@@ -119,18 +139,59 @@ export const viewStory = (req, res) => {
 };
 
 // STORY EXPIRATION FUNCTION
-export default function deleteOldData() {
-  const q = "DELETE FROM stories WHERE createdAt < DATE_SUB(NOW(), INTERVAL 1 DAY)";
-  db.query(q, (err, result) => {
-    if (err) {
-      console.error("Error deleting old stories:", err);
-    } else {
-      console.log("Old stories deleted successfully.");
-    }
-  });
+async function deleteOldData() {
+  const twentyFourHoursAgo = moment().subtract(1, 'days').format("YYYY-MM-DD HH:mm:ss");
+  const selectQuery = "SELECT id, storyImage, storyVideo FROM stories WHERE createdAt < ?";
+
+  try {
+    // Step 1: Select old stories
+    db.query(selectQuery, [twentyFourHoursAgo], async (err, results) => {
+      if (err) {
+        console.error("Error selecting old stories:", err);
+        return; // Exit, don't proceed to delete
+      }
+
+      // Step 2: Iterate over old stories and delete S3 objects
+      for (const story of results) {
+        try {
+          if (story.storyImage) {
+            // Split multiple images into array of URLs
+            const imageUrls = story.storyImage.split(",");
+            for (const imageUrl of imageUrls) {
+              await deleteS3Object(imageUrl);
+            }
+          }
+          if (story.storyVideo) {
+            // Split multiple videos into array of URLs
+            const videoUrls = story.storyVideo.split(",");
+            for (const videoUrl of videoUrls) {
+              await deleteS3Object(videoUrl);
+            }
+          }
+
+          // Step 3: Delete story from the database
+          const deleteQuery = "DELETE FROM stories WHERE id = ?";
+          db.query(deleteQuery, [story.id], (deleteErr, deleteResult) => {
+            if (deleteErr) {
+              console.error(`Error deleting story ${story.id} from database:`, deleteErr);
+            } else {
+              console.log(`Story ${story.id} deleted from database.`);
+            }
+          });
+        } catch (s3Error) {
+          console.error(`Error deleting S3 objects for story ${story.id}:`, s3Error);
+          // Continue to the next story if deletion fails
+        }
+      }
+    });
+  } catch (error) {
+    console.error("An unexpected error occurred:", error);
+  }
 }
 
-setInterval(deleteOldData, 24 * 60 * 60 * 1000);
+// Run the function every 24 hours (in milliseconds)
+const twentyFourHours = 24 * 60 * 60 * 1000;
+setInterval(deleteOldData, twentyFourHours);
 
 // API TO DELETE STORY
 export const deleteStory = (req, res) => {
@@ -150,28 +211,21 @@ export const deleteStory = (req, res) => {
 
       const { imageUrl, videoUrl } = data[0];
 
-      const deleteS3Object = async (url) => {
-        const key = s3KeyFromUrl(url);
-        if (!key) {
-          console.error("Invalid S3 object URL:", url);
-          return null;
-        }
-        try {
-          const deleteCommand = new DeleteObjectCommand({
-            Bucket: process.env.BUCKET_NAME,
-            Key: key,
-          });
-          await s3.send(deleteCommand);
-          console.log("S3 object deleted successfully:", key);
-        } catch (s3Error) {
-          console.error("Error deleting S3 object:", s3Error);
-          throw new Error("Error deleting file from S3");
-        }
-      };
-
       try {
-        if (imageUrl) await deleteS3Object(imageUrl);
-        if (videoUrl) await deleteS3Object(videoUrl);
+        if (imageUrl) {
+          // Split multiple images into array of URLs
+          const imageUrls = imageUrl.split(",");
+          for (const imgUrl of imageUrls) {
+            await deleteS3Object(imgUrl);
+          }
+        }
+        if (videoUrl) {
+          // Split multiple videos into array of URLs
+          const videoUrls = videoUrl.split(",");
+          for (const vidUrl of videoUrls) {
+            await deleteS3Object(vidUrl);
+          }
+        }
       } catch (deleteError) {
         return res.status(500).json({ message: "Error deleting S3 objects", error: deleteError });
       }

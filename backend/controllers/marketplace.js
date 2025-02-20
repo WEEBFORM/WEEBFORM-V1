@@ -1,5 +1,5 @@
 import {db} from "../config/connectDB.js"
-import errorHandler from "../middlewares/errors.mjs";
+import errorHandler from "../middlewares/Transformer.js";
 import {authenticateUser} from "../middlewares/verify.mjs"
 import moment from "moment"
 import multer from "multer";

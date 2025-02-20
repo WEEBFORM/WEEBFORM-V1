@@ -3,397 +3,275 @@ import { authenticateUser } from "../../middlewares/verify.mjs";
 import moment from "moment";
 import { cpUpload } from "../../middlewares/storage.js";
 import multer from "multer";
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { s3, generateS3Url, s3KeyFromUrl, decodeNestedKey } from "../../middlewares/S3bucketConfig.js";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
+import NodeCache from 'node-cache';
 
-// API TO CREATE NEW POST
-export const newPost = async (req, res) => {
-    authenticateUser(req, res, () => {
-        cpUpload(req, res, async (err) => {
-            if (err instanceof multer.MulterError) {
-                return res.status(500).json({ message: "File upload error", error: err });
-            } else if (err) {
-                return res.status(500).json({ message: "Unknown error", error: err });
-            }
+const postCache = new NodeCache({ stdTTL: 300 }); // Cache posts for 5 minutes
 
-            const media = req.files["media"];
-            const uploadedMediaUrls = [];
-
-            if (media) {
-                for (const file of media) {
-                    try {
-                        const params = {
-                            Bucket: process.env.BUCKET_NAME,
-                            Key: `uploads/posts/${Date.now()}_${file.originalname}`,
-                            Body: file.buffer,
-                            ContentType: file.mimetype,
-                        };
-                        const command = new PutObjectCommand(params);
-                        await s3.send(command);
-                        uploadedMediaUrls.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`);
-                    } catch (uploadError) {
-                        console.error("Error uploading media:", uploadError);
-                        return res.status(500).json({ message: "Error uploading media to S3", error: uploadError });
-                    }
-                }
-            }
-
-            const q = "INSERT INTO posts (`userId`, `description`, `media`, `tags`, `category`, `createdAt`) VALUES (?)";
-            const values = [
-                req.user.id,
-                req.body.description,
-                uploadedMediaUrls.join(","),
-                req.body.tags,
-                req.body.category,
-                moment(Date.now()).format("YYYY-MM-DD HH:mm:ss"),
-            ];
-            db.query(q, [values], (err, post) => {
-                if (err) return res.status(500).json(err);
-                else {
-                    res.status(200).json({ message: "Post created successfully", post, values });
-                }
-            });
-        });
-    });
-};
-
-// API TO VIEW ALL POSTS
-export const allPosts = async (req, res) => {
-    authenticateUser(req, res, () => {
-        const user = req.user;
-        const searchTerm = req.query.searchTerm || ''; // Get search term from query
-        const q = `
-            SELECT 
-                p.*, 
-                u.id AS userId, 
-                u.username, 
-                u.full_name, 
-                u.profilePic,
-                COUNT(DISTINCT l.id) AS likeCount,
-                 COUNT(DISTINCT c.id) AS commentCount,
-                CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
-            FROM 
-                posts AS p
-            JOIN 
-                users AS u ON u.id = p.userId
-            LEFT JOIN 
-               likes AS l ON l.postId = p.id
-             LEFT JOIN 
-              comments AS c ON c.postId = p.id
-            LEFT JOIN
-               likes AS l2 ON l2.postId = p.id AND l2.userId = ?
-            WHERE
-               u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?
-            GROUP BY 
-                p.id, u.id
-            ORDER BY 
-                p.createdAt DESC
-        `;
-         const searchValue = `%${searchTerm}%`
-
-        db.query(q, [user.id, user.id, searchValue, searchValue, searchValue ], async (err, data) => {
-            if (err) return res.status(500).json(err);
-            const processedPosts = await Promise.all(
-                data.map(async (post) => {
-                    if (post.media) {
-                        const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
-                        try {
-                            post.media = await Promise.all(mediaKeys.map(generateS3Url));
-                        } catch (error) {
-                            console.error("Error generating media URLs:", error);
-                            post.media = null;
-                        }
-                    } 
-                    if (post.profilePic) {
-                        const profileKey = s3KeyFromUrl(post.profilePic);
-                        try {
-                            post.profilePic = await generateS3Url(profileKey);
-                        } catch (error) {
-                            console.error("Error generating profilePic URL:", error);
-                            post.profilePic = null;
-                        }
-                    }
-                    return post;
-                })
-            );
-            
-            const shuffledPosts = shufflePosts(processedPosts); // Shuffle the posts
-            res.status(200).json(shuffledPosts); // Return shuffled posts
-        });
-    });
-};
-
-// API TO VIEW POST IN USER PROFILE
-export const userPosts = async (req, res) => {
-    authenticateUser(req, res, () => {
-        const userId = req.params.id;
-        const user = req.user;
-        const searchTerm = req.query.searchTerm || ''; // Get search term from query
-         const q = `SELECT 
-            p.*, 
-            u.id AS userId,
-            u.username, 
-            u.full_name, 
-            u.profilePic, 
-             COUNT(DISTINCT l.id) AS likeCount,
-              COUNT(DISTINCT c.id) AS commentCount,
-            CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
-        FROM 
-            posts AS p
-        JOIN 
-            users AS u ON u.id = p.userId
-        LEFT JOIN 
-            likes AS l ON l.postId = p.id
-            LEFT JOIN
-               comments AS c ON c.postId = p.id
-         LEFT JOIN
-               likes AS l2 ON l2.postId = p.id AND l2.userId = ?
-        WHERE 
-            u.id = ?
-            AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
-        GROUP BY 
-            p.id, 
-            u.id, 
-            u.username, 
-            u.full_name, 
-            u.profilePic
-        ORDER BY 
-            p.createdAt DESC;`;
-          const searchValue = `%${searchTerm}%`
-        db.query(q, [user.id, user.id, userId, searchValue, searchValue, searchValue], async (err, data) => {
-            if (err) {
-                return res.status(500).json(err);
-            }
-            if (data.length === 0) {
-                return res.status(404).json('No posts yet..');
-            }
-            const processedPosts = await Promise.all(
-                data.map(async (post) => {
-                    if (post.media) {
-                        const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
-                        try {
-                            post.media = await Promise.all(mediaKeys.map(generateS3Url));
-                        } catch (error) {
-                            console.error("Error generating media URLs:", error);
-                            post.media = null;
-                        }
-                    }
-                    if (post.profilePic) {
-                        const profileKey = s3KeyFromUrl(post.profilePic);
-                        try {
-                            post.profilePic = await generateS3Url(profileKey);
-                        } catch (error) {
-                            console.error("Error generating profilePic URL:", error);
-                            post.profilePic = null;
-                        }
-                    }
-                    return post;
-                })
-            );
-           const shuffledPosts = shufflePosts(processedPosts);
-            res.status(200).json(shuffledPosts);
-        });
-    });
-};
-
-// API TO VIEW POSTS BASED ON FOLLOWING
-export const followingPosts = async (req, res) => {
-    authenticateUser(req, res, () => {
-        const user = req.user;
-        const searchTerm = req.query.searchTerm || ''; // Get search term from query
-        const q = `
-            SELECT 
-                p.*, 
-                u.id AS userId, 
-                u.username, 
-                u.full_name, 
-                u.profilePic,
-                COUNT(DISTINCT l.id) AS likeCount,
-                 COUNT(DISTINCT c.id) AS commentCount,
-                CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
-            FROM 
-                posts AS p
-            JOIN 
-                users AS u ON u.id = p.userId
-            LEFT JOIN 
-               likes AS l ON l.postId = p.id
-             LEFT JOIN 
-              comments AS c ON c.postId = p.id
-            LEFT JOIN
-               likes AS l2 ON l2.postId = p.id AND l2.userId = ?
-             LEFT JOIN reach AS r ON (p.userId = r.followed)
-                WHERE (r.follower = ? OR p.userId = ?)
-                 AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
-            GROUP BY 
-                p.id, u.id
-            ORDER BY 
-                p.createdAt DESC
-        `;
-        const searchValue = `%${searchTerm}%`
-        db.query(q, [user.id,user.id, user.id, user.id, searchValue, searchValue, searchValue], async (err, data) => {
-            if (err) {
-                return res.status(500).json(err);
-            } else {
-                const processedPosts = await Promise.all(
-                    data.map(async (post) => {
-                        if (post.media) {
-                            const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
-                            try {
-                                post.media = await Promise.all(mediaKeys.map(generateS3Url));
-                            } catch (error) {
-                                console.error("Error generating media URLs:", error);
-                                post.media = null;
-                            }
-                        }
-                        if (post.profilePic) {
-                            const profileKey = s3KeyFromUrl(post.profilePic);
-                            try {
-                                post.profilePic = await generateS3Url(profileKey);
-                            } catch (error) {
-                                console.error("Error generating profilePic URL:", error);
-                                post.profilePic = null;
-                            }
-                        }
-                        return post;
-                    })
-                );
-              const shuffledPosts = shufflePosts(processedPosts);
-                res.status(200).json(shuffledPosts);
-            }
-        });
-    });
-};
-
-// API TO VIEW POST BASED ON CATEGORY
-export const postCategory = (req, res) => {
-    authenticateUser(req, res, () => {
-        const user = req.user;
-         const searchTerm = req.query.searchTerm || ''; // Get search term from query
-          const q = `
-          SELECT 
-          p.*, 
-          u.id AS userId, 
-          u.username,
-          full_name, 
-          u.profilePic, 
-           COUNT(DISTINCT l.id) AS likeCount,
-              COUNT(DISTINCT c.id) AS commentCount,
-              CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
-        FROM 
-          posts AS p 
-        JOIN 
-          users AS u ON u.id = p.userId 
-        LEFT JOIN 
-          likes AS l ON l.postId = p.id
-           LEFT JOIN
-               comments AS c ON c.postId = p.id
-        LEFT JOIN
-               likes AS l2 ON l2.postId = p.id AND l2.userId = ?
-         WHERE 
-            p.category = ? 
-            AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
-        GROUP BY 
-            p.id, u.id 
-        ORDER BY 
-            createdAt DESC`;
-        const category = req.params.category;
-        const searchValue = `%${searchTerm}%`
-        db.query(q, [user.id,user.id, category, searchValue, searchValue, searchValue ], async (err, data) => {
-            if (err) return res.status(500).json(err);
-            if (data.length === 0) {
-                return res.status(404).json("No posts found in this category.");
-            }
-            const processedPosts = await Promise.all(
-                data.map(async (post) => {
-                    if (post.media) {
-                        const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
-                        try {
-                            post.media = await Promise.all(mediaKeys.map(generateS3Url));
-                        } catch (error) {
-                            console.error("Error generating media URLs:", error);
-                            post.media = null;
-                        }
-                    }
-                    if (post.profilePic) {
-                        const profileKey = s3KeyFromUrl(post.profilePic);
-                        try {
-                            post.profilePic = await generateS3Url(profileKey);
-                        } catch (error) {
-                            console.error("Error generating profilePic URL:", error);
-                            post.profilePic = null;
-                        }
-                    }
-                    return post;
-                })
-            );
-              const shuffledPosts = shufflePosts(processedPosts);
-            return res.status(200).json(shuffledPosts);
-        });
-    });
-};
-
-// API TO DELETE POST
-export const deletePost = (req, res) => {
-    authenticateUser(req, res, () => {
-        const user = req.user;
-        const getPost = "SELECT media AS mediaUrl FROM posts WHERE id = ? AND userId = ?";
-        db.query(getPost, [req.params.id, user.id], async (err, data) => {
-            if (err) {
-                return res.status(500).json({ message: "Database query error", error: err });
-            }
-            if (data.length === 0) {
-                return res.status(404).json({ message: "Post not found!" });
-            }
-            const { mediaUrl } = data[0];
-            const deleteS3Object = async (url) => {
-                const key = s3KeyFromUrl(url);
-                if (!key) {
-                    console.error("Invalid S3 object URL:", url);
-                    return null;
-                }
-                try {
-                    const deleteCommand = new DeleteObjectCommand({
-                        Bucket: process.env.BUCKET_NAME,
-                        Key: key,
-                    });
-                    await s3.send(deleteCommand);
-                    console.log("S3 object deleted successfully:", key);
-                } catch (s3Error) {
-                    console.error("Error deleting S3 object:", s3Error);
-                    throw new Error("Error deleting file from S3");
-                }
-            };
-            try {
-                if (mediaUrl) {
-                    const mediaUrls = mediaUrl.split(",");
-                    for (const url of mediaUrls) {
-                        await deleteS3Object(url);
-                    }
-                }
-            } catch (deleteError) {
-                return res.status(500).json({ message: "Error deleting S3 objects", error: deleteError });
-            }
-            const deletePostQuery = "DELETE FROM posts WHERE id = ? AND userId = ?";
-            db.query(deletePostQuery, [req.params.id, user.id], (err, result) => {
-                if (err) {
-                    return res.status(500).json({ message: "Database deletion error", error: err });
-                }
-                if (result.affectedRows > 0) {
-                    return res.status(200).json({ message: "Post deleted successfully." });
-                } else {
-                    return res.status(403).json({ message: "You can only delete your own post." });
-                }
-            });
-        });
-    });
-};
-
-// RELEVANT FUNCTIONS
-// FUNCTION TO SHUFFLE POSTS
 const shufflePosts = (array) => {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+};
+
+// API TO CREATE NEW POST
+export const newPost = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            cpUpload(req, res, async (uploadErr) => {
+                if (uploadErr instanceof multer.MulterError) {
+                    return res.status(400).json({ message: "File upload error", error: uploadErr.message });
+                } else if (uploadErr) {
+                    console.error("Unexpected error during upload:", uploadErr);
+                    return res.status(500).json({ message: "File upload failed", error: 'Unexpected error' });
+                }
+
+                const userId = req.user.id;
+                const { description, tags, category } = req.body;
+                const media = req.files && req.files["media"] ? req.files["media"] : [];
+                const uploadedMediaUrls = [];
+
+                for (const file of media) {
+                    const params = {
+                        Bucket: process.env.BUCKET_NAME,
+                        Key: `uploads/posts/${Date.now()}_${file.originalname}`,
+                        Body: file.buffer,
+                        ContentType: file.mimetype,
+                    };
+                    await s3.send(new PutObjectCommand(params));
+                    uploadedMediaUrls.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`);
+                }
+
+                const q = "INSERT INTO posts (`userId`, `description`, `media`, `tags`, `category`, `createdAt`) VALUES (?)";
+                const values = [
+                    userId,
+                    description,
+                    uploadedMediaUrls.join(","),
+                    tags,
+                    category,
+                    moment(Date.now()).format("YYYY-MM-DD HH:mm:ss"),
+                ];
+                const [result] = await db.promise().query(q, [values]);
+                const postId = result.insertId; // Assuming you want the newly inserted post ID
+                const response = { message: "Post created successfully", postId };
+                postCache.flushAll() //Invalidate cache on update
+
+                res.status(201).json(response); // Use 201 for successful creation
+            });
+        } catch (error) {
+            console.error("Error in newPost:", error);
+            res.status(500).json({ message: "Failed to create post", error });
+        }
+    });
+};
+
+// Helper function to fetch posts
+const fetchPostsData = async (q, params) => {
+    try {
+        const [rows] = await db.promise().query(q, params);
+        return rows;
+    } catch (error) {
+        console.error("Error fetching posts:", error);
+        throw new Error("DB_ERROR"); // More specific error code
+    }
+};
+
+// API TO GET ALL POSTS, FOLLOWING POSTS, AND USER POSTS (Consolidated)
+const getPosts = async (req, res, queryType) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
+        const searchTerm = req.query.searchTerm || '';
+        const searchValue = `%${searchTerm}%`;
+        let q;
+        let params = [userId, userId, searchValue, searchValue, searchValue]; // Default params
+
+        switch (queryType) {
+            case 'all':
+                q = `SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
+                    COUNT(DISTINCT l.id) AS likeCount, COUNT(DISTINCT c.id) AS commentCount,
+                    CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
+                    FROM posts AS p JOIN users AS u ON u.id = p.userId
+                    LEFT JOIN likes AS l ON l.postId = p.id LEFT JOIN comments AS c ON c.postId = p.id
+                    LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+                    WHERE (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
+                    GROUP BY p.id, u.id ORDER BY p.createdAt DESC`;
+                break;
+            case 'following':   
+                q = `SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
+                    COUNT(DISTINCT l.id) AS likeCount, COUNT(DISTINCT c.id) AS commentCount,
+                    CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
+                    FROM posts AS p JOIN users AS u ON u.id = p.userId
+                    LEFT JOIN likes AS l ON l.postId = p.id LEFT JOIN comments AS c ON c.postId = p.id
+                    LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+                    LEFT JOIN reach AS r ON (p.userId = r.followed)
+                    WHERE (r.follower = ? OR p.userId = ?)
+                    AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
+                    GROUP BY p.id, u.id ORDER BY p.createdAt DESC`;
+                params = [userId,userId, userId, userId, searchValue, searchValue, searchValue];
+                break;
+            case 'user':   
+                 q = `SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
+                    COUNT(DISTINCT l.id) AS likeCount, COUNT(DISTINCT c.id) AS commentCount,
+                    CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
+                    FROM posts AS p JOIN users AS u ON u.id = p.userId
+                    LEFT JOIN likes AS l ON l.postId = p.id LEFT JOIN comments AS c ON c.postId = p.id
+                    LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+                    WHERE u.id = ? AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
+                    GROUP BY p.id, u.id ORDER BY p.createdAt DESC`;
+                params = [userId, userId, req.params.id, searchValue, searchValue, searchValue];
+                break;
+            default:
+                return res.status(400).json({ message: "Invalid query type" });
+        }
+
+        try {
+            let cacheKey = `posts:${queryType}:${userId}:${searchTerm}`;  // Construct a cache key that includes everything
+            let cachedPosts = postCache.get(cacheKey);  // Try to retrieve from cache
+            let posts;
+
+            if (cachedPosts) {
+                posts = cachedPosts;  // Serve from cache
+                console.log("Serving posts from cache", cacheKey);
+            } else {
+            let data = await fetchPostsData(q, params);
+             posts = await Promise.all(
+                data.map(async (post) => {
+                    if (post.media) {
+                        const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
+                        try {
+                            post.media = await Promise.all(mediaKeys.map(generateS3Url));
+                        } catch (mediaErr) {
+                            console.warn("Failed to generate all media URLs:", mediaErr);
+                            post.media = null;
+                        }
+                    }
+                     if (post.profilePic) {
+                        post.profilePic = await generateS3Url(s3KeyFromUrl(post.profilePic));
+                    }
+                    return post;
+                })
+            );
+               if (queryType !=="user"){
+                     postCache.set(cacheKey, posts);   // Store results in cache
+                }
+            }
+
+            const shuffledPosts = shufflePosts(posts);  // Shuffle after fetching
+            res.status(200).json(shuffledPosts);
+        } catch (error) {
+            console.error("Error in getPosts:", error);
+            res.status(500).json({ message: "Failed to fetch posts", error });
+        }
+    });
+};
+
+// Separate handler functions for each type
+export const allPosts = (req, res) => getPosts(req, res, 'all');
+export const followingPosts = (req, res) => getPosts(req, res, 'following');
+export const userPosts = (req, res) => getPosts(req, res, 'user');
+
+// API TO VIEW POST BASED ON CATEGORY
+export const postCategory = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
+        const { category } = req.params;
+        const searchTerm = req.query.searchTerm || '';
+        const searchValue = `%${searchTerm}%`;
+
+        try {
+            const q = `SELECT p.*, u.id AS userId, u.username, full_name, u.profilePic,
+                      COUNT(DISTINCT l.id) AS likeCount, COUNT(DISTINCT c.id) AS commentCount,
+                      CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
+                    FROM posts AS p JOIN users AS u ON u.id = p.userId 
+                    LEFT JOIN likes AS l ON l.postId = p.id
+                     LEFT JOIN comments AS c ON c.postId = p.id
+                     LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+                    WHERE p.category = ? AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
+                    GROUP BY p.id, u.id 
+                    ORDER BY createdAt DESC`;
+            const [data] = await db.promise().query(q, [userId, userId, category, searchValue, searchValue, searchValue]);
+
+            if (data.length === 0) {
+                return res.status(404).json("No posts found in this category.");
+            }
+            const posts = await Promise.all(
+                data.map(async (post) => {
+                    if (post.media) {
+                        const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
+                        try {
+                            post.media = await Promise.all(mediaKeys.map(generateS3Url));
+                        } catch (mediaErr) {
+                            console.warn("Failed to generate all media URLs:", mediaErr);
+                            post.media = null;
+                        }
+                    }
+                     if (post.profilePic) {
+                        post.profilePic = await generateS3Url(s3KeyFromUrl(post.profilePic));
+                    }
+                    return post;
+                })
+            );
+
+            res.status(200).json(posts);
+        } catch (err) {
+            console.error("Error fetching posts by category:", err);
+            res.status(500).json({ message: "Failed to fetch posts", error: err });
+        }
+    });
+};
+
+// API TO DELETE POST
+export const deletePost = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
+        const postId = req.params.id;
+        try {
+            const getPost = "SELECT media AS mediaUrl FROM posts WHERE id = ? AND userId = ?";
+            const [data] = await db.promise().query(getPost, [postId, userId]);
+
+            if (!data.length) {
+                return res.status(404).json({ message: "Post not found!" });
+            }
+
+            const { mediaUrl } = data[0];
+            const mediaUrls = mediaUrl ? mediaUrl.split(",") : [];
+
+            // Delete media from S3 concurrently
+            await Promise.all(mediaUrls.map(async (url) => {
+                const key = s3KeyFromUrl(url);
+                if (key) {
+                    const deleteParams = {
+                        Bucket: process.env.BUCKET_NAME,
+                        Key: key,
+                    };
+                    try {
+                        await s3.send(new DeleteObjectCommand(deleteParams));
+                        console.log("Deleted S3 object:", key);
+                    } catch (s3Error) {
+                        console.error("S3 deletion error for key:", key, s3Error);
+                    }
+                } else {
+                    console.warn("Invalid S3 URL, skipping deletion:", url);
+                }
+            }));
+
+            // Delete the post from database
+            const deletePostQuery = "DELETE FROM posts WHERE id = ? AND userId = ?";
+            const [result] = await db.promise().query(deletePostQuery, [postId, userId]);
+
+            if (result.affectedRows > 0) {
+                 postCache.flushAll() //Invalidate cache on update
+
+                return res.status(200).json({ message: "Post deleted successfully." });
+            } else {
+                return res.status(403).json({ message: "You can only delete your own post." });
+            }
+        } catch (err) {
+            console.error("Failed to delete post:", err);
+            return res.status(500).json({ message: "Failed to delete post", error: err });
+        }
+    });
 };

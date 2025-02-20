@@ -1,0 +1,1331 @@
+[2025-02-13 10:04:12] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:04:34] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:04:37] [31merror[39m: Worker 19920 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 26664 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 16848 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 5296 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 27276 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 19476 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 31896 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 17692 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 28760 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 28180 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 4152 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 16524 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 15016 died, spawning a new one.
+[2025-02-13 10:04:37] [31merror[39m: Worker 17972 died, spawning a new one.
+[2025-02-13 10:04:38] [31merror[39m: Worker 1668 died, spawning a new one.
+[2025-02-13 10:04:38] [31merror[39m: Worker 25360 died, spawning a new one.
+[2025-02-13 10:04:40] [31merror[39m: Worker 12956 died, spawning a new one.
+[2025-02-13 10:04:40] [31merror[39m: Worker 6460 died, spawning a new one.
+[2025-02-13 10:04:40] [31merror[39m: Worker 23960 died, spawning a new one.
+[2025-02-13 10:04:40] [31merror[39m: Worker 20344 died, spawning a new one.
+[2025-02-13 10:04:40] [31merror[39m: Worker 12804 died, spawning a new one.
+[2025-02-13 10:04:41] [31merror[39m: Worker 23612 died, spawning a new one.
+[2025-02-13 10:04:41] [31merror[39m: Worker 20408 died, spawning a new one.
+[2025-02-13 10:04:41] [31merror[39m: Worker 18004 died, spawning a new one.
+[2025-02-13 10:04:41] [31merror[39m: Worker 5444 died, spawning a new one.
+[2025-02-13 10:04:41] [31merror[39m: Worker 18388 died, spawning a new one.
+[2025-02-13 10:04:41] [31merror[39m: Worker 30876 died, spawning a new one.
+[2025-02-13 10:04:41] [31merror[39m: Worker 18528 died, spawning a new one.
+[2025-02-13 10:04:41] [31merror[39m: Worker 13916 died, spawning a new one.
+[2025-02-13 10:04:41] [31merror[39m: Worker 30308 died, spawning a new one.
+[2025-02-13 10:04:41] [31merror[39m: Worker 24204 died, spawning a new one.
+[2025-02-13 10:04:41] [31merror[39m: Worker 16452 died, spawning a new one.
+[2025-02-13 10:04:43] [31merror[39m: Worker 13176 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 5740 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 20104 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 17380 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 25704 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 27144 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 12264 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 16192 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 15068 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 30444 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 30744 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 19544 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 2688 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 22476 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 27004 died, spawning a new one.
+[2025-02-13 10:04:44] [31merror[39m: Worker 31296 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 23368 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 31184 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 19508 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 5172 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 20580 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 27308 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 29308 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 32708 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 9924 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 26404 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 16916 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 25008 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 11792 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 27056 died, spawning a new one.
+[2025-02-13 10:04:47] [31merror[39m: Worker 31112 died, spawning a new one.
+[2025-02-13 10:04:48] [31merror[39m: Worker 28980 died, spawning a new one.
+[2025-02-13 10:04:50] [31merror[39m: Worker 31864 died, spawning a new one.
+[2025-02-13 10:04:50] [31merror[39m: Worker 21096 died, spawning a new one.
+[2025-02-13 10:04:50] [31merror[39m: Worker 20692 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 32604 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 3036 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 15500 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 24528 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 28976 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 20124 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 17904 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 25460 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 9832 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 13464 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 9460 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 30960 died, spawning a new one.
+[2025-02-13 10:04:51] [31merror[39m: Worker 22148 died, spawning a new one.
+[2025-02-13 10:04:53] [31merror[39m: Worker 28668 died, spawning a new one.
+[2025-02-13 10:04:53] [31merror[39m: Worker 3052 died, spawning a new one.
+[2025-02-13 10:04:53] [31merror[39m: Worker 11184 died, spawning a new one.
+[2025-02-13 10:04:53] [31merror[39m: Worker 27336 died, spawning a new one.
+[2025-02-13 10:04:53] [31merror[39m: Worker 32300 died, spawning a new one.
+[2025-02-13 10:04:53] [31merror[39m: Worker 12440 died, spawning a new one.
+[2025-02-13 10:04:53] [31merror[39m: Worker 24468 died, spawning a new one.
+[2025-02-13 10:04:56] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:04:59] [32minfo[39m: Worker 30340 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 30636 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 16848 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 28776 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 16364 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 9640 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 32028 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 15576 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 28176 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 28100 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 876 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 29960 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 27872 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 24756 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 6664 started
+[2025-02-13 10:04:59] [32minfo[39m: Worker 14468 started
+[2025-02-13 10:19:14] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:19:16] [32minfo[39m: Worker 17960 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 22056 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 18460 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 15272 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 28552 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 30832 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 8568 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 27632 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 9824 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 28232 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 8796 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 23916 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 928 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 23996 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 6872 started
+[2025-02-13 10:19:17] [32minfo[39m: Worker 28720 started
+[2025-02-13 10:20:14] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:20:17] [32minfo[39m: Worker 20668 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 25640 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 11072 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 2948 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 32584 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 25592 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 16604 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 15280 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 24980 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 29380 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 11764 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 30960 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 30116 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 32648 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 1828 started
+[2025-02-13 10:20:17] [32minfo[39m: Worker 21564 started
+[2025-02-13 10:27:12] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:27:13] [31merror[39m: Worker 17692 died, spawning a new one.
+[2025-02-13 10:27:13] [31merror[39m: Worker 28556 died, spawning a new one.
+[2025-02-13 10:27:13] [31merror[39m: Worker 21084 died, spawning a new one.
+[2025-02-13 10:27:13] [31merror[39m: Worker 13176 died, spawning a new one.
+[2025-02-13 10:27:13] [31merror[39m: Worker 27940 died, spawning a new one.
+[2025-02-13 10:27:13] [31merror[39m: Worker 25720 died, spawning a new one.
+[2025-02-13 10:27:13] [31merror[39m: Worker 4916 died, spawning a new one.
+[2025-02-13 10:27:13] [31merror[39m: Worker 7100 died, spawning a new one.
+[2025-02-13 10:27:13] [31merror[39m: Worker 24404 died, spawning a new one.
+[2025-02-13 10:27:15] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:27:17] [32minfo[39m: Worker 10220 started
+[2025-02-13 10:27:17] [32minfo[39m: Worker 2760 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 4472 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 31520 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 2228 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 29580 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 19192 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 13072 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 11268 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 17096 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 32224 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 10200 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 11512 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 11864 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 13464 started
+[2025-02-13 10:27:18] [32minfo[39m: Worker 29064 started
+[2025-02-13 10:27:47] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:27:50] [32minfo[39m: Worker 3528 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 31888 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 26836 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 11284 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 17420 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 32336 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 31012 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 32504 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 28408 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 28832 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 28980 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 27512 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 26864 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 7856 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 13584 started
+[2025-02-13 10:27:50] [32minfo[39m: Worker 6484 started
+[2025-02-13 10:30:49] [31merror[39m: Unexpected token 'O', "OK" is not valid JSON
+[2025-02-13 10:31:32] [31merror[39m: Unexpected token 'O', "OK" is not valid JSON
+[2025-02-13 10:31:58] [31merror[39m: Unexpected token 'O', "OK" is not valid JSON
+[2025-02-13 10:32:09] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:32:09] [31merror[39m: Unexpected token 'O', "OK" is not valid JSON
+[2025-02-13 10:32:11] [32minfo[39m: Worker 21096 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 9536 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 5212 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 19476 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 31596 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 14764 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 27260 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 5988 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 26632 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 32044 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 27508 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 1828 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 19996 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 23980 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 23056 started
+[2025-02-13 10:32:12] [32minfo[39m: Worker 26368 started
+[2025-02-13 10:32:54] [31merror[39m: Unexpected token 'O', "OK" is not valid JSON
+[2025-02-13 10:33:43] [31merror[39m: Unexpected token 'O', "OK" is not valid JSON
+[2025-02-13 10:38:23] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:38:25] [32minfo[39m: Worker 26708 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 15924 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 20692 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 27068 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 12492 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 26876 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 11036 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 10936 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 27768 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 31944 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 18552 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 22116 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 16288 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 31364 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 13196 started
+[2025-02-13 10:38:25] [32minfo[39m: Worker 5604 started
+[2025-02-13 10:41:00] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:41:03] [32minfo[39m: Worker 30104 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 21680 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 31188 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 13120 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 3616 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 7968 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 32488 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 17576 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 12340 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 10112 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 16364 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 31664 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 31148 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 20376 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 27852 started
+[2025-02-13 10:41:03] [32minfo[39m: Worker 7620 started
+[2025-02-13 10:41:13] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:41:15] [32minfo[39m: Worker 26448 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 11324 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 32720 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 24484 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 23980 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 8796 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 27260 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 24528 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 25456 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 9484 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 20056 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 28652 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 12304 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 27308 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 3492 started
+[2025-02-13 10:41:15] [32minfo[39m: Worker 26372 started
+[2025-02-13 10:42:05] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:42:07] [32minfo[39m: Worker 23916 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 19980 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 24212 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 15336 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 25540 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 32236 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 32496 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 10324 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 28744 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 9892 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 25920 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 22636 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 29576 started
+[2025-02-13 10:42:07] [32minfo[39m: Worker 31304 started
+[2025-02-13 10:42:08] [32minfo[39m: Worker 29832 started
+[2025-02-13 10:42:08] [32minfo[39m: Worker 31440 started
+[2025-02-13 10:46:45] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:46:47] [32minfo[39m: Worker 16540 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 29080 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 18304 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 27508 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 30300 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 28796 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 8716 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 21684 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 32492 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 1812 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 15400 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 20524 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 20388 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 21260 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 26436 started
+[2025-02-13 10:46:47] [32minfo[39m: Worker 23152 started
+[2025-02-13 10:48:49] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:48:51] [32minfo[39m: Worker 25964 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 17896 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 20272 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 17932 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 30056 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 26552 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 22932 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 28556 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 22256 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 22168 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 23720 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 23728 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 22176 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 16792 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 31288 started
+[2025-02-13 10:48:51] [32minfo[39m: Worker 29460 started
+[2025-02-13 10:51:31] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:51:33] [32minfo[39m: Worker 28804 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 15688 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 25504 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 31032 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 19664 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 22712 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 23556 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 31324 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 11268 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 2300 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 17116 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 7796 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 31516 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 32084 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 28184 started
+[2025-02-13 10:51:33] [32minfo[39m: Worker 10140 started
+[2025-02-13 10:53:59] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:54:01] [32minfo[39m: Worker 13848 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 30540 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 30608 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 29752 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 22224 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 22748 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 26720 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 6080 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 31896 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 28080 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 7880 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 14736 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 16288 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 30012 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 25628 started
+[2025-02-13 10:54:01] [32minfo[39m: Worker 32436 started
+[2025-02-13 10:54:18] [32minfo[39m: Server running on port 8000
+[2025-02-13 10:54:20] [32minfo[39m: Worker 15988 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 28956 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 30620 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 14304 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 16368 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 20584 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 26908 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 18304 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 19412 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 26496 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 28612 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 29624 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 12932 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 29792 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 32076 started
+[2025-02-13 10:54:20] [32minfo[39m: Worker 30976 started
+[2025-02-13 11:05:11] [32minfo[39m: Server running on port 8000
+[2025-02-13 11:05:13] [32minfo[39m: Worker 28044 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 24584 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 32348 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 22288 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 24340 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 24476 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 21068 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 31800 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 19304 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 9800 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 27892 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 15232 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 18560 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 10488 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 22920 started
+[2025-02-13 11:05:13] [32minfo[39m: Worker 20312 started
+[2025-02-13 11:05:53] [32minfo[39m: Server running on port 8000
+[2025-02-13 11:05:55] [32minfo[39m: Worker 30516 started
+[2025-02-13 11:05:55] [32minfo[39m: Worker 24132 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 30196 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 25896 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 1924 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 30776 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 17068 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 30048 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 27436 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 15088 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 18912 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 7616 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 20340 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 4544 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 17960 started
+[2025-02-13 11:05:56] [32minfo[39m: Worker 19576 started
+[2025-02-13 11:06:06] [32minfo[39m: Server running on port 8000
+[2025-02-13 11:06:08] [32minfo[39m: Worker 21104 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 15836 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 23856 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 30744 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 30260 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 24760 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 29088 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 5296 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 29144 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 32764 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 29864 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 3696 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 21296 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 25460 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 7796 started
+[2025-02-13 11:06:08] [32minfo[39m: Worker 27860 started
+[2025-02-13 11:06:20] [32minfo[39m: Server running on port 8000
+[2025-02-13 11:06:22] [32minfo[39m: Worker 20924 started
+[2025-02-13 11:06:22] [32minfo[39m: Worker 26296 started
+[2025-02-13 11:06:22] [32minfo[39m: Worker 12868 started
+[2025-02-13 11:06:22] [32minfo[39m: Worker 26636 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 16048 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 17924 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 28796 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 29968 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 26876 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 19152 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 19232 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 9652 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 31144 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 32420 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 340 started
+[2025-02-13 11:06:23] [32minfo[39m: Worker 11688 started
+[2025-02-13 11:06:30] [32minfo[39m: Server running on port 8000
+[2025-02-13 11:06:32] [32minfo[39m: Worker 25412 started
+[2025-02-13 11:06:32] [32minfo[39m: Worker 24972 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 27932 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 5308 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 17852 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 31868 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 5132 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 24564 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 22284 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 11404 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 11996 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 31368 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 24948 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 3628 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 27808 started
+[2025-02-13 11:06:33] [32minfo[39m: Worker 31148 started
+[2025-02-13 11:07:46] [32minfo[39m: Server running on port 8000
+[2025-02-13 11:07:48] [32minfo[39m: Worker 4152 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 3668 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 18956 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 5616 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 29148 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 22592 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 3708 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 24268 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 14420 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 18860 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 31692 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 22144 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 32436 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 4876 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 17928 started
+[2025-02-13 11:07:48] [32minfo[39m: Worker 16360 started
+[2025-02-13 11:08:01] [32minfo[39m: Server running on port 8000
+[2025-02-13 11:08:04] [32minfo[39m: Worker 21888 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 20976 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 22056 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 20972 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 28608 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 26840 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 8380 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 12860 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 23280 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 24176 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 23996 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 29692 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 19828 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 26260 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 15936 started
+[2025-02-13 11:08:04] [32minfo[39m: Worker 31380 started
+[2025-02-13 11:08:30] [32minfo[39m: Server running on port 8000
+[2025-02-13 11:08:33] [32minfo[39m: Worker 30392 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 24520 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 30224 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 16752 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 16856 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 30340 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 31276 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 30640 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 27724 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 29552 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 21824 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 25964 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 15416 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 9824 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 9852 started
+[2025-02-13 11:08:33] [32minfo[39m: Worker 2836 started
+[2025-02-13 11:09:49] [32minfo[39m: Server running on port 8000
+[2025-02-13 11:09:51] [32minfo[39m: Worker 28816 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 1668 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 29704 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 29444 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 30188 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 26392 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 9820 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 23928 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 25200 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 4988 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 27900 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 12340 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 32488 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 15296 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 19356 started
+[2025-02-13 11:09:51] [32minfo[39m: Worker 30504 started
+[2025-02-13 11:09:55] [32minfo[39m: Server running on port 8000
+[2025-02-13 11:09:57] [32minfo[39m: Worker 19568 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 3668 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 5864 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 6084 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 2336 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 4876 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 27516 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 30756 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 32704 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 17116 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 25764 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 30456 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 18420 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 12272 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 18956 started
+[2025-02-13 11:09:57] [32minfo[39m: Worker 22700 started
+[2025-02-13 11:13:37] [32minfo[39m: Master 28596 is running
+[2025-02-13 11:13:37] [32minfo[39m: Database connection established.
+[2025-02-13 11:13:37] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-13 11:13:39] [32minfo[39m: Worker 20040 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 20112 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 19752 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 28656 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 28300 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 27276 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 18452 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 27932 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 1620 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 29244 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 8496 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 10220 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 5224 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 20888 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 27900 started
+[2025-02-13 11:13:39] [32minfo[39m: Worker 24264 started
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Worker 20040 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Worker 20112 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Worker 19752 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Worker 28656 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Worker 28300 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Worker 27276 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Worker 29244 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Worker 8496 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 13:13:50] [31merror[39m: Worker 20888 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Worker 24264 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Worker 5224 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Worker 10220 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Worker 27932 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Worker 27900 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Worker 18452 died with code 1, spawning a new one...
+[2025-02-13 13:13:50] [31merror[39m: Worker 1620 died with code 1, spawning a new one...
+[2025-02-13 13:13:52] [32minfo[39m: Worker 4428 started
+[2025-02-13 13:13:52] [32minfo[39m: Worker 10068 started
+[2025-02-13 13:13:52] [32minfo[39m: Worker 15372 started
+[2025-02-13 13:13:52] [32minfo[39m: Worker 13940 started
+[2025-02-13 13:13:52] [32minfo[39m: Worker 29224 started
+[2025-02-13 13:13:53] [32minfo[39m: Worker 2428 started
+[2025-02-13 13:13:53] [32minfo[39m: Worker 28364 started
+[2025-02-13 13:13:53] [32minfo[39m: Worker 29376 started
+[2025-02-13 13:13:53] [32minfo[39m: Worker 22504 started
+[2025-02-13 13:13:53] [32minfo[39m: Worker 12868 started
+[2025-02-13 13:13:53] [32minfo[39m: Worker 31600 started
+[2025-02-13 13:13:53] [32minfo[39m: Worker 19328 started
+[2025-02-13 13:13:53] [32minfo[39m: Worker 16312 started
+[2025-02-13 13:13:53] [32minfo[39m: Worker 31728 started
+[2025-02-13 13:13:53] [32minfo[39m: Worker 32268 started
+[2025-02-13 13:13:53] [32minfo[39m: Worker 26448 started
+[2025-02-13 13:25:14] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 19:15:25] [32minfo[39m: Master 25000 is running
+[2025-02-13 19:15:25] [32minfo[39m: Database connection established.
+[2025-02-13 19:15:25] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-13 19:15:31] [32minfo[39m: Worker 24300 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 18456 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 4472 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 17432 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 26528 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 30252 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 21000 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 30212 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 15052 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 13232 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 24864 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 28140 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 24468 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 28912 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 10196 started
+[2025-02-13 19:15:33] [32minfo[39m: Worker 24072 started
+[2025-02-13 21:43:45] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 21:43:45] [31merror[39m: Worker 26528 died with code 1, spawning a new one...
+[2025-02-13 21:43:45] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 21:43:45] [31merror[39m: Worker 13232 died with code 1, spawning a new one...
+[2025-02-13 21:43:45] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 21:43:45] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 21:43:45] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-13 23:17:08] [32minfo[39m: Master 32968 is running
+[2025-02-13 23:17:09] [32minfo[39m: Database connection established.
+[2025-02-13 23:17:09] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-13 23:17:12] [32minfo[39m: Worker 12968 started
+[2025-02-13 23:17:12] [32minfo[39m: Worker 18208 started
+[2025-02-13 23:17:12] [32minfo[39m: Worker 29080 started
+[2025-02-13 23:17:12] [32minfo[39m: Worker 30592 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 1496 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 24716 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 14828 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 30980 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 11748 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 30292 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 32368 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 28092 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 33552 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 17080 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 25256 started
+[2025-02-13 23:17:13] [32minfo[39m: Worker 32580 started
+[2025-02-14 00:22:04] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-14 00:28:53] [32minfo[39m: Master 33224 is running
+[2025-02-14 00:28:53] [32minfo[39m: Database connection established.
+[2025-02-14 00:28:53] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-14 00:28:54] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.76.178' (using password: YES)
+[2025-02-14 00:29:27] [32minfo[39m: Master 16396 is running
+[2025-02-14 00:29:27] [32minfo[39m: Database connection established.
+[2025-02-14 00:29:27] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-14 00:29:28] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.76.178' (using password: YES)
+[2025-02-15 15:38:53] [32minfo[39m: Master 24420 is running
+[2025-02-15 15:38:53] [32minfo[39m: Database connection established.
+[2025-02-15 15:38:53] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-15 15:38:54] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.113.74' (using password: YES)
+[2025-02-15 15:39:26] [32minfo[39m: Master 32856 is running
+[2025-02-15 15:39:26] [32minfo[39m: Database connection established.
+[2025-02-15 15:39:26] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-15 15:39:30] [32minfo[39m: Worker 36056 started
+[2025-02-15 15:39:31] [32minfo[39m: Worker 30504 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 23236 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 16040 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 35024 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 36608 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 35512 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 35016 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 21700 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 29044 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 35712 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 28808 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 35240 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 19948 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 12652 started
+[2025-02-15 15:39:33] [32minfo[39m: Worker 35068 started
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-15 15:46:03] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-17 08:11:51] [32minfo[39m: Master 33528 is running
+[2025-02-17 08:11:51] [32minfo[39m: Database connection established.
+[2025-02-17 08:11:51] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-17 08:11:52] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.57.225' (using password: YES)
+[2025-02-17 08:11:56] [32minfo[39m: Master 10040 is running
+[2025-02-17 08:11:56] [32minfo[39m: Database connection established.
+[2025-02-17 08:11:56] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-17 08:11:57] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.57.225' (using password: YES)
+[2025-02-17 08:11:59] [32minfo[39m: Master 8456 is running
+[2025-02-17 08:11:59] [32minfo[39m: Database connection established.
+[2025-02-17 08:11:59] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-17 08:12:00] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.57.225' (using password: YES)
+[2025-02-18 12:00:29] [32minfo[39m: Master 35424 is running
+[2025-02-18 12:00:29] [32minfo[39m: Database connection established.
+[2025-02-18 12:00:29] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 12:00:30] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'197.210.84.62' (using password: YES)
+[2025-02-18 12:01:06] [32minfo[39m: Master 27856 is running
+[2025-02-18 12:01:06] [32minfo[39m: Database connection established.
+[2025-02-18 12:01:06] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 12:01:12] [32minfo[39m: Worker 15368 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 23612 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 40996 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 29348 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 26216 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 36236 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 39016 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 4228 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 13960 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 35048 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 19888 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 41208 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 40980 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 41020 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 28888 started
+[2025-02-18 12:01:14] [32minfo[39m: Worker 35908 started
+[2025-02-18 13:26:44] [32minfo[39m: Master 18984 is running
+[2025-02-18 13:26:44] [32minfo[39m: Database connection established.
+[2025-02-18 13:26:44] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 13:26:47] [32minfo[39m: Worker 13200 started
+[2025-02-18 13:26:47] [32minfo[39m: Worker 21076 started
+[2025-02-18 13:26:47] [32minfo[39m: Worker 21012 started
+[2025-02-18 13:26:47] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.69.177' (using password: YES)
+[2025-02-18 13:28:57] [32minfo[39m: Master 1824 is running
+[2025-02-18 13:28:57] [32minfo[39m: Database connection established.
+[2025-02-18 13:28:57] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 13:28:59] [32minfo[39m: Worker 17784 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 12452 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 20092 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 9452 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 1424 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 21476 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 18924 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 14532 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 6456 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 7772 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 15104 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 12504 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 8720 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 21008 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 21304 started
+[2025-02-18 13:28:59] [32minfo[39m: Worker 3780 started
+[2025-02-18 13:37:38] [32minfo[39m: Master 19532 is running
+[2025-02-18 13:37:38] [32minfo[39m: Database connection established.
+[2025-02-18 13:37:38] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 13:37:39] [32minfo[39m: Master 21352 is running
+[2025-02-18 13:37:39] [32minfo[39m: Database connection established.
+[2025-02-18 13:37:39] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 13:37:41] [32minfo[39m: Worker 10292 started
+[2025-02-18 13:37:41] [32minfo[39m: Worker 13656 started
+[2025-02-18 13:37:41] [32minfo[39m: Worker 17680 started
+[2025-02-18 13:37:41] [32minfo[39m: Worker 6780 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 17776 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 5636 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 15028 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 21380 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 7592 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 18276 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 18512 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 7880 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 9008 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 20612 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 6768 started
+[2025-02-18 13:37:42] [32minfo[39m: Worker 11844 started
+[2025-02-18 13:38:02] [32minfo[39m: Master 12712 is running
+[2025-02-18 13:38:02] [32minfo[39m: Database connection established.
+[2025-02-18 13:38:02] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 13:38:04] [32minfo[39m: Worker 19836 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 1784 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 21060 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 17984 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 7972 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 20020 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 6124 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 19652 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 7792 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 4632 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 11508 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 4408 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 18220 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 12000 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 1592 started
+[2025-02-18 13:38:04] [32minfo[39m: Worker 20932 started
+[2025-02-18 13:47:20] [32minfo[39m: Master 9560 is running
+[2025-02-18 13:47:20] [32minfo[39m: Database connection established.
+[2025-02-18 13:47:20] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 13:47:22] [32minfo[39m: Worker 8816 started
+[2025-02-18 13:47:22] [32minfo[39m: Worker 13280 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 23636 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 17664 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 3240 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 20772 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 4804 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 17328 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 5368 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 23424 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 24452 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 24036 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 23728 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 17916 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 7016 started
+[2025-02-18 13:47:23] [32minfo[39m: Worker 19848 started
+[2025-02-18 14:00:43] [32minfo[39m: Master 23084 is running
+[2025-02-18 14:00:43] [32minfo[39m: Database connection established.
+[2025-02-18 14:00:43] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:00:46] [32minfo[39m: Worker 6256 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 15752 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 6948 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 4420 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 5140 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 7036 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 24280 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 9276 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 20028 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 4276 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 4056 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 24412 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 11052 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 7432 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 10684 started
+[2025-02-18 14:00:46] [32minfo[39m: Worker 23904 started
+[2025-02-18 14:17:50] [32minfo[39m: Master 9104 is running
+[2025-02-18 14:17:50] [32minfo[39m: Database connection established.
+[2025-02-18 14:17:50] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:17:57] [32minfo[39m: Master 22744 is running
+[2025-02-18 14:17:57] [32minfo[39m: Database connection established.
+[2025-02-18 14:17:57] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:17:58] [31merror[39m: Worker 7400 died with code 1, spawning a new one...
+[2025-02-18 14:17:58] [31merror[39m: Worker 23328 died with code 1, spawning a new one...
+[2025-02-18 14:17:58] [31merror[39m: Worker 23280 died with code 1, spawning a new one...
+[2025-02-18 14:17:58] [31merror[39m: Worker 23992 died with code 1, spawning a new one...
+[2025-02-18 14:17:58] [31merror[39m: Worker 23284 died with code 1, spawning a new one...
+[2025-02-18 14:17:58] [31merror[39m: Worker 14192 died with code 1, spawning a new one...
+[2025-02-18 14:17:58] [31merror[39m: Worker 13680 died with code 1, spawning a new one...
+[2025-02-18 14:17:58] [31merror[39m: Worker 7032 died with code 1, spawning a new one...
+[2025-02-18 14:18:01] [32minfo[39m: Master 23660 is running
+[2025-02-18 14:18:01] [32minfo[39m: Database connection established.
+[2025-02-18 14:18:01] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:18:04] [32minfo[39m: Worker 12308 started
+[2025-02-18 14:18:04] [32minfo[39m: Worker 724 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 23040 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 24320 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 24748 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 23976 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 19012 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 19784 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 15044 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 22468 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 24832 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 24412 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 9260 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 19648 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 21464 started
+[2025-02-18 14:18:05] [32minfo[39m: Worker 25084 started
+[2025-02-18 14:18:18] [32minfo[39m: Master 25292 is running
+[2025-02-18 14:18:18] [32minfo[39m: Database connection established.
+[2025-02-18 14:18:18] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:18:21] [32minfo[39m: Worker 10144 started
+[2025-02-18 14:18:21] [32minfo[39m: Worker 6100 started
+[2025-02-18 14:18:23] [32minfo[39m: Master 25396 is running
+[2025-02-18 14:18:23] [32minfo[39m: Database connection established.
+[2025-02-18 14:18:23] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:18:24] [31merror[39m: Worker 25024 died with code 1, spawning a new one...
+[2025-02-18 14:18:24] [31merror[39m: Worker 24664 died with code 1, spawning a new one...
+[2025-02-18 14:18:24] [31merror[39m: Worker 23692 died with code 1, spawning a new one...
+[2025-02-18 14:18:24] [31merror[39m: Worker 24672 died with code 1, spawning a new one...
+[2025-02-18 14:18:24] [31merror[39m: Worker 6244 died with code 1, spawning a new one...
+[2025-02-18 14:18:24] [31merror[39m: Worker 25184 died with code 1, spawning a new one...
+[2025-02-18 14:18:26] [32minfo[39m: Master 17788 is running
+[2025-02-18 14:18:26] [32minfo[39m: Database connection established.
+[2025-02-18 14:18:26] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:18:29] [32minfo[39m: Worker 23544 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 24296 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 21256 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 23168 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 25512 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 17724 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 25448 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 11456 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 4508 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 23628 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 3304 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 24856 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 22620 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 6116 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 24464 started
+[2025-02-18 14:18:29] [32minfo[39m: Worker 24544 started
+[2025-02-18 14:19:13] [32minfo[39m: Master 24692 is running
+[2025-02-18 14:19:13] [32minfo[39m: Database connection established.
+[2025-02-18 14:19:13] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:19:16] [32minfo[39m: Worker 5732 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 25328 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 25396 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 18352 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 25188 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 9484 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 23768 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 18204 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 14700 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 25344 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 14040 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 2980 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 25012 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 9956 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 24732 started
+[2025-02-18 14:19:16] [32minfo[39m: Worker 24568 started
+[2025-02-18 14:20:18] [32minfo[39m: Master 5540 is running
+[2025-02-18 14:20:18] [32minfo[39m: Database connection established.
+[2025-02-18 14:20:18] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:20:21] [32minfo[39m: Worker 2596 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 10920 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 1376 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 18072 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 15940 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 23600 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 8960 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 1020 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 13972 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 10316 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 6696 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 18752 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 2184 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 3972 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 24304 started
+[2025-02-18 14:20:21] [32minfo[39m: Worker 18484 started
+[2025-02-18 14:21:47] [32minfo[39m: Master 6948 is running
+[2025-02-18 14:21:47] [32minfo[39m: Database connection established.
+[2025-02-18 14:21:47] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:21:50] [32minfo[39m: Worker 17644 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 2780 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 24816 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 7656 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 24020 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 9916 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 21292 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 19032 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 17664 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 4980 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 17912 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 23232 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 23148 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 19872 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 25052 started
+[2025-02-18 14:21:50] [32minfo[39m: Worker 6400 started
+[2025-02-18 14:22:43] [32minfo[39m: Master 1884 is running
+[2025-02-18 14:22:44] [32minfo[39m: Database connection established.
+[2025-02-18 14:22:44] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:22:47] [32minfo[39m: Worker 6596 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 24756 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 21480 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 23096 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 22472 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 23748 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 24884 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 17384 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 23292 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 24556 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 18888 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 25308 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 11360 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 22464 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 24904 started
+[2025-02-18 14:22:47] [32minfo[39m: Worker 25460 started
+[2025-02-18 14:26:07] [32minfo[39m: Master 25368 is running
+[2025-02-18 14:26:07] [32minfo[39m: Database connection established.
+[2025-02-18 14:26:07] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:26:11] [32minfo[39m: Worker 22744 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 24588 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 5832 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 23752 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 15596 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 11864 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 23976 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 6236 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 21256 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 13808 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 25416 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 8600 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 23760 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 4928 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 24804 started
+[2025-02-18 14:26:11] [32minfo[39m: Worker 23828 started
+[2025-02-18 14:29:33] [32minfo[39m: Master 1408 is running
+[2025-02-18 14:29:33] [32minfo[39m: Database connection established.
+[2025-02-18 14:29:33] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:29:36] [31merror[39m: Worker 4340 died with code 1, spawning a new one...
+[2025-02-18 14:29:37] [32minfo[39m: Master 5324 is running
+[2025-02-18 14:29:37] [32minfo[39m: Database connection established.
+[2025-02-18 14:29:37] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:29:40] [32minfo[39m: Worker 24480 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 24048 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 20644 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 20960 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 24292 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 25188 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 25296 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 23084 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 3024 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 4440 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 23868 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 18888 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 23928 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 21108 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 11380 started
+[2025-02-18 14:29:41] [32minfo[39m: Worker 18640 started
+[2025-02-18 14:29:44] [32minfo[39m: Master 20544 is running
+[2025-02-18 14:29:44] [32minfo[39m: Database connection established.
+[2025-02-18 14:29:44] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:29:47] [32minfo[39m: Worker 11768 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 6812 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 15460 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 10064 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 21468 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 21456 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 24396 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 13204 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 10520 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 25572 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 10228 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 25220 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 4868 started
+[2025-02-18 14:29:47] [32minfo[39m: Worker 12068 started
+[2025-02-18 14:29:48] [32minfo[39m: Worker 13972 started
+[2025-02-18 14:29:48] [32minfo[39m: Worker 18220 started
+[2025-02-18 14:51:28] [32minfo[39m: Master 4424 is running
+[2025-02-18 14:51:28] [32minfo[39m: Database connection established.
+[2025-02-18 14:51:28] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:51:31] [32minfo[39m: Worker 4124 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 23164 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 24684 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 9104 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 20736 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 25096 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 25108 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 6832 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 23360 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 13680 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 23148 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 24472 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 24888 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 23792 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 10816 started
+[2025-02-18 14:51:31] [32minfo[39m: Worker 20760 started
+[2025-02-18 14:54:26] [32minfo[39m: Master 10648 is running
+[2025-02-18 14:54:26] [32minfo[39m: Database connection established.
+[2025-02-18 14:54:26] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:54:30] [32minfo[39m: Worker 23736 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 25236 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 24404 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 20552 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 16972 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 6708 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 5140 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 24416 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 24688 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 22816 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 1784 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 23048 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 9124 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 4144 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 11484 started
+[2025-02-18 14:54:30] [32minfo[39m: Worker 5112 started
+[2025-02-18 14:55:55] [32minfo[39m: Master 10196 is running
+[2025-02-18 14:55:55] [32minfo[39m: Database connection established.
+[2025-02-18 14:55:55] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:55:58] [32minfo[39m: Worker 7592 started
+[2025-02-18 14:55:58] [32minfo[39m: Worker 23168 started
+[2025-02-18 14:55:58] [32minfo[39m: Worker 25588 started
+[2025-02-18 14:55:58] [32minfo[39m: Worker 23456 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 7792 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 18204 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 10920 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 16032 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 7568 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 15044 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 17924 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 22768 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 23052 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 10956 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 23096 started
+[2025-02-18 14:55:59] [32minfo[39m: Worker 22996 started
+[2025-02-18 14:56:19] [32minfo[39m: Master 23116 is running
+[2025-02-18 14:56:19] [32minfo[39m: Database connection established.
+[2025-02-18 14:56:19] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 14:56:22] [32minfo[39m: Worker 21480 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 16768 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 10376 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 4876 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 25336 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 2000 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 25016 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 11188 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 23224 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 25316 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 19180 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 25184 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 21148 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 3664 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 336 started
+[2025-02-18 14:56:22] [32minfo[39m: Worker 23956 started
+[2025-02-18 15:31:37] [32minfo[39m: Master 26032 is running
+[2025-02-18 15:31:37] [32minfo[39m: Database connection established.
+[2025-02-18 15:31:37] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 15:31:40] [32minfo[39m: Worker 26112 started
+[2025-02-18 15:31:40] [32minfo[39m: Worker 26156 started
+[2025-02-18 15:31:40] [32minfo[39m: Worker 26568 started
+[2025-02-18 15:31:40] [32minfo[39m: Worker 26136 started
+[2025-02-18 15:31:40] [32minfo[39m: Worker 26200 started
+[2025-02-18 15:31:40] [32minfo[39m: Worker 26520 started
+[2025-02-18 15:31:40] [32minfo[39m: Worker 26364 started
+[2025-02-18 15:31:41] [32minfo[39m: Worker 25644 started
+[2025-02-18 15:31:41] [32minfo[39m: Worker 26404 started
+[2025-02-18 15:31:41] [32minfo[39m: Worker 26176 started
+[2025-02-18 15:31:41] [32minfo[39m: Worker 25756 started
+[2025-02-18 15:31:41] [32minfo[39m: Worker 26312 started
+[2025-02-18 15:31:41] [32minfo[39m: Worker 26468 started
+[2025-02-18 15:31:41] [32minfo[39m: Worker 25720 started
+[2025-02-18 15:31:41] [32minfo[39m: Worker 25660 started
+[2025-02-18 15:31:41] [32minfo[39m: Worker 26244 started
+[2025-02-18 15:32:31] [32minfo[39m: Master 25676 is running
+[2025-02-18 15:32:31] [32minfo[39m: Database connection established.
+[2025-02-18 15:32:31] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 15:32:34] [32minfo[39m: Worker 12164 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 25524 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 26132 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 25824 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 4340 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 18348 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 25892 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 22476 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 23684 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 25096 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 24332 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 12772 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 15808 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 12252 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 25244 started
+[2025-02-18 15:32:34] [32minfo[39m: Worker 26004 started
+[2025-02-18 15:32:39] [32minfo[39m: Master 14196 is running
+[2025-02-18 15:32:39] [32minfo[39m: Database connection established.
+[2025-02-18 15:32:39] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-18 15:32:42] [32minfo[39m: Worker 2224 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 19924 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 24064 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 26620 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 26120 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 11168 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 11408 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 20356 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 3304 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 7080 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 19424 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 26268 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 26388 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 25660 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 9100 started
+[2025-02-18 15:32:42] [32minfo[39m: Worker 26464 started
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-18 19:15:08] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 01:20:28] [32minfo[39m: Master 18260 is running
+[2025-02-20 01:20:29] [32minfo[39m: Database connection established.
+[2025-02-20 01:20:29] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-20 01:20:30] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.69.30' (using password: YES)
+[2025-02-20 01:21:06] [32minfo[39m: Master 16584 is running
+[2025-02-20 01:21:06] [32minfo[39m: Database connection established.
+[2025-02-20 01:21:06] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-20 01:21:07] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.69.30' (using password: YES)
+[2025-02-20 01:21:45] [32minfo[39m: Master 20100 is running
+[2025-02-20 01:21:45] [32minfo[39m: Database connection established.
+[2025-02-20 01:21:45] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-20 01:21:49] [32minfo[39m: Worker 5180 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 2676 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 13088 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 18308 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 29464 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 13096 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 11208 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 23636 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 19888 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 25748 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 29604 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 1808 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 5648 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 3788 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 15140 started
+[2025-02-20 01:21:49] [32minfo[39m: Worker 23596 started
+[2025-02-20 11:22:56] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:56] [31merror[39m: Worker 25748 died with code 1, spawning a new one...
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 11:22:57] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 13:23:37] [32minfo[39m: Master 26220 is running
+[2025-02-20 13:23:37] [32minfo[39m: Database connection established.
+[2025-02-20 13:23:37] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-20 13:23:41] [32minfo[39m: Worker 21984 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 23860 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 29164 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 18544 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 26880 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 28732 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 28588 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 21580 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 23912 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 16768 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 18128 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 22684 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 10288 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 21632 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 14272 started
+[2025-02-20 13:23:41] [32minfo[39m: Worker 20416 started
+[2025-02-20 13:23:46] [31merror[39m: Uncaught Exception: connect ETIMEDOUT
+[2025-02-20 13:24:31] [32minfo[39m: Master 9668 is running
+[2025-02-20 13:24:31] [32minfo[39m: Database connection established.
+[2025-02-20 13:24:31] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-20 13:24:34] [32minfo[39m: Worker 12800 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 3324 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 26516 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 27776 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 2036 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 3764 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 11460 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 22032 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 20108 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 18540 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 28844 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 11824 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 14992 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 14532 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 11596 started
+[2025-02-20 13:24:34] [32minfo[39m: Worker 2236 started
+[2025-02-20 13:24:40] [31merror[39m: Uncaught Exception: connect ETIMEDOUT
+[2025-02-20 13:28:03] [32minfo[39m: Master 18640 is running
+[2025-02-20 13:28:03] [32minfo[39m: Database connection established.
+[2025-02-20 13:28:03] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-20 13:28:04] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.65.86' (using password: YES)
+[2025-02-20 13:28:51] [32minfo[39m: Master 24720 is running
+[2025-02-20 13:28:51] [32minfo[39m: Database connection established.
+[2025-02-20 13:28:51] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-20 13:28:54] [32minfo[39m: Worker 10244 started
+[2025-02-20 13:28:54] [32minfo[39m: Worker 29444 started
+[2025-02-20 13:28:54] [32minfo[39m: Worker 24412 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 24732 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 7744 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 29304 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 2152 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 18724 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 28584 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 6132 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 29280 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 4296 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 10724 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 6724 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 16736 started
+[2025-02-20 13:28:55] [32minfo[39m: Worker 2860 started
+[2025-02-20 13:35:35] [32minfo[39m: Master 2832 is running
+[2025-02-20 13:35:35] [32minfo[39m: Database connection established.
+[2025-02-20 13:35:35] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-20 13:35:36] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.103.105' (using password: YES)
+[2025-02-20 13:36:11] [32minfo[39m: Master 16976 is running
+[2025-02-20 13:36:11] [32minfo[39m: Database connection established.
+[2025-02-20 13:36:11] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-20 13:36:14] [32minfo[39m: Worker 22660 started
+[2025-02-20 13:36:15] [32minfo[39m: Worker 6756 started
+[2025-02-20 13:36:15] [32minfo[39m: Worker 10612 started
+[2025-02-20 13:36:15] [32minfo[39m: Worker 21864 started
+[2025-02-20 13:36:15] [32minfo[39m: Worker 26952 started
+[2025-02-20 13:36:16] [32minfo[39m: Worker 5856 started
+[2025-02-20 13:36:16] [32minfo[39m: Worker 25104 started
+[2025-02-20 13:36:16] [32minfo[39m: Worker 28072 started
+[2025-02-20 13:36:16] [32minfo[39m: Worker 26968 started
+[2025-02-20 13:36:16] [32minfo[39m: Worker 11288 started
+[2025-02-20 13:36:16] [32minfo[39m: Worker 10364 started
+[2025-02-20 13:36:16] [32minfo[39m: Worker 3916 started
+[2025-02-20 13:36:16] [32minfo[39m: Worker 26172 started
+[2025-02-20 13:36:16] [32minfo[39m: Worker 28824 started
+[2025-02-20 13:36:16] [32minfo[39m: Worker 4068 started
+[2025-02-20 13:36:16] [32minfo[39m: Worker 20396 started
+[2025-02-20 17:24:42] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 17:24:42] [31merror[39m: Worker 20396 died with code 1, spawning a new one...
+[2025-02-20 17:24:42] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 17:24:42] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 17:24:42] [31merror[39m: Worker 11288 died with code 1, spawning a new one...
+[2025-02-20 17:24:42] [31merror[39m: Worker 4068 died with code 1, spawning a new one...
+[2025-02-20 17:24:42] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 17:24:42] [31merror[39m: Worker 10364 died with code 1, spawning a new one...
+[2025-02-20 17:24:43] [32minfo[39m: Worker 27708 started
+[2025-02-20 17:24:43] [32minfo[39m: Worker 29840 started
+[2025-02-20 17:24:43] [32minfo[39m: Worker 18028 started
+[2025-02-20 17:24:43] [32minfo[39m: Worker 14976 started
+[2025-02-20 17:24:44] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-20 17:24:44] [31merror[39m: Worker 6756 died with code 1, spawning a new one...
+[2025-02-20 17:24:45] [32minfo[39m: Worker 25228 started
+[2025-02-20 17:24:45] [31merror[39m: Uncaught Exception: read ECONNRESET

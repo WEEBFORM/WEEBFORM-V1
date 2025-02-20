@@ -4,8 +4,8 @@ import {followUser, getFollowers, unfollowUser, getFollowing} from "../controlle
 const router = express.Router()
 
 router.post('/:followed', followUser)
-router.get('/', getFollowers)
-router.get('/:userId', getFollowing)
+router.get('/followers/:userId', getFollowers)
+router.get('/following/:userId', getFollowing)
 router.delete('/:followed', unfollowUser)
 
 
