@@ -79,13 +79,13 @@ app.use((req, res, next) => {
 });
 
 // Rate limiting
-// const apiLimiter = rateLimit({
-//     windowMs: 15 * 60 * 1000, // 15 minutes
-//     max: 100, // Limit each IP to 100 requests per window
-//     standardHeaders: true,
-//     message: 'Too many requests from this IP, please try again after 15 minutes',
-// });
-// app.use('/api', apiLimiter);
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per window
+    standardHeaders: true,
+    message: 'Too many requests from this IP, please try again after 15 minutes',
+});
+app.use('/api', apiLimiter);
 
 // CORS Configuration
 app.use((req, res, next) => {
