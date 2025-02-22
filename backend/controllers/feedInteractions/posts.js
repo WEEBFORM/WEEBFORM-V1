@@ -111,7 +111,7 @@ const getPosts = async (req, res, queryType) => {
                     AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
                     GROUP BY p.id, u.id ORDER BY p.createdAt DESC`;
                 params = [userId,userId, userId, userId, searchValue, searchValue, searchValue];
-                break;
+                break; 
             case 'user':   
                  q = `SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
                     COUNT(DISTINCT l.id) AS likeCount, COUNT(DISTINCT c.id) AS commentCount,

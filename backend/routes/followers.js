@@ -1,12 +1,11 @@
 import express from "express";
-import {followUser, getFollowers, unfollowUser, getFollowing} from "../controllers/feedInteractions/followers.js"
+import { followUser, getFollowers, unfollowUser, getFollowing } from "../controllers/feedInteractions/followers.js"
 
 const router = express.Router()
 
-router.post('/:followed', followUser)
-router.get('/followers/:userId', getFollowers)
-router.get('/following/:userId', getFollowing)
-router.delete('/:followed', unfollowUser)
+router.post('/follow/:followed', followUser) // Corrected route for followUser
+router.get('/followers/:userId', getFollowers) // Correct Route
+router.get('/following/:userId', getFollowing) // Correct Route
+router.delete('/unfollow/:followed', unfollowUser) // Corrected route for unfollowUser
 
-
-export default router
+export default router  

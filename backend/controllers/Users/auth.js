@@ -52,7 +52,7 @@ export const initiateRegistration = async (req, res) => {
                     <p>To get started, please use the following verification code to activate your account:</p>
                     <div style="text-align: center; margin: 20px 0;">
                         <span style="font-size: 28px; font-weight: bold; color: #CF833F;">${verificationCode}</span>
-                    </div>
+                    </div> 
                     <p>This code will expire in <strong>10 minutes</strong>, so be sure to use it soon!</p>
                     <p>If you have any questions or need support, feel free to reach out to us.</p>
                     <p>Enjoy your journey through <strong>WEEBFORM</strong>!</p>
@@ -174,7 +174,7 @@ export const login = async (req, res) => {
             maxAge: 3 * 24 * 60 * 60 * 1000
         }).status(200).json({
             message: "User logged in successfully", user
-        });
+        }); 
         const loginTime = new Date().toLocaleString(); // Get current date and time
         const mailOptions = {
             from: process.env.EMAIL_USER,
