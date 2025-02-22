@@ -42,6 +42,25 @@ const WHITELIST = [
 
 const app = express();
 
+const corsOptions = {
+    origin: (origin, callback) => {
+        if (!origin || WHITELIST.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    allowedHeaders: [
+        'Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+};
+
+// Use CORS middleware
+app.use(cors(corsOptions));
+
+
 // Security Middleware
 app.use(helmet());
 
