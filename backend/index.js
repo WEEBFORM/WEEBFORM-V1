@@ -84,7 +84,7 @@ const apiLimiter = rateLimit({
     max: 100, // Limit each IP to 100 requests per window
     standardHeaders: true,
     message: 'Too many requests from this IP, please try again after 15 minutes',
-});
+});    
 app.use('/api', apiLimiter);
 
 // CORS Configuration

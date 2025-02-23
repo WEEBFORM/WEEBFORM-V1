@@ -1759,3 +1759,359 @@
 [2025-02-22 17:09:39] [32minfo[39m: Master 8668 is running
 [2025-02-22 17:09:39] [32minfo[39m: Database connection established.
 [2025-02-22 17:09:39] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-22 17:09:42] [32minfo[39m: Worker 28008 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 28808 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 30508 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 23052 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 2352 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 11072 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 2428 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 18712 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 25192 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 23996 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 9036 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 24328 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 31560 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 11816 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 13944 started
+[2025-02-22 17:09:42] [32minfo[39m: Worker 12744 started
+[2025-02-22 19:49:15] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-22 19:49:15] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-22 19:49:15] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-22 19:49:15] [31merror[39m: Worker 31560 died with code 1, spawning a new one...
+[2025-02-22 19:49:15] [31merror[39m: Worker 28008 died with code 1, spawning a new one...
+[2025-02-22 19:49:15] [31merror[39m: Worker 9036 died with code 1, spawning a new one...
+[2025-02-22 19:49:16] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-22 19:49:16] [31merror[39m: Worker 25192 died with code 1, spawning a new one...
+[2025-02-22 19:49:17] [32minfo[39m: Worker 29968 started
+[2025-02-22 19:49:17] [32minfo[39m: Worker 29736 started
+[2025-02-22 19:49:17] [32minfo[39m: Worker 30996 started
+[2025-02-22 19:49:17] [32minfo[39m: Worker 6332 started
+[2025-02-22 19:49:17] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-22 19:49:17] [31merror[39m: Worker 13944 died with code 1, spawning a new one...
+[2025-02-22 19:49:18] [32minfo[39m: Worker 4172 started
+[2025-02-22 19:49:20] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-22 20:51:24] [32minfo[39m: Master 34344 is running
+[2025-02-22 20:51:24] [32minfo[39m: Database connection established.
+[2025-02-22 20:51:24] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-22 20:51:25] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.64.76' (using password: YES)
+[2025-02-22 20:52:03] [32minfo[39m: Master 28280 is running
+[2025-02-22 20:52:03] [32minfo[39m: Database connection established.
+[2025-02-22 20:52:03] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-22 20:52:08] [32minfo[39m: Worker 20412 started
+[2025-02-22 20:52:08] [32minfo[39m: Worker 19316 started
+[2025-02-22 20:52:08] [32minfo[39m: Worker 24116 started
+[2025-02-22 20:52:08] [32minfo[39m: Worker 1920 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 34684 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 2632 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 32952 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 32360 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 34760 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 10384 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 20028 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 28220 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 31656 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 9144 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 33784 started
+[2025-02-22 20:52:09] [32minfo[39m: Worker 33120 started
+[2025-02-22 20:52:17] [32minfo[39m: Master 19968 is running
+[2025-02-22 20:52:17] [32minfo[39m: Database connection established.
+[2025-02-22 20:52:17] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-22 20:52:19] [32minfo[39m: Worker 11604 started
+[2025-02-22 20:52:19] [32minfo[39m: Worker 7432 started
+[2025-02-22 20:52:19] [32minfo[39m: Worker 26900 started
+[2025-02-22 20:52:19] [32minfo[39m: Worker 11084 started
+[2025-02-22 20:52:19] [32minfo[39m: Worker 14248 started
+[2025-02-22 20:52:19] [32minfo[39m: Worker 32056 started
+[2025-02-22 20:52:19] [32minfo[39m: Worker 5540 started
+[2025-02-22 20:52:20] [32minfo[39m: Worker 11344 started
+[2025-02-22 20:52:20] [32minfo[39m: Worker 7908 started
+[2025-02-22 20:52:20] [32minfo[39m: Worker 26020 started
+[2025-02-22 20:52:20] [32minfo[39m: Worker 27160 started
+[2025-02-22 20:52:20] [32minfo[39m: Worker 7832 started
+[2025-02-22 20:52:20] [32minfo[39m: Worker 10324 started
+[2025-02-22 20:52:20] [32minfo[39m: Worker 33692 started
+[2025-02-22 20:52:20] [32minfo[39m: Worker 15628 started
+[2025-02-22 20:52:20] [32minfo[39m: Worker 18508 started
+[2025-02-22 21:03:31] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-22 21:07:39] [32minfo[39m: Master 16116 is running
+[2025-02-22 21:07:39] [32minfo[39m: Database connection established.
+[2025-02-22 21:07:39] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-22 21:07:44] [32minfo[39m: Worker 31672 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 30692 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 33944 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 22300 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 32924 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 24936 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 9704 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 5388 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 31660 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 26752 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 34048 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 28512 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 27100 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 32216 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 13884 started
+[2025-02-22 21:07:44] [32minfo[39m: Worker 30964 started
+[2025-02-22 21:23:50] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-22 21:23:50] [31merror[39m: Worker 31660 died with code 1, spawning a new one...
+[2025-02-22 21:23:51] [32minfo[39m: Worker 32748 started
+[2025-02-22 21:30:34] [32minfo[39m: Master 28668 is running
+[2025-02-22 21:30:35] [32minfo[39m: Database connection established.
+[2025-02-22 21:30:35] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-22 21:30:37] [32minfo[39m: Worker 8464 started
+[2025-02-22 21:30:38] [32minfo[39m: Worker 23164 started
+[2025-02-22 21:30:38] [32minfo[39m: Worker 34484 started
+[2025-02-22 21:30:38] [32minfo[39m: Worker 29472 started
+[2025-02-22 21:30:39] [32minfo[39m: Worker 2476 started
+[2025-02-22 21:30:39] [32minfo[39m: Worker 11620 started
+[2025-02-22 21:30:39] [32minfo[39m: Worker 3024 started
+[2025-02-22 21:30:39] [32minfo[39m: Worker 27332 started
+[2025-02-22 21:30:39] [32minfo[39m: Worker 20204 started
+[2025-02-22 21:30:40] [32minfo[39m: Worker 31388 started
+[2025-02-22 21:30:40] [32minfo[39m: Worker 32904 started
+[2025-02-22 21:30:40] [32minfo[39m: Worker 13144 started
+[2025-02-22 21:30:40] [32minfo[39m: Worker 26836 started
+[2025-02-22 21:30:40] [32minfo[39m: Worker 13468 started
+[2025-02-22 21:30:40] [32minfo[39m: Worker 27548 started
+[2025-02-22 21:30:40] [32minfo[39m: Worker 29500 started
+[2025-02-22 21:46:47] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-22 21:46:47] [31merror[39m: Worker 20204 died with code 1, spawning a new one...
+[2025-02-22 21:46:48] [32minfo[39m: Worker 4896 started
+[2025-02-22 21:52:51] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-22 21:52:51] [31merror[39m: Worker 4896 died with code 1, spawning a new one...
+[2025-02-22 21:52:53] [32minfo[39m: Worker 29108 started
+[2025-02-22 21:56:51] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-22 21:56:51] [31merror[39m: Worker 13468 died with code 1, spawning a new one...
+[2025-02-22 21:56:53] [32minfo[39m: Worker 32504 started
+[2025-02-22 21:58:38] [32minfo[39m: Master 25216 is running
+[2025-02-22 21:58:38] [32minfo[39m: Database connection established.
+[2025-02-22 21:58:38] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-22 21:58:41] [32minfo[39m: Worker 2708 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 33624 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 18812 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 2872 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 23800 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 24392 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 19132 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 27340 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 11152 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 10384 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 21556 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 9240 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 20652 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 20440 started
+[2025-02-22 21:58:41] [32minfo[39m: Worker 24516 started
+[2025-02-22 21:58:42] [32minfo[39m: Worker 3652 started
+[2025-02-22 22:00:11] [32minfo[39m: Master 34432 is running
+[2025-02-22 22:00:11] [32minfo[39m: Database connection established.
+[2025-02-22 22:00:11] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-22 22:00:14] [32minfo[39m: Worker 32788 started
+[2025-02-22 22:00:14] [32minfo[39m: Worker 18144 started
+[2025-02-22 22:00:14] [32minfo[39m: Worker 30412 started
+[2025-02-22 22:00:14] [32minfo[39m: Worker 32900 started
+[2025-02-22 22:00:14] [32minfo[39m: Worker 11944 started
+[2025-02-22 22:00:14] [32minfo[39m: Worker 20448 started
+[2025-02-22 22:00:14] [32minfo[39m: Worker 6044 started
+[2025-02-22 22:00:15] [32minfo[39m: Worker 32892 started
+[2025-02-22 22:00:15] [32minfo[39m: Worker 30516 started
+[2025-02-22 22:00:15] [32minfo[39m: Worker 29288 started
+[2025-02-22 22:00:15] [32minfo[39m: Worker 7488 started
+[2025-02-22 22:00:15] [32minfo[39m: Worker 29232 started
+[2025-02-22 22:00:15] [32minfo[39m: Worker 3856 started
+[2025-02-22 22:00:15] [32minfo[39m: Worker 4012 started
+[2025-02-22 22:00:15] [32minfo[39m: Worker 17076 started
+[2025-02-22 22:00:15] [32minfo[39m: Worker 21132 started
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 16:38:52] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:26:20] [32minfo[39m: Master 18876 is running
+[2025-02-23 20:26:20] [32minfo[39m: Database connection established.
+[2025-02-23 20:26:20] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-23 20:26:21] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.88.110.33' (using password: YES)
+[2025-02-23 20:26:52] [32minfo[39m: Master 30736 is running
+[2025-02-23 20:26:53] [32minfo[39m: Database connection established.
+[2025-02-23 20:26:53] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-23 20:26:53] [31merror[39m: Worker 23492 died with code 1, spawning a new one...
+[2025-02-23 20:26:54] [32minfo[39m: Master 32176 is running
+[2025-02-23 20:26:55] [32minfo[39m: Database connection established.
+[2025-02-23 20:26:55] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-23 20:26:58] [32minfo[39m: Worker 12144 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 32384 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 32792 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 7084 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 24956 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 28660 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 10608 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 31020 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 11540 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 26840 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 18652 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 9156 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 8324 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 5724 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 27176 started
+[2025-02-23 20:26:58] [32minfo[39m: Worker 27564 started
+[2025-02-23 20:49:36] [32minfo[39m: Master 16928 is running
+[2025-02-23 20:49:36] [32minfo[39m: Database connection established.
+[2025-02-23 20:49:36] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-23 20:49:37] [31merror[39m: Worker 31184 died with code 1, spawning a new one...
+[2025-02-23 20:49:38] [32minfo[39m: Master 25380 is running
+[2025-02-23 20:49:39] [32minfo[39m: Database connection established.
+[2025-02-23 20:49:39] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-23 20:49:41] [32minfo[39m: Worker 33504 started
+[2025-02-23 20:49:42] [32minfo[39m: Worker 19816 started
+[2025-02-23 20:49:42] [32minfo[39m: Worker 24536 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 2284 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 18400 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 22324 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 7604 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 30064 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 13572 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 14916 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 33308 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 19768 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 28432 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 15640 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 18372 started
+[2025-02-23 20:49:43] [32minfo[39m: Worker 20660 started
+[2025-02-23 20:49:46] [32minfo[39m: Master 12188 is running
+[2025-02-23 20:49:46] [32minfo[39m: Database connection established.
+[2025-02-23 20:49:46] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-23 20:49:49] [32minfo[39m: Worker 30088 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 15232 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 7608 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 30152 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 24488 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 12444 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 31780 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 28416 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 15276 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 30732 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 12160 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 6324 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 28332 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 32236 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 32132 started
+[2025-02-23 20:49:49] [32minfo[39m: Worker 30104 started
+[2025-02-23 20:49:50] [32minfo[39m: Master 28536 is running
+[2025-02-23 20:49:51] [32minfo[39m: Database connection established.
+[2025-02-23 20:49:51] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-23 20:49:53] [32minfo[39m: Worker 34468 started
+[2025-02-23 20:49:53] [32minfo[39m: Worker 18264 started
+[2025-02-23 20:49:53] [32minfo[39m: Worker 30112 started
+[2025-02-23 20:49:54] [32minfo[39m: Master 968 is running
+[2025-02-23 20:49:54] [32minfo[39m: Database connection established.
+[2025-02-23 20:49:54] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-23 20:49:56] [32minfo[39m: Worker 32380 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 2112 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 24784 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 22212 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 18140 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 7776 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 25648 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 28400 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 4008 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 31920 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 30336 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 26404 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 15284 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 34392 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 22628 started
+[2025-02-23 20:49:57] [32minfo[39m: Worker 27876 started
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-02-23 20:54:11] [31merror[39m: Worker 24784 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 2112 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 25648 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 31920 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 26404 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 22212 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 34392 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 15284 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 32380 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 22628 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 7776 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 27876 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 30336 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 18140 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 4008 died with code 1, spawning a new one...
+[2025-02-23 20:54:11] [31merror[39m: Worker 28400 died with code 1, spawning a new one...
+[2025-02-23 20:54:14] [32minfo[39m: Worker 2452 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 27992 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 11456 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 22992 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 29104 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 10552 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 34012 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 8956 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 19476 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 16072 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 25988 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 23660 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 23144 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 31156 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 14956 started
+[2025-02-23 20:54:14] [32minfo[39m: Worker 30520 started
+[2025-02-23 20:54:25] [32minfo[39m: Master 28232 is running
+[2025-02-23 20:54:25] [32minfo[39m: Database connection established.
+[2025-02-23 20:54:25] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-23 20:54:26] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.65.202' (using password: YES)
+[2025-02-23 20:55:24] [32minfo[39m: Master 22244 is running
+[2025-02-23 20:55:24] [32minfo[39m: Database connection established.
+[2025-02-23 20:55:24] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-23 20:55:27] [32minfo[39m: Worker 25028 started
+[2025-02-23 20:55:27] [32minfo[39m: Worker 13028 started
+[2025-02-23 20:55:27] [32minfo[39m: Worker 24884 started
+[2025-02-23 20:55:27] [32minfo[39m: Worker 23672 started
+[2025-02-23 20:55:27] [32minfo[39m: Worker 12132 started
+[2025-02-23 20:55:28] [32minfo[39m: Worker 12516 started
+[2025-02-23 20:55:28] [32minfo[39m: Worker 23480 started
+[2025-02-23 20:55:28] [32minfo[39m: Worker 25364 started
+[2025-02-23 20:55:28] [32minfo[39m: Worker 18644 started
+[2025-02-23 20:55:28] [32minfo[39m: Worker 16668 started
+[2025-02-23 20:55:28] [32minfo[39m: Worker 31340 started
+[2025-02-23 20:55:28] [32minfo[39m: Worker 8568 started
+[2025-02-23 20:55:28] [32minfo[39m: Worker 12476 started
+[2025-02-23 20:55:28] [32minfo[39m: Worker 29704 started
+[2025-02-23 20:55:28] [32minfo[39m: Worker 34648 started
+[2025-02-23 20:55:28] [32minfo[39m: Worker 3416 started
+[2025-02-23 21:19:18] [32minfo[39m: Master 12120 is running
+[2025-02-23 21:19:19] [32minfo[39m: Database connection established.
+[2025-02-23 21:19:19] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-02-23 21:19:20] [31merror[39m: Worker 25992 died with code 1, spawning a new one...
+[2025-02-23 21:19:20] [31merror[39m: Worker 13440 died with code 1, spawning a new one...
+[2025-02-23 21:19:20] [31merror[39m: Worker 7912 died with code 1, spawning a new one...
+[2025-02-23 21:19:20] [31merror[39m: Worker 25664 died with code 1, spawning a new one...
+[2025-02-23 21:19:20] [31merror[39m: Worker 31780 died with code 1, spawning a new one...
+[2025-02-23 21:19:20] [31merror[39m: Worker 6460 died with code 1, spawning a new one...
+[2025-02-23 21:19:22] [32minfo[39m: Master 23592 is running
+[2025-02-23 21:19:22] [32minfo[39m: Database connection established.
+[2025-02-23 21:19:22] [32minfo[39m: Server listening on port 8000 in development mode

@@ -56,7 +56,7 @@ export const initiateRegistration = async (req, res) => {
                     <p>This code will expire in <strong>10 minutes</strong>, so be sure to use it soon!</p>
                     <p>If you have any questions or need support, feel free to reach out to us.</p>
                     <p>Enjoy your journey through <strong>WEEBFORM</strong>!</p>
-                    <p>Best regards,</p>
+                    <p>Best regards,</p> 
                     <p><strong>The WEEBFORM Team</strong></p>
                     <hr style="border: 0; height: 1px; background-color: #ccc; margin: 20px 0;">
                     <p style="font-size: 14px; color: #777;">
