@@ -8,6 +8,7 @@ import { cpUpload } from "../../middlewares/storage.js";
 import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
 import { executeQuery } from "../../middlewares/dbExecute.js";
 import NodeCache from 'node-cache';
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const userProfileCache = new NodeCache({ stdTTL: 600 }); // Cache user data for 10 minutes
 
@@ -27,9 +28,6 @@ export const editProfile = async (req, res) => {
                     console.error("Unexpected error during upload:", uploadErr);
                     return res.status(500).json({ message: "File upload failed", error: 'Unexpected error' });
                 }
-
-                const salt = bcrypt.genSaltSync(10);
-                const hashedPassword = req.body.password ? bcrypt.hashSync(req.body.password, salt) : undefined;
 
                 let profilePicUrl = user.profilePic; // Default
                 let coverPhotoUrl = user.coverPhoto; // Default
@@ -70,15 +68,14 @@ export const editProfile = async (req, res) => {
                     req.body.full_name,
                     req.body.username,
                     req.body.nationality,
-                    hashedPassword || user.password,
-                    coverPhotoUrl, // Use URL
-                    profilePicUrl, // Use URL
+                    coverPhotoUrl || user.coverPhoto, 
+                    profilePicUrl || user.profilePic,
                     req.body.bio,
                     user.id,
                 ];
 
                 await executeQuery(
-                    `UPDATE users SET email = ?, full_name = ?, username = ?, nationality = ?, password = ?, coverPhoto = ?, profilePic = ?, bio = ? WHERE id = ?`,
+                    `UPDATE users SET email = ?, full_name = ?, username = ?, nationality = ?, coverPhoto = ?, profilePic = ?, bio = ? WHERE id = ?`,
                     values
                 );
 
@@ -150,12 +147,10 @@ export const viewProfile = async (req, res) => {
             }
         }
 
-        const { password, ...safeUserInfo } = userInfo;
-
-        return res.status(200).json(safeUserInfo);
+        return res.status(200).json(userInfo);
     });
-};
-
+}; 
+  
 // API TO GET ANOTHER USER'S INFORMATION
 export const viewUserProfile = async (req, res) => {
     const userId = req.params.id;

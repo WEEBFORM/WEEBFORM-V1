@@ -223,6 +223,54 @@ export const postCategory = async (req, res) => {
     });
 };
 
+// API TO GET A SINGLE POST BY ID
+export const getPostById = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
+        const postId = req.params.id;
+
+        try {
+            const q = `
+                SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
+                COUNT(DISTINCT l.id) AS likeCount, COUNT(DISTINCT c.id) AS commentCount,
+                CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
+                FROM posts AS p
+                JOIN users AS u ON u.id = p.userId
+                LEFT JOIN likes AS l ON l.postId = p.id
+                LEFT JOIN comments AS c ON c.postId = p.id
+                LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+                WHERE p.id = ?
+                GROUP BY p.id, u.id
+            `;
+
+            const [data] = await db.promise().query(q, [userId, userId, postId]);
+
+            if (data.length === 0) {
+                return res.status(404).json({ message: "Post not found" });
+            }
+
+            const post = data[0]; // Get the first (and only) post
+            if (post.media) {
+                const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
+                try {
+                    post.media = await Promise.all(mediaKeys.map(generateS3Url));
+                } catch (mediaErr) {
+                    console.warn("Failed to generate all media URLs:", mediaErr);
+                    post.media = null;
+                }
+            }
+             if (post.profilePic) {
+                post.profilePic = await generateS3Url(s3KeyFromUrl(post.profilePic));
+            }
+
+            res.status(200).json(post);
+        } catch (error) {
+            console.error("Error fetching post by ID:", error);
+            res.status(500).json({ message: "Failed to fetch post", error });
+        }
+    });
+};
+
 // API TO DELETE POST
 export const deletePost = async (req, res) => {
     authenticateUser(req, res, async () => {
