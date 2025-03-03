@@ -42,34 +42,28 @@ const WHITELIST = [
 
 const app = express();
 
+// CORS options to allow all origins
 const corsOptions = {
-    origin: (origin, callback) => {
-        if (!origin || WHITELIST.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
+    origin: true,
+    credentials: true, 
     allowedHeaders: [
-        'Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control'
+      'Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control'
     ],
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-};
-
-// Use CORS middleware
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
+  }; 
+  
+// USE CORS MIDDLEWARE
 app.use(cors(corsOptions));
 
-
-// Security Middleware
+// SECURITY MIDDLEWARE
 app.use(helmet());
 
-// Request Parsing
+// REQUEST PARSING
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
 
-// Logging
+// LOGGING
 app.use(morgan(NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // Add request timestamp
@@ -80,8 +74,8 @@ app.use((req, res, next) => {
 
 // Rate limiting
 const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per window
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     standardHeaders: true,
     message: 'Too many requests from this IP, please try again after 15 minutes',
 });    

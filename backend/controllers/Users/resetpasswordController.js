@@ -2,12 +2,7 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import bcrypt from "bcryptjs";
 import { db } from '../../config/connectDB.js';
-import { transporter } from '../../middlewares/mailTransportConfig.js'; // Import the configured transporter
-
-// EMAIL CONFIGURATION (Now in mailTransportConfig.js)
-// const transporter = nodemailer.createTransport({ ... }); // No longer needed here
-// transporter.verify(...); // No longer needed here
-
+import { transporter } from '../../middlewares/mailTransportConfig.js';
 
 export const forgotPassword = (req, res) => { 
     const findEmail = "SELECT * FROM users WHERE `email` = ?";
