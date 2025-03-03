@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
 import bcrypt from "bcryptjs";
 import { db } from '../../config/connectDB.js';
 import { transporter } from '../../middlewares/mailTransportConfig.js';

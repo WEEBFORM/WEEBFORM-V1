@@ -446,3 +446,27 @@
 [2025-03-03 12:39:55] [31merror[39m: Uncaught Exception: Got timeout reading communication packets
 [2025-03-03 12:40:26] [31merror[39m: Uncaught Exception: Got timeout reading communication packets
 [2025-03-03 12:44:48] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.119.19.238' (using password: YES)
+[2025-03-03 15:36:24] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:24] [31merror[39m: Worker 28408 died with code 1, spawning a new one...
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Worker 26400 died with code 1, spawning a new one...
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Worker 12280 died with code 1, spawning a new one...
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Worker 26656 died with code 1, spawning a new one...
+[2025-03-03 15:36:25] [31merror[39m: Worker 27116 died with code 1, spawning a new one...
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 15:36:25] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-03-03 22:36:59] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.63.194' (using password: YES)
+[2025-03-03 23:35:08] [31merror[39m: Uncaught Exception: connect ETIMEDOUT
