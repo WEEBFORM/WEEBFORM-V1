@@ -7,7 +7,7 @@ import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
 import NodeCache from 'node-cache';
 
-const postCache = new NodeCache({ stdTTL: 300 }); // Cache posts for 5 minutes
+const postCache = new NodeCache({ stdTTL: 300 }); 
 
 const shufflePosts = (array) => {
     for (let i = array.length - 1; i > 0; i--) {
@@ -158,15 +158,13 @@ const getPosts = async (req, res, queryType) => {
                      postCache.set(cacheKey, posts);   // Store results in cache
                 }
             }
-
-            const shuffledPosts = shufflePosts(posts);  // Shuffle after fetching
-            res.status(200).json(shuffledPosts);
+            res.status(200).json(posts);
         } catch (error) {
             console.error("Error in getPosts:", error);
             res.status(500).json({ message: "Failed to fetch posts", error });
         }
     });
-};
+}; 
 
 // Separate handler functions for each type
 export const allPosts = (req, res) => getPosts(req, res, 'all');
@@ -270,10 +268,10 @@ export const getPostById = async (req, res) => {
         }
     });
 };
-
+ 
 // API TO DELETE POST
 export const deletePost = async (req, res) => {
-    authenticateUser(req, res, async () => {
+    authenticateUser(req, res, async () => {  
         const userId = req.user.id;
         const postId = req.params.id;
         try {

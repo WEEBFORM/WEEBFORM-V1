@@ -7,7 +7,7 @@ router.post('/', newPost)
 router.get('/user/:id', userPosts)
 router.get('/following/:id', followingPosts)
 router.get('/:category', postCategory)
-router.get('/', allPosts)
+router.get('/', allPosts) 
 router.get("/:id", getPostById);
 
 router.delete('/:id', deletePost) 
