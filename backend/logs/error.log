@@ -659,3 +659,4 @@
 [2025-03-06 20:38:08] [31merror[39m: Uncaught Exception: getaddrinfo EAI_AGAIN weeb-social-db.cjgqoamaeprc.eu-north-1.rds.amazonaws.com
 [2025-03-06 21:12:12] [31merror[39m: Uncaught Exception: getaddrinfo EAI_AGAIN weeb-social-db.cjgqoamaeprc.eu-north-1.rds.amazonaws.com
 [2025-03-06 21:49:02] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'105.113.91.21' (using password: YES)
+[2025-03-07 00:06:08] [31merror[39m: Uncaught Exception: read ECONNRESET
