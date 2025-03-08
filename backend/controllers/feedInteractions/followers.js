@@ -1,6 +1,9 @@
+// --- START OF FILE followers.js ---
+
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import NodeCache from 'node-cache';
+import { generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js"; // Import S3 utility functions
 const followerCache = new NodeCache({ stdTTL: 300 });
 
 //API TO FOLLOW USER
@@ -33,9 +36,9 @@ export const followUser = async (req, res) => {
             followerCache.flushAll();
             return res.status(200).json({ message: "Following user" });
         } catch (err) {
-            console.error("Follow User error:", err); 
+            console.error("Follow User error:", err);
             return res.status(500).json({ message: "Failed to follow user", error: err.message });
-        } 
+        }
     });
 };
 
@@ -55,13 +58,27 @@ export const getFollowers = async (req, res) => {
                 return res.status(200).json(cachedData);
             }
 
-            const q = "SELECT r.follower FROM reach AS r WHERE r.followed = ?"; // Get followers of userId
+            const q = `SELECT u.id, u.full_name, u.profilePic 
+                        FROM reach AS r 
+                        JOIN users AS u ON r.follower = u.id 
+                        WHERE r.followed = ?
+                      `;
             const [data] = await db.promise().query(q, [userId]);
 
             if (data && data.length > 0) {
-                const follower = data.map(obj => Number(obj.follower));
-                followerCache.set(cacheKey, follower);
-                return res.status(200).json(follower);
+                // Process the data to generate S3 URLs for profile pics
+                const followersWithS3Urls = await Promise.all(
+                    data.map(async (follower) => {
+                        if (follower.profilePic) {
+                            const profilePicKey = s3KeyFromUrl(follower.profilePic);
+                            follower.profilePic = await generateS3Url(profilePicKey);
+                        }
+                        return follower;
+                    })
+                );
+
+                followerCache.set(cacheKey, followersWithS3Urls);
+                return res.status(200).json(followersWithS3Urls);
             } else {
                 return res.status(200).json([]);
             }
@@ -87,13 +104,27 @@ export const getFollowing = async (req, res) => {
             if (cachedData) {
                 return res.status(200).json(cachedData);
             }
-            const q = "SELECT r.followed FROM reach AS r WHERE r.follower = ?"; // Get users followed by userId
+            const q = `
+                        SELECT u.id, u.full_name, u.profilePic 
+                        FROM reach AS r 
+                        JOIN users AS u ON r.followed = u.id 
+                        WHERE r.follower = ?
+                        `;
             const [data] = await db.promise().query(q, [userId]);
 
             if (data && data.length > 0) {
-                const followed = data.map(obj => Number(obj.followed));
-                followerCache.set(cacheKey, followed);
-                return res.status(200).json(followed);
+                 // Process the data to generate S3 URLs for profile pics
+                 const followingWithS3Urls = await Promise.all(
+                    data.map(async (following) => {
+                        if (following.profilePic) {
+                            const profilePicKey = s3KeyFromUrl(following.profilePic);
+                            following.profilePic = await generateS3Url(profilePicKey);
+                        }
+                        return following;
+                    })
+                );
+                followerCache.set(cacheKey, followingWithS3Urls);
+                return res.status(200).json(followingWithS3Urls);
             } else {
                 return res.status(200).json([]);
             }
