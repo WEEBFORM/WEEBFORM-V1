@@ -1,5 +1,3 @@
-// --- START OF FILE followers.js ---
-
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import NodeCache from 'node-cache';
@@ -66,7 +64,6 @@ export const getFollowers = async (req, res) => {
             const [data] = await db.promise().query(q, [userId]);
 
             if (data && data.length > 0) {
-                // Process the data to generate S3 URLs for profile pics
                 const followersWithS3Urls = await Promise.all(
                     data.map(async (follower) => {
                         if (follower.profilePic) {
@@ -113,7 +110,6 @@ export const getFollowing = async (req, res) => {
             const [data] = await db.promise().query(q, [userId]);
 
             if (data && data.length > 0) {
-                 // Process the data to generate S3 URLs for profile pics
                  const followingWithS3Urls = await Promise.all(
                     data.map(async (following) => {
                         if (following.profilePic) {
@@ -195,10 +191,11 @@ export const getRecommendedUsers = async (req, res) => {
             if (cachedData) {
                 return res.status(200).json(cachedData);
             }
-                const q = `
-                SELECT DISTINCT r2.followed
+           const q = `
+                SELECT DISTINCT u.id, u.full_name, u.profilePic
                 FROM reach r1
                 JOIN reach r2 ON r1.followed = r2.follower
+                JOIN users u ON r2.followed = u.id
                 WHERE r1.follower = ?
                   AND r2.followed <> ?
                   AND NOT EXISTS (SELECT 1 FROM reach r3 WHERE r3.follower = ? AND r3.followed = r2.followed)
@@ -208,9 +205,18 @@ export const getRecommendedUsers = async (req, res) => {
             const [data] = await db.promise().query(q, [userId, userId, userId]);
 
             if (data && data.length > 0) {
-                const recommendedUsers = data.map(obj => Number(obj.followed));
-                followerCache.set(cacheKey, recommendedUsers);
-                return res.status(200).json(recommendedUsers);
+                const recommendedUsersWithS3Urls = await Promise.all(
+                    data.map(async (user) => {
+                        if (user.profilePic) {
+                            const profilePicKey = s3KeyFromUrl(user.profilePic);
+                            user.profilePic = await generateS3Url(profilePicKey);
+                        }
+                        return user;
+                    })
+                );
+
+                followerCache.set(cacheKey, recommendedUsersWithS3Urls);
+                return res.status(200).json(recommendedUsersWithS3Urls);
             } else {
                 return res.status(200).json([]);
             }
