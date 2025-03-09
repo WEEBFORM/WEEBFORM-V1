@@ -40,7 +40,7 @@ export const followUser = async (req, res) => {
     });
 };
 
-//API TO GET FOLLOWERS
+// API TO GET FOLLOWERS
 export const getFollowers = async (req, res) => {
     authenticateUser(req, res, async () => {
         const userId = req.params.userId;
@@ -49,18 +49,19 @@ export const getFollowers = async (req, res) => {
             return res.status(400).json({ message: "Invalid user ID" });
         }
 
-        let cacheKey = `followers:${userId}`;
+        const cacheKey = `followers:${userId}`;
         try {
-            let cachedData = followerCache.get(cacheKey);
+            const cachedData = followerCache.get(cacheKey);
             if (cachedData) {
                 return res.status(200).json(cachedData);
             }
 
-            const q = `SELECT u.id, u.full_name, u.profilePic 
-                        FROM reach AS r 
-                        JOIN users AS u ON r.follower = u.id 
-                        WHERE r.followed = ?
-                      `;
+            const q = `
+                SELECT u.id, u.full_name, u.profilePic 
+                FROM reach AS r 
+                JOIN users AS u ON r.follower = u.id 
+                WHERE r.followed = ?
+            `;
             const [data] = await db.promise().query(q, [userId]);
 
             if (data && data.length > 0) {
@@ -73,7 +74,6 @@ export const getFollowers = async (req, res) => {
                         return follower;
                     })
                 );
-
                 followerCache.set(cacheKey, followersWithS3Urls);
                 return res.status(200).json(followersWithS3Urls);
             } else {
@@ -86,31 +86,32 @@ export const getFollowers = async (req, res) => {
     });
 };
 
-//API TO GET FOLLOWING
+// API TO GET FOLLOWING
 export const getFollowing = async (req, res) => {
     authenticateUser(req, res, async () => {
-        const userId = req.user.id;
+        // Updated: Now gets userId from req.params.userId
+        const userId = req.params.userId;
 
         if (!Number.isInteger(Number(userId))) {
-            return res.status(400).json({ message: "Invalid userId" });
+            return res.status(400).json({ message: "Invalid user ID" });
         }
 
-        let cacheKey = `following:${userId}`;
+        const cacheKey = `following:${userId}`;
         try {
-            let cachedData = followerCache.get(cacheKey);
+            const cachedData = followerCache.get(cacheKey);
             if (cachedData) {
                 return res.status(200).json(cachedData);
             }
             const q = `
-                        SELECT u.id, u.full_name, u.profilePic 
-                        FROM reach AS r 
-                        JOIN users AS u ON r.followed = u.id 
-                        WHERE r.follower = ?
-                        `;
+                SELECT u.id, u.full_name, u.profilePic 
+                FROM reach AS r 
+                JOIN users AS u ON r.followed = u.id 
+                WHERE r.follower = ?
+            `;
             const [data] = await db.promise().query(q, [userId]);
 
             if (data && data.length > 0) {
-                 const followingWithS3Urls = await Promise.all(
+                const followingWithS3Urls = await Promise.all(
                     data.map(async (following) => {
                         if (following.profilePic) {
                             const profilePicKey = s3KeyFromUrl(following.profilePic);
@@ -130,6 +131,7 @@ export const getFollowing = async (req, res) => {
         }
     });
 };
+
 
 //API TO UNFOLLOW USERS
 export const unfollowUser = async (req, res) => {
