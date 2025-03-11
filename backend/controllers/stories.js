@@ -144,32 +144,26 @@ async function deleteOldData() {
   const selectQuery = "SELECT id, storyImage, storyVideo FROM stories WHERE createdAt < ?";
 
   try {
-    // Step 1: Select old stories
     db.query(selectQuery, [twentyFourHoursAgo], async (err, results) => {
       if (err) {
         console.error("Error selecting old stories:", err);
-        return; // Exit, don't proceed to delete
+        return;
       }
-
-      // Step 2: Iterate over old stories and delete S3 objects
-      for (const story of results) {
+        for (const story of results) {
         try {
           if (story.storyImage) {
-            // Split multiple images into array of URLs
             const imageUrls = story.storyImage.split(",");
             for (const imageUrl of imageUrls) {
               await deleteS3Object(imageUrl);
             }
           }
           if (story.storyVideo) {
-            // Split multiple videos into array of URLs
             const videoUrls = story.storyVideo.split(",");
             for (const videoUrl of videoUrls) {
               await deleteS3Object(videoUrl);
             }
           }
 
-          // Step 3: Delete story from the database
           const deleteQuery = "DELETE FROM stories WHERE id = ?";
           db.query(deleteQuery, [story.id], (deleteErr, deleteResult) => {
             if (deleteErr) {
@@ -180,7 +174,6 @@ async function deleteOldData() {
           });
         } catch (s3Error) {
           console.error(`Error deleting S3 objects for story ${story.id}:`, s3Error);
-          // Continue to the next story if deletion fails
         }
       }
     });
@@ -189,7 +182,6 @@ async function deleteOldData() {
   }
 }
 
-// Run the function every 24 hours (in milliseconds)
 const twentyFourHours = 24 * 60 * 60 * 1000;
 setInterval(deleteOldData, twentyFourHours);
 
@@ -213,14 +205,12 @@ export const deleteStory = (req, res) => {
 
       try {
         if (imageUrl) {
-          // Split multiple images into array of URLs
           const imageUrls = imageUrl.split(",");
           for (const imgUrl of imageUrls) {
             await deleteS3Object(imgUrl);
           }
         }
         if (videoUrl) {
-          // Split multiple videos into array of URLs
           const videoUrls = videoUrl.split(",");
           for (const vidUrl of videoUrls) {
             await deleteS3Object(vidUrl);

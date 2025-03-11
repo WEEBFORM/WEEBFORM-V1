@@ -18,6 +18,7 @@ export const cpUpload = upload.fields([
     { name: 'storyImages', maxCount: 3 },
     { name: 'storyVideos', maxCount: 3 },
     { name: 'logoImage', maxCount: 1 },
+    { name: 'productImage', maxCount: 1 },
     { name: 'uploadSingle', maxCount: 1 },
 ]);
 
