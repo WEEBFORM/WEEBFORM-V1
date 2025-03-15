@@ -29,8 +29,8 @@ export const editProfile = async (req, res) => {
                     return res.status(500).json({ message: "File upload failed", error: 'Unexpected error' });
                 }
 
-                let profilePicUrl = user.profilePic; // Default
-                let coverPhotoUrl = user.coverPhoto; // Default
+                let profilePicUrl = user.profilePic;
+                let coverPhotoUrl = user.coverPhoto;
 
                 if (req.files) {
                     if (req.files.profilePic && req.files.profilePic[0]) {
@@ -49,7 +49,7 @@ export const editProfile = async (req, res) => {
                     }
                     if (req.files.coverPhoto && req.files.coverPhoto[0]) {
                         const coverPhoto = req.files.coverPhoto[0];
-                        const resizedBuffer = await resizeImage(coverPhoto.buffer, 800, 450); // Mobile-friendly size
+                        const resizedBuffer = await resizeImage(coverPhoto.buffer, 800, 450);
                         const coverKey = `uploads/profiles/${Date.now()}_${coverPhoto.originalname}`;
                         const coverParams = {
                             Bucket: process.env.BUCKET_NAME,

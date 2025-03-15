@@ -25,3 +25,4 @@ router.get('/catalogue/:storeId', getCatalogueItems);
 router.put('/catalogue/edit/:id', editCatalogueItem);
 
 export default router;
+  
