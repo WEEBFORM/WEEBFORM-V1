@@ -5,11 +5,11 @@ import { cpUpload } from "../../middlewares/storage.js";
 import multer from "multer";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
-import WeebAI from "../../AI AGENT/WeebAIClass.js";
+// import WeebAI from "../../AI AGENT/WeebAIClass.js";
 import NodeCache from 'node-cache';
 
 const postCache = new NodeCache({ stdTTL: 300 }); 
-const weebAI = new WeebAI(process.env.GEMINI_API_KEY);
+// const weebAI = new WeebAI(process.env.GEMINI_API_KEY);
 
 const shufflePosts = (array) => {
     for (let i = array.length - 1; i > 0; i--) {
@@ -36,23 +36,23 @@ export const newPost = async (req, res) => {
                 const media = req.files && req.files["media"] ? req.files["media"] : [];
                 const uploadedMediaUrls = [];
 
-                try {
-                    console.log("AI moderation check starting...");
-                    console.log("WeebAI intents:", weebAI.intents);
-                    console.log("Delete content intent:", weebAI.intents?.delete_content);
+                // try {
+                //     console.log("AI moderation check starting...");
+                //     console.log("WeebAI intents:", weebAI.intents);
+                //     console.log("Delete content intent:", weebAI.intents?.delete_content);
                     
-                    if (!weebAI.intents?.delete_content || !weebAI.intents.delete_content.checkContent) {
-                        throw new Error("AI moderation function is not properly initialized.");
-                    }
+                //     if (!weebAI.intents?.delete_content || !weebAI.intents.delete_content.checkContent) {
+                //         throw new Error("AI moderation function is not properly initialized.");
+                //     }
                     
-                    const shouldDelete = await weebAI.intents.delete_content.checkContent(description);
-                    if (shouldDelete) {
-                        return res.status(400).json({ message: "Post violates community guidelines and was deleted." });
-                    }
-                } catch (error) {
-                    console.error("AI moderation error:", error);
-                    return res.status(500).json({ message: "AI moderation failed.", error: error.message });
-                }
+                //     const shouldDelete = await weebAI.intents.delete_content.checkContent(description);
+                //     if (shouldDelete) {
+                //         return res.status(400).json({ message: "Post violates community guidelines and was deleted." });
+                //     }
+                // } catch (error) {
+                //     console.error("AI moderation error:", error);
+                //     return res.status(500).json({ message: "AI moderation failed.", error: error.message });
+                // }
 
                 for (const file of media) {
                     const params = {
