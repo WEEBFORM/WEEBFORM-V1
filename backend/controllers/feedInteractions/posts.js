@@ -33,27 +33,10 @@ export const newPost = async (req, res) => {
 
                 const userId = req.user.id;
                 const { description, tags, category } = req.body;
-                const media = req.files && req.files["media"] ? req.files["media"] : [];
-                const uploadedMediaUrls = [];
+                const media = req.files && req.files["media"] ? req.files["media"] : []; // Ensure media is an array
+                let uploadedMediaUrls = [];
 
-                // try {
-                //     console.log("AI moderation check starting...");
-                //     console.log("WeebAI intents:", weebAI.intents);
-                //     console.log("Delete content intent:", weebAI.intents?.delete_content);
-                    
-                //     if (!weebAI.intents?.delete_content || !weebAI.intents.delete_content.checkContent) {
-                //         throw new Error("AI moderation function is not properly initialized.");
-                //     }
-                    
-                //     const shouldDelete = await weebAI.intents.delete_content.checkContent(description);
-                //     if (shouldDelete) {
-                //         return res.status(400).json({ message: "Post violates community guidelines and was deleted." });
-                //     }
-                // } catch (error) {
-                //     console.error("AI moderation error:", error);
-                //     return res.status(500).json({ message: "AI moderation failed.", error: error.message });
-                // }
-
+                // Loop through media files to upload and get URLs
                 for (const file of media) {
                     const params = {
                         Bucket: process.env.BUCKET_NAME,
@@ -61,13 +44,27 @@ export const newPost = async (req, res) => {
                         Body: file.buffer,
                         ContentType: file.mimetype,
                     };
-                    await s3.send(new PutObjectCommand(params));
-                    uploadedMediaUrls.push(`https://${process.env.BUCKET_NAME}.s3.amazonaws.com/${params.Key}`);
+                    try {
+                        await s3.send(new PutObjectCommand(params));
+                        uploadedMediaUrls.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`); 
+                    } catch (s3Error) {
+                        console.error("Error uploading to S3:", s3Error);
+                        return res.status(500).json({ message: "Error uploading image to S3", error: s3Error.message });
+                    }
                 }
-                const query = "INSERT INTO posts (userId, description, tags, category, media, createdAt) VALUES (?, ?, ?, ?, ?, ?)";
-                const values = [userId, description, tags, category, JSON.stringify(uploadedMediaUrls), moment().format("YYYY-MM-DD HH:mm:ss")];
-                await db.execute(query, values);
 
+                // If there are multiple images, store them as a comma-separated string
+                const mediaString = uploadedMediaUrls.join(',');
+
+                const query = "INSERT INTO posts (userId, description, tags, category, media, createdAt) VALUES (?, ?, ?, ?, ?, ?)";
+                const values = [userId, description, tags, category, mediaString, moment().format("YYYY-MM-DD HH:mm:ss")];
+
+                try {
+                   await db.promise().execute(query, values);
+                } catch (dbError) {
+                     console.error("Error inserting into database:", dbError);
+                     return res.status(500).json({ message: "Database insertion error", error: dbError.message });
+                }
                 return res.status(201).json({ message: "Post created successfully." });
             });
         } catch (error) {

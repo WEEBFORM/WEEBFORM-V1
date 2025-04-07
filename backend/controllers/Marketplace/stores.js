@@ -58,7 +58,7 @@ async function handleNewStore(req, res, user){
                     };
                     const command = new PutObjectCommand(params);
                     await s3.send(command);
-                    logoImage = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
+                    logoImage = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`; 
                 } catch (uploadError) {
                     console.error("Error uploading file:", uploadError);
                     return res.status(500).json({ message: "Error uploading file to S3", error: uploadError });
