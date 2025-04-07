@@ -8,7 +8,7 @@ import {
     addCatalogueItem,
     getCatalogueItems,
     editCatalogueItem
-} from "../controllers/marketplace.js";
+} from "../controllers/Marketplace/stores.js";
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ router.post('/create', newStore);
 router.get('/', viewStores);
 router.get('/:id', viewSingleStore);
 router.put('/edit-store-details/:id', editStoreDetails);
-router.delete('/close-store/:id', closeStore);
+router.delete('/close-store/:id', closeStore); 
 
 // CATALOGUE ENPOINTS
 router.post('/:id/catalogue', addCatalogueItem);

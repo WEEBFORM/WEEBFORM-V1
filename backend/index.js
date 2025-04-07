@@ -15,15 +15,15 @@ import AppError from './utils/appError.js';
 import logger from './utils/logger.js';
 
 // ROUTES
-import authRoute from './routes/auth.js';
-import Users from './routes/users.js';
-import forgottenPasswordRoute from './routes/resetpasswordRoute.js';
-import postRoute from './routes/posts.js';
-import followRoute from './routes/followers.js';
-import Likes from './routes/likes.js';
-import Stories from './routes/stories.js';
-import Comments from './routes/comments.js';
-import Replies from './routes/commentReplies.js';
+import authRoute from './routes/Users/auth.js';
+import Users from './routes/Users/users.js';
+import forgottenPasswordRoute from './routes/Users/resetpasswordRoute.js';
+import postRoute from './routes/Home/posts.js';
+import followRoute from './routes/Home/followers.js';
+import Likes from './routes/Home/likes.js';
+import Stories from './routes/Home/stories.js';
+import Comments from './routes/Home/comments.js';
+import Replies from './routes/Home/commentReplies.js';
 import Stores from './routes/marketplace.js';
 import News from './routes/news.js';
 import Communities from './routes/Community/community.js';

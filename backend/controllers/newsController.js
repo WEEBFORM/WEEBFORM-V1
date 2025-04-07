@@ -32,7 +32,7 @@ export const allnews = async (req, res) => {
                     (
                         p.description LIKE '%to be released%' OR
                         p.description LIKE '%will be released%' OR
-                        p.description LIKE '%Release%' OR
+                        p.description LIKE '%Released%' OR
                         p.description LIKE '%release%' OR
                         p.description LIKE '%releases%' OR
                         p.description LIKE '%releasing%' OR
@@ -41,8 +41,9 @@ export const allnews = async (req, res) => {
                         p.description LIKE '%Announcement%' OR
                         p.description LIKE '%announcement%' OR
                         p.description LIKE '%Highlights%' OR
+                        p.description LIKE '%Info%' OR
                         p.description LIKE '%Season%' OR
-                        p.description LIKE '%premiere%'
+                        p.description LIKE '%premieres%'
                     )
                 GROUP BY
                     p.id, u.id

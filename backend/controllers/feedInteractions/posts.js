@@ -5,9 +5,11 @@ import { cpUpload } from "../../middlewares/storage.js";
 import multer from "multer";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
+import WeebAI from "../../AI AGENT/WeebAIClass.js";
 import NodeCache from 'node-cache';
 
 const postCache = new NodeCache({ stdTTL: 300 }); 
+const weebAI = new WeebAI(process.env.GEMINI_API_KEY);
 
 const shufflePosts = (array) => {
     for (let i = array.length - 1; i > 0; i--) {
@@ -26,13 +28,31 @@ export const newPost = async (req, res) => {
                     return res.status(400).json({ message: "File upload error", error: uploadErr.message });
                 } else if (uploadErr) {
                     console.error("Unexpected error during upload:", uploadErr);
-                    return res.status(500).json({ message: "File upload failed", error: 'Unexpected error' });
+                    return res.status(500).json({ message: "File upload failed", error: "Unexpected error" });
                 }
 
                 const userId = req.user.id;
                 const { description, tags, category } = req.body;
                 const media = req.files && req.files["media"] ? req.files["media"] : [];
                 const uploadedMediaUrls = [];
+
+                try {
+                    console.log("AI moderation check starting...");
+                    console.log("WeebAI intents:", weebAI.intents);
+                    console.log("Delete content intent:", weebAI.intents?.delete_content);
+                    
+                    if (!weebAI.intents?.delete_content || !weebAI.intents.delete_content.checkContent) {
+                        throw new Error("AI moderation function is not properly initialized.");
+                    }
+                    
+                    const shouldDelete = await weebAI.intents.delete_content.checkContent(description);
+                    if (shouldDelete) {
+                        return res.status(400).json({ message: "Post violates community guidelines and was deleted." });
+                    }
+                } catch (error) {
+                    console.error("AI moderation error:", error);
+                    return res.status(500).json({ message: "AI moderation failed.", error: error.message });
+                }
 
                 for (const file of media) {
                     const params = {
@@ -42,33 +62,23 @@ export const newPost = async (req, res) => {
                         ContentType: file.mimetype,
                     };
                     await s3.send(new PutObjectCommand(params));
-                    uploadedMediaUrls.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`);
+                    uploadedMediaUrls.push(`https://${process.env.BUCKET_NAME}.s3.amazonaws.com/${params.Key}`);
                 }
+                const query = "INSERT INTO posts (userId, description, tags, category, media, createdAt) VALUES (?, ?, ?, ?, ?, ?)";
+                const values = [userId, description, tags, category, JSON.stringify(uploadedMediaUrls), moment().format("YYYY-MM-DD HH:mm:ss")];
+                await db.execute(query, values);
 
-                const q = "INSERT INTO posts (`userId`, `description`, `media`, `tags`, `category`, `createdAt`) VALUES (?)";
-                const values = [
-                    userId,
-                    description,
-                    uploadedMediaUrls.join(","),
-                    tags,
-                    category,
-                    moment(Date.now()).format("YYYY-MM-DD HH:mm:ss"),
-                ];
-                const [result] = await db.promise().query(q, [values]);
-                const postId = result.insertId; // Assuming you want the newly inserted post ID
-                const response = { message: "Post created successfully", postId };
-                postCache.flushAll() //Invalidate cache on update
-
-                res.status(201).json(response); // Use 201 for successful creation
+                return res.status(201).json({ message: "Post created successfully." });
             });
         } catch (error) {
-            console.error("Error in newPost:", error);
-            res.status(500).json({ message: "Failed to create post", error });
+            console.error("Error creating post:", error);
+            return res.status(500).json({ message: "Server error.", error: error.message });
         }
     });
 };
 
-// Helper function to fetch posts
+
+// HELPER FUNCTION TO FETCH POSTS
 const fetchPostsData = async (q, params) => {
     try {
         const [rows] = await db.promise().query(q, params);
@@ -155,7 +165,7 @@ const getPosts = async (req, res, queryType) => {
                 })
             );
                if (queryType !=="user"){
-                     postCache.set(cacheKey, posts);   // Store results in cache
+                     postCache.set(cacheKey, posts);
                 }
             }
             res.status(200).json(posts);
@@ -166,7 +176,6 @@ const getPosts = async (req, res, queryType) => {
     });
 }; 
 
-// Separate handler functions for each type
 export const allPosts = (req, res) => getPosts(req, res, 'all');
 export const followingPosts = (req, res) => getPosts(req, res, 'following');
 export const userPosts = (req, res) => getPosts(req, res, 'user');
@@ -247,7 +256,7 @@ export const getPostById = async (req, res) => {
                 return res.status(404).json({ message: "Post not found" });
             }
 
-            const post = data[0]; // Get the first (and only) post
+            const post = data[0];
             if (post.media) {
                 const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
                 try {
@@ -285,7 +294,6 @@ export const deletePost = async (req, res) => {
             const { mediaUrl } = data[0];
             const mediaUrls = mediaUrl ? mediaUrl.split(",") : [];
 
-            // Delete media from S3 concurrently
             await Promise.all(mediaUrls.map(async (url) => {
                 const key = s3KeyFromUrl(url);
                 if (key) {
@@ -304,12 +312,11 @@ export const deletePost = async (req, res) => {
                 }
             }));
 
-            // Delete the post from database
             const deletePostQuery = "DELETE FROM posts WHERE id = ? AND userId = ?";
             const [result] = await db.promise().query(deletePostQuery, [postId, userId]);
 
             if (result.affectedRows > 0) {
-                 postCache.flushAll() //Invalidate cache on update
+                 postCache.flushAll()
 
                 return res.status(200).json({ message: "Post deleted successfully." });
             } else {

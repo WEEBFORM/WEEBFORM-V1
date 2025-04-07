@@ -1,5 +1,5 @@
 import express from "express";
-import { followUser, getFollowers, unfollowUser, getFollowing, checkFollowStatus, getRecommendedUsers } from "../controllers/feedInteractions/followers.js"
+import { followUser, getFollowers, unfollowUser, getFollowing, checkFollowStatus, getRecommendedUsers } from "../../controllers/feedInteractions/followers.js"
 
 const router = express.Router()
 

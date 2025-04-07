@@ -1,5 +1,5 @@
 import express from "express";
-import {like, getLikes, unlike} from "../controllers/feedInteractions/likes.js"
+import {like, getLikes, unlike} from "../../controllers/feedInteractions/likes.js"
 
 const router = express.Router()
 

@@ -1,3 +1,4 @@
+
 import express from "express";
 import {
     allnews,
@@ -5,7 +6,7 @@ import {
     animeNewsNetwork,
     fetchConsolidatedAnimeData
 } from "../controllers/newsController.js"
-const router = express.Router()
+const router = express.Router() 
 
 router.get('/', allnews)
 router.get('/ann', animeNewsNetwork)
