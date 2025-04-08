@@ -1054,3 +1054,6 @@
 [2025-04-07 15:54:45] [31merror[39m: Worker 13284 died with code 1, spawning a new one...
 [2025-04-07 17:16:17] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.68.174' (using password: YES)
 [2025-04-07 17:16:19] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.68.174' (using password: YES)
+[2025-04-07 21:28:55] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-04-07 21:28:55] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-04-07 21:28:55] [31merror[39m: Uncaught Exception: read ECONNRESET
