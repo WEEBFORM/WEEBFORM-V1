@@ -4,8 +4,9 @@ import {authenticateUser} from "../../middlewares/verify.mjs"
 import moment from "moment"
 import multer from "multer";
 import {cpUpload} from "../../middlewares/storage.js";
-import { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
+import axios from "axios";
 
 //CREATE NEW STORE
 export const newStore = (req, res) => {
@@ -18,7 +19,7 @@ export const newStore = (req, res) => {
                 return res.status(500).json({ message: "Unknown error", error: err });
             }
 
-            // Check if the user is allowed to create more than one store.
+            // ROLE CHECK
             if (user.role !== 'admin' && user.role !== 'premium') {
                 const checkQuery = "SELECT COUNT(*) AS storeCount FROM stores WHERE ownerId = ?";
                 db.query(checkQuery, [user.id], (err, data) => {
@@ -30,14 +31,11 @@ export const newStore = (req, res) => {
                     if (storeCount >= 1) {
                         return res.status(403).json({ message: "Basic users can only create one store. Upgrade to premium!" });
                     }
-
-                     // Rest of the newStore logic (inside the cpUpload callback)
-                     handleNewStore(req, res, user);  //Call the handleNewStore with all necessary data.
+                     handleNewStore(req, res, user);
 
                 });
             } else {
-                // Rest of the newStore logic for premium users or admin roles (inside the cpUpload callback)
-                handleNewStore(req, res, user); //Call the handleNewStore with all necessary data.
+                handleNewStore(req, res, user);
             }
 
 
@@ -57,7 +55,7 @@ async function handleNewStore(req, res, user){
                         ContentType: photo.mimetype,
                     };
                     const command = new PutObjectCommand(params);
-                    await s3.send(command);
+                    await s3.send (command); 
                     logoImage = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`; 
                 } catch (uploadError) {
                     console.error("Error uploading file:", uploadError);
@@ -68,7 +66,7 @@ async function handleNewStore(req, res, user){
                     INSERT INTO stores (ownerId, label, description, logoImage, category, web_link, created)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 `;
-            const values = [
+            const values = [ 
                 user.id,
                 req.body.label,
                 req.body.description,
@@ -91,71 +89,98 @@ async function handleNewStore(req, res, user){
 
 //API TO VIEW ALL STORES
 export const viewStores = async (req, res) => {
-    authenticateUser(req, res, () => {
+    authenticateUser(req, res, async () => {
+      try {
         const q = `
-        SELECT
-          s.*,
-          u.username AS ownerUsername,
-          u.profilePic AS ownerProfilePic
-        FROM
-          stores AS s
-        JOIN
-          users AS u ON u.id = s.ownerId
-      `;
-
+          SELECT
+            s.*,
+            u.username AS ownerUsername,
+            u.profilePic AS ownerProfilePic,
+            COALESCE(AVG(sr.rating), 0) AS averageRating,
+            COUNT(sr.rating) AS totalRatings
+          FROM
+            stores AS s
+          JOIN
+            users AS u ON u.id = s.ownerId
+          LEFT JOIN
+            store_ratings AS sr ON s.id = sr.storeId
+          GROUP BY
+            s.id
+        `;
+  
         db.query(q, async (err, data) => {
-            if (err) return res.status(500).json(err);
-
-            const processedStores = await Promise.all(
-                data.map(async (store) => {
-                    console.log("Processing store:", store);
-
-                    if (store.logoImage) {
-                        const imageKey = s3KeyFromUrl(store.logoImage);
-                        console.log("Extracted image key:", imageKey);
-
-                        try {
-                            store.logoImage = await generateS3Url(imageKey);
-                        } catch (error) {
-                            console.error("Error generating image URL:", error);
-                            store.logoImage = null;
-                        }
-                    }
-
-                    if (store.ownerProfilePic) {
-                        const profileKey = s3KeyFromUrl(store.ownerProfilePic);
-                        try {
-                            store.ownerProfilePic = await generateS3Url(profileKey);
-                        } catch (error) {
-                            console.error("Error generating owner profilePic URL:", error);
-                            store.ownerProfilePic = null;
-                        }
-                    }
-
-                    return store;
-                })
-            );
-
-            res.status(200).json(processedStores);
+          if (err) {
+            console.error("Database query error:", err);
+            return res.status(500).json({ message: "Database error", error: err });
+          }
+  
+          const processedStores = await Promise.all(
+            data.map(async (store) => {
+              if (store.logoImage) {
+                try {
+                  store.logoImage = await generateS3Url(s3KeyFromUrl(store.logoImage));
+                } catch (error) {
+                  console.error("Error generating logo image URL:", error);
+                  store.logoImage = null;
+                }
+              }
+  
+              if (store.ownerProfilePic) {
+                try {
+                  store.ownerProfilePic = await generateS3Url(
+                    s3KeyFromUrl(store.ownerProfilePic)
+                  );
+                } catch (error) {
+                  console.error("Error generating owner profilePic URL:", error);
+                  store.ownerProfilePic = null;
+                }
+              }
+  
+              return store;
+            })
+          );
+  
+          // Sort stores by average rating in descending order
+          const sortedStores = [...processedStores].sort(
+            (a, b) => b.averageRating - a.averageRating
+          );
+  
+          // Extract top 10 stores for "specialStores"
+          const specialStores = sortedStores.slice(0, 10);
+  
+          const stores = shuffleStores(processedStores)
+  
+          res.status(200).json({
+            availableStores: stores,
+            specialStores: specialStores, 
+          });
         });
+      } catch (error) {
+        console.error("Error in viewStores:", error);
+        res.status(500).json({ message: "Failed to fetch stores", error: error });
+      }
     });
-};
+  };
 
 //API TO VIEW A SINGLE STORE
 export const viewSingleStore = async (req, res) => {
     authenticateUser(req, res, async () => {
         const storeId = req.params.id;
+
         const q = `
-    SELECT
-        s.*,
-        u.username AS ownerUsername,
-        u.profilePic AS ownerProfilePic
-    FROM
-        stores AS s
-    JOIN
-        users AS u ON u.id = s.ownerId
-    WHERE s.id = ?
-    `;
+        SELECT
+            s.*,
+            u.username AS ownerUsername,
+            u.profilePic AS ownerProfilePic,
+            (SELECT AVG(rating) FROM store_ratings WHERE storeId = s.id) AS averageRating,
+            (SELECT COUNT(*) FROM store_ratings WHERE storeId = s.id) AS totalRatings,
+            (SELECT COUNT(*) FROM store_visits WHERE storeId = s.id) AS visitCount
+        FROM
+            stores AS s
+        JOIN
+            users AS u ON u.id = s.ownerId
+        WHERE s.id = ?
+        `;
 
         db.query(q, [storeId], async (err, data) => {
             if (err) return res.status(500).json(err);
@@ -184,7 +209,29 @@ export const viewSingleStore = async (req, res) => {
                     store.ownerProfilePic = null;
                 }
             }
-            res.status(200).json(store);
+
+            // After successfully fetching the store details, record the visit
+            try {
+                // Make a request to the recordStoreVisit endpoint
+                await axios.post(`http://localhost:8000/api/v1/stores/record-store-visit/${storeId}`, {}, {  // Pass an empty object as data
+                    headers: {
+                        Cookie: req.get('Cookie')//req.headers.cookie // Forward the cookies, most importantly the access token
+                    }
+                });
+
+                console.log("Store visit recorded successfully.");
+            } catch (visitError) {
+                console.error("Error recording store visit:", visitError);
+                // Log the error, but don't block the store details response
+                // It's important not to break the main functionality
+            }
+
+            res.status(200).json({
+              ...store,
+               averageRating: store.averageRating ? parseFloat(store.averageRating).toFixed(1) : "0.0", //Format average rating if it exists
+               totalRatings: store.totalRatings || 0, //Ensure totalRatings always returns a number
+                visitCount: store.visitCount || 0
+            });
         })
     })
 }
@@ -294,248 +341,7 @@ export const closeStore = (req, res) => {
     });
 };
 
-// API TO ADD NEW CATALOGUE ITEM
-export const addCatalogueItem = (req, res) => {
-    authenticateUser(req, res, () => {
-        cpUpload(req, res, async (err) => {
-            const ownerId = req.user.id;
-            const storeId = req.params.id;
-            if (err instanceof multer.MulterError) {
-                return res.status(500).json({ message: "File upload error", error: err });
-            } else if (err) {
-                return res.status(500).json({ message: "Unknown error", error: err });
-            }
 
-            const { product_name, product_description, price, delivery_time, purchase_link } = req.body;
-            if (!Number.isInteger(Number(storeId))) {
-                return res.status(400).json({ message: "Invalid store ID" });
-            }
-
-            const storeQuery = "SELECT * FROM stores WHERE id = ? AND ownerId = ?";
-            db.query(storeQuery, [storeId, ownerId], async (err, storeData) => {
-                if (err) return res.status(500).json({ message: "Database error", error: err });
-                if (storeData.length === 0) {
-                    return res.status(403).json({ message: "Not authorized to add catalogue item to this store" });
-                }
-
-                let productImageUrl = null;
-                if (req.files && req.files.productImage && req.files.productImage[0]) {
-                    try {
-                        const photo = req.files.productImage[0];
-                        const params = {
-                            Bucket: process.env.BUCKET_NAME,
-                            Key: `uploads/stores/${Date.now()}_${photo.originalname}`,
-                            Body: photo.buffer,
-                            ContentType: photo.mimetype,
-                        };
-                        const command = new PutObjectCommand(params);
-                        await s3.send(command);
-                        productImageUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
-                    } catch (uploadError) {
-                        console.error("Error uploading catalogue image:", uploadError); 
-                        return res.status(500).json({ message: "Error uploading product image to S3", error: uploadError });
-                    }
-                }
-                else{
-                   return res.status(400).json({ message: "Missing catalogue image"});
-                }
-
-                const insertQuery = `
-                    INSERT INTO catalogue_items
-                    (storeId, product_image, product_name, product_description, price, delivery_time, purchase_link, created)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                `;
-                const values = [
-                    storeId,
-                    productImageUrl,
-                    product_name,
-                    product_description,
-                    price,
-                    delivery_time,
-                    purchase_link,
-                    moment(Date.now()).format("YYYY-MM-DD HH:mm:ss")
-                ];
-
-                db.query(insertQuery, values, (err, result) => {
-                    if (err) return res.status(500).json({ message: "Error adding catalogue item", error: err });
-                    return res.status(200).json({ message: "Catalogue item added successfully", itemId: result.insertId });
-                });
-            });
-        });
-    });
-};
-
-// API TO GET CATALOGUE ITEMS FOR A STORE
-export const getCatalogueItems = (req, res) => {
-    authenticateUser(req, res, () => {
-        const storeId = req.params.storeId;
-        if (!Number.isInteger(Number(storeId))) {
-            return res.status(400).json({ message: "Invalid store ID" });
-        }
-
-        const q = `SELECT * FROM catalogue_items WHERE storeId = ? ORDER BY created DESC`;
-        db.query(q, [storeId], async (err, data) => {
-            if (err) return res.status(500).json({ message: "Error fetching catalogue items", error: err });
-
-            const processedItems = await Promise.all(data.map(async (item) => {
-                if (item.product_image) {
-                    const imageKey = s3KeyFromUrl(item.product_image);
-                    try {
-                        item.product_image = await generateS3Url(imageKey);
-                    } catch (error) {
-                        console.error("Error generating product image URL:", error);
-                        item.product_image = null;
-                    }
-                }
-                return item;
-            }));
-            res.status(200).json(processedItems);
-        });
-    });
-};
-
-
-// API TO EDIT CATALOGUE ITEM
-export const editCatalogueItem = (req, res) => {
-    authenticateUser(req, res, () => {
-        cpUpload(req, res, async (err) => {
-            if (err instanceof multer.MulterError) {
-                return res.status(500).json({ message: "File upload error", error: err });
-            } else if (err) {
-                return res.status(500).json({ message: "Unknown error", error: err });
-            }
-
-            const itemId = req.params.id;
-            const { product_name, product_description, price, delivery_time, purchase_link } = req.body;
-
-            const itemQuery = "SELECT * FROM catalogue_items WHERE id = ?";
-            db.query(itemQuery, [itemId], async (err, items) => {
-                if (err) return res.status(500).json({ message: "Database error", error: err });
-                if (items.length === 0) {
-                    return res.status(404).json({ message: "Catalogue item not found" });
-                }
-                const item = items[0];
-
-                const storeQuery = "SELECT * FROM stores WHERE id = ? AND ownerId = ?";
-                db.query(storeQuery, [item.storeId, req.user.id], async (err, storeData) => {
-                    if (err) return res.status(500).json({ message: "Database error", error: err });
-                    if (storeData.length === 0) {
-                        return res.status(403).json({ message: "Not authorized to edit this catalogue item" });
-                    }
-
-                    let productImageUrl = item.product_image;
-                    if (req.files && req.files.productImage && req.files.productImage[0]) {
-                        try {
-                            const photo = req.files.productImage[0];
-                            const params = {
-                                Bucket: process.env.BUCKET_NAME,
-                                Key: `uploads/stores/${Date.now()}_${photo.originalname}`,
-                                Body: photo.buffer,
-                                ContentType: photo.mimetype,
-                            };
-                            const command = new PutObjectCommand(params);
-                            await s3.send(command);
-                            productImageUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
-                        } catch (uploadError) {
-                            console.error("Error uploading new catalogue image:", uploadError);
-                            return res.status(500).json({ message: "Error uploading new product image", error: uploadError });
-                        }
-                    }
-
-                    const updateQuery = `
-                        UPDATE catalogue_items
-                        SET product_image = ?, product_name = ?, product_description = ?, price = ?, delivery_time = ?, purchase_link = ?
-                        WHERE id = ?
-                    `;
-                    const values = [
-                        productImageUrl,
-                        product_name || item.product_name,
-                        product_description || item.product_description,
-                        price || item.price,
-                        delivery_time || item.delivery_time,
-                        purchase_link || item.purchase_link,
-                        itemId
-                    ];
-                    db.query(updateQuery, values, (err, result) => {
-                        if (err) return res.status(500).json({ message: "Error updating catalogue item", error: err });
-                        return res.status(200).json({ message: "Catalogue item updated successfully" });
-                    });
-                });
-            });
-        });
-    });
-};
-
-// API TO DELETE A CATALOGUE ITEM
-export const deleteCatalogueItem = (req, res) => {
-    authenticateUser(req, res, async () => {
-        const user = req.user;
-        const itemId = req.params.id;
-
-        try {
-            const getItemQuery = "SELECT storeId, product_image FROM catalogue_items WHERE id = ?";
-            db.query(getItemQuery, [itemId], async (err, itemData) => {
-                if (err) {
-                    return res.status(500).json({ message: "Database query error", error: err });
-                }
-
-                if (itemData.length === 0) {
-                    return res.status(404).json({ message: "Catalogue item not found." });
-                }
-
-                const item = itemData[0];
-
-                const storeQuery = "SELECT ownerId FROM stores WHERE id = ?";
-                db.query(storeQuery, [item.storeId], async (err, storeData) => {
-                    if (err) {
-                        return res.status(500).json({ message: "Database query error", error: err });
-                    }
-
-                    if (storeData.length === 0) {
-                        return res.status(404).json({ message: "Store not found." });
-                    }
-
-                    if (storeData[0].ownerId !== user.id) {
-                        return res.status(403).json({ message: "You are not authorized to delete this catalogue item." });
-                    }
-                    if (item.product_image) {
-                        const productImageKey = s3KeyFromUrl(item.product_image);
-                        if (productImageKey) {
-                            try {
-                                const deleteCommand = new DeleteObjectCommand({
-                                    Bucket: process.env.BUCKET_NAME,
-                                    Key: productImageKey,
-                                });
-                                await s3.send(deleteCommand);
-                                console.log("S3 object deleted successfully:", productImageKey);
-                            } catch (s3Error) {
-                                console.error("Error deleting S3 object:", s3Error);
-                                return res.status(500).json({ message: "Error deleting product image from S3", error: s3Error });
-                            }
-                        } else {
-                            console.warn("Invalid S3 URL, skipping deletion:", item.product_image);
-                        }
-                    }
-                    const deleteItemQuery = "DELETE FROM catalogue_items WHERE id = ?";
-                    db.query(deleteItemQuery, [itemId], (err, result) => {
-                        if (err) {
-                            return res.status(500).json({ message: "Database deletion error", error: err });
-                        }
-
-                        if (result.affectedRows > 0) {
-                            return res.status(200).json({ message: "Catalogue item deleted successfully." });
-                        } else {
-                            return res.status(404).json({ message: "Catalogue item not found." });
-                        }
-                    });
-                });
-            });
-        } catch (error) {
-            console.error("Error deleting catalogue item:", error);
-            return res.status(500).json({ message: "Failed to delete catalogue item", error: error });
-        }
-    });
-};
 
 const shuffleStores = (array) => {
     for (let i = array.length - 1; i > 0; i--) {

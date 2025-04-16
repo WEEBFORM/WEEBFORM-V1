@@ -10,94 +10,278 @@ import { executeQuery } from "../../middlewares/dbExecute.js";
 import NodeCache from 'node-cache';
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
-const userProfileCache = new NodeCache({ stdTTL: 600 }); // Cache user data for 10 minutes
-
+const userProfileCache = new NodeCache({ stdTTL: 600 }); 
 const resizeImage = async (buffer, width, height) => {
-    return await sharp(buffer).resize(width, height).toBuffer();
+    try {
+        return await sharp(buffer).resize(width, height).toBuffer();
+    } catch (error) {
+        console.error("Error resizing image:", error);
+        throw new Error("Failed to resize image");
+    }
+};
+const deleteS3Object = async (fileUrl) => {
+    // Basic validation for the URL format
+    if (!fileUrl || typeof fileUrl !== 'string' || !fileUrl.startsWith(`https://${process.env.BUCKET_NAME}.s3.`)) {
+         console.warn(`Skipping deletion for invalid or non-matching S3 URL: ${fileUrl}`);
+        return;
+    }
+    try {
+        const key = s3KeyFromUrl(fileUrl);
+        if (key && key.trim() !== '') {
+            const deleteParams = {
+                Bucket: process.env.BUCKET_NAME,
+                Key: key,
+            };
+            console.log(`Attempting to delete S3 object with key: ${key}`);
+            await s3.send(new DeleteObjectCommand(deleteParams));
+            console.log(`Successfully deleted old S3 object: ${key}`);
+        } else {
+             console.warn(`Could not extract a valid key from URL: ${fileUrl}`);
+        }
+    } catch (error) {
+        if (error.name === 'NoSuchKey') {
+             console.warn(`S3 object key not found during deletion attempt (might have been deleted already): ${key}`);
+        } else {
+            console.error(`Failed to delete S3 object with key '${key}' derived from ${fileUrl}:`, error);
+        }
+    }
 };
 
-// API TO EDIT USER INFO
+// API TO EDIT USER INFO (Profile fields, excluding password) - Updated
 export const editProfile = async (req, res) => {
-    authenticateUser(req, res, async () => { // Ensure async for proper error handling
-        const user = req.user;
+    authenticateUser(req, res, async () => {
+        const authenticatedUser = req.user;
+        const userId = authenticatedUser.id;
+
+        if (!userId) {
+            return res.status(401).json({ message: "Authentication failed, user ID missing." });
+        }
+
         try {
             cpUpload(req, res, async (uploadErr) => {
-                if (uploadErr instanceof multer.MulterError) {
-                    return res.status(400).json({ message: "File upload error", error: uploadErr.message }); // Improved error message
-                } else if (uploadErr) {
-                    console.error("Unexpected error during upload:", uploadErr);
-                    return res.status(500).json({ message: "File upload failed", error: 'Unexpected error' });
+                if (uploadErr /* ... handle upload errors ... */ ) {
+                     console.error(`Multer error during profile update for user ${userId}:`, uploadErr);
+                     return res.status(400).json({ message: "File upload error", error: uploadErr.message });
+                 } else if (uploadErr) {
+                    console.error(`Unexpected error during file processing middleware for user ${userId}:`, uploadErr);
+                     return res.status(500).json({ message: "File processing failed", error: 'Internal server error during file handling' });
+                 }
+
+
+                let newProfilePicUrl = null;
+                let newCoverPhotoUrl = null;
+                const s3UploadPromises = [];
+                const oldImageUrlsToDelete = [];
+
+                // --- Process Image Uploads ---
+                try {
+                    if (req.files) {
+                        // Process Profile Picture
+                        if (req.files.profilePic && req.files.profilePic[0]) {
+                            const profilePicFile = req.files.profilePic[0];
+                             if (profilePicFile.size > 5 * 1024 * 1024) { /* ... size validation ... */
+                                return res.status(400).json({ message: "Profile picture file size exceeds limit (5MB)." });
+                             }
+                            const resizedBuffer = await resizeImage(profilePicFile.buffer, 300, 300);
+                            // Generate a unique key
+                            const profileKey = `uploads/profiles/${userId}_profile_${Date.now()}_${profilePicFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
+                            const profileParams = {
+                                Bucket: process.env.BUCKET_NAME, // Use env var directly
+                                Key: profileKey,
+                                Body: resizedBuffer,
+                                ContentType: profilePicFile.mimetype
+                            };
+                            // Construct the public URL using env vars directly
+                            newProfilePicUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${profileKey}`;
+                            // Use the imported s3 client
+                            s3UploadPromises.push(s3.send(new PutObjectCommand(profileParams)).catch(err => { throw new Error(`S3 Profile Pic Upload Error: ${err.message}`) }));
+                            if (authenticatedUser.profilePic) {
+                                oldImageUrlsToDelete.push(authenticatedUser.profilePic);
+                            }
+                        }
+
+                        // Process Cover Photo (similar changes)
+                        if (req.files.coverPhoto && req.files.coverPhoto[0]) {
+                            const coverPhotoFile = req.files.coverPhoto[0];
+                             if (coverPhotoFile.size > 10 * 1024 * 1024) { /* ... size validation ... */
+                                return res.status(400).json({ message: "Cover photo file size exceeds limit (10MB)." });
+                             }
+                            const resizedBuffer = await resizeImage(coverPhotoFile.buffer, 800, 450);
+                            const coverKey = `uploads/profiles/${userId}_cover_${Date.now()}_${coverPhotoFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
+                            const coverParams = {
+                                Bucket: process.env.BUCKET_NAME, // Use env var directly
+                                Key: coverKey,
+                                Body: resizedBuffer,
+                                ContentType: coverPhotoFile.mimetype
+                            };
+                            // Construct the public URL using env vars directly
+                            newCoverPhotoUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${coverKey}`;
+                             // Use the imported s3 client
+                            s3UploadPromises.push(s3.send(new PutObjectCommand(coverParams)).catch(err => { throw new Error(`S3 Cover Photo Upload Error: ${err.message}`) }));
+                            if (authenticatedUser.coverPhoto) {
+                                oldImageUrlsToDelete.push(authenticatedUser.coverPhoto);
+                            }
+                        }
+                    }
+
+                    // Wait for all S3 uploads
+                    if (s3UploadPromises.length > 0) {
+                         console.log(`Uploading ${s3UploadPromises.length} file(s) to S3 for user ${userId}...`);
+                         await Promise.all(s3UploadPromises);
+                         console.log(`S3 uploads completed successfully for user ${userId}.`);
+                    }
+
+                } catch (imageProcessingError) {
+                     console.error(`Error processing or uploading images for user ${userId}:`, imageProcessingError);
+                     return res.status(500).json({ message: "Failed to process or upload image(s)", error: imageProcessingError.message || "Internal server error" });
                 }
 
-                let profilePicUrl = user.profilePic;
-                let coverPhotoUrl = user.coverPhoto;
+                // --- Dynamically Build Update Query ---
+                const updateFieldsPayload = {};
+                const values = [];
+                const setClauses = [];
+                const allowedTextFields = { 
+                     email: 'email',
+                     full_name: 'full_name',
+                     username: 'username',
+                     nationality: 'nationality',
+                     bio: 'bio',
+                     dateOfBirth: 'dateOfBirth',
+                 };
 
-                if (req.files) {
-                    if (req.files.profilePic && req.files.profilePic[0]) {
-                        const profilePic = req.files.profilePic[0];
-                        const resizedBuffer = await resizeImage(profilePic.buffer, 300, 300);
-                        const profileKey = `uploads/profiles/${Date.now()}_${profilePic.originalname}`;
-                        const profileParams = {
-                            Bucket: process.env.BUCKET_NAME,
-                            Key: profileKey,
-                            Body: resizedBuffer,
-                            ContentType: profilePic.mimetype,
-                        };
-                        await s3.send(new PutObjectCommand(profileParams));
-                        profilePicUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${profileKey}`;
+                 // Add basic validation here (email format, username format etc.)
+                 // ... (validation logic as before)
 
-                    }
-                    if (req.files.coverPhoto && req.files.coverPhoto[0]) {
-                        const coverPhoto = req.files.coverPhoto[0];
-                        const resizedBuffer = await resizeImage(coverPhoto.buffer, 800, 450);
-                        const coverKey = `uploads/profiles/${Date.now()}_${coverPhoto.originalname}`;
-                        const coverParams = {
-                            Bucket: process.env.BUCKET_NAME,
-                            Key: coverKey,
-                            Body: resizedBuffer,
-                            ContentType: coverPhoto.mimetype,
-                        };
-                        await s3.send(new PutObjectCommand(coverParams));
-                        coverPhotoUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${coverKey}`;
 
+                for (const key in allowedTextFields) {
+                    if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+                        const dbColumn = allowedTextFields[key];
+                        setClauses.push(`${dbColumn} = ?`);
+                        values.push(req.body[key]);
+                        updateFieldsPayload[dbColumn] = req.body[key];
                     }
                 }
 
-                const values = [
-                    req.body.email,
-                    req.body.full_name,
-                    req.body.username,
-                    req.body.nationality,
-                    coverPhotoUrl || user.coverPhoto, 
-                    profilePicUrl || user.profilePic,
-                    req.body.bio,
-                    user.id,
-                ];
+                if (newProfilePicUrl) {
+                    setClauses.push(`profilePic = ?`);
+                    values.push(newProfilePicUrl);
+                    updateFieldsPayload.profilePic = newProfilePicUrl;
+                }
+                if (newCoverPhotoUrl) {
+                    setClauses.push(`coverPhoto = ?`);
+                    values.push(newCoverPhotoUrl);
+                    updateFieldsPayload.coverPhoto = newCoverPhotoUrl;
+                }
+                if (setClauses.length > 0) {
+                    values.push(userId);
+                    const editQuery = `UPDATE users SET ${setClauses.join(', ')} WHERE id = ?`;
 
-                await executeQuery(
-                    `UPDATE users SET email = ?, full_name = ?, username = ?, nationality = ?, coverPhoto = ?, profilePic = ?, bio = ? WHERE id = ?`,
-                    values
-                );
+                    try {
+                        console.log(`Executing DB profile update for user ${userId}.`);
+                        const result = await executeQuery(editQuery, values);
 
-                // Clear cache for updated user
-                userProfileCache.del(user.id); // Remove single user cache, other view might use it too
+                        if (result.affectedRows > 0) {
+                            console.log(`User profile updated successfully in DB for user ID: ${userId}`);
 
-                res.status(200).json({
-                    message: "Account updated successfully",
-                    profilePicUrl,
-                    coverPhotoUrl,
-                    // Omit sensitive data like hashed password
-                });
+                            if(oldImageUrlsToDelete.length > 0){
+                                console.log(`Attempting to delete ${oldImageUrlsToDelete.length} old S3 objects for user ${userId}.`);
+                                await Promise.all(oldImageUrlsToDelete.map(url => deleteS3Object(url)));
+                                console.log(`Finished attempting old S3 object deletion for user ${userId}.`);
+                            }
 
+                            userProfileCache.del(userId);
+                            console.log(`Cache cleared for user ID: ${userId}`);
+
+                             res.status(200).json({
+                                message: "Account details updated successfully",
+                                updatedFields: updateFieldsPayload,
+                            });
+
+                        } else {
+                             console.warn(`No rows updated for user ID: ${userId}. User might not exist or data was identical.`);
+                             res.status(200).json({
+                                message: "Account details processed. No changes needed or applied.",
+                                updatedFields: updateFieldsPayload
+                             });
+                        }
+
+                    } catch (dbError) {
+                        console.error(`Database error updating profile for user ${userId}:`, dbError);
+                        // S3 CALLBACK
+                        console.error(`Attempting S3 rollback due to DB error for user ${userId}.`);
+                        if (newProfilePicUrl) await deleteS3Object(newProfilePicUrl);
+                        if (newCoverPhotoUrl) await deleteS3Object(newCoverPhotoUrl);
+                        return res.status(500).json({ message: "Failed to update profile in database", error: "Database error" });
+                    }
+                } else {
+                    res.status(200).json({ message: "No profile changes were submitted or detected." });
+                }
             });
         } catch (error) {
-            console.error("Unexpected error in editProfile:", error);
-            res.status(500).json({ message: "Failed to edit profile", error: "Unexpected error" });
+            console.error(`Unexpected error in editProfile handler for user ${userId}:`, error);
+            res.status(500).json({ message: "Failed to edit profile due to an unexpected server error", error: "Internal server error" });
         }
     });
 };
 
-// Function to fetch and process user data
+// API TO EDIT USER PASSWORD
+export const editPassword = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
+        const { currentPassword, newPassword } = req.body;
+
+        if (!userId) {
+           return res.status(401).json({ message: "Authentication failed, user ID missing." });
+        }
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: "Current password and new password are required." });
+        }
+        if (newPassword.length < 8) {
+             return res.status(400).json({ message: "New password must be at least 8 characters long." });
+        }
+         if (currentPassword === newPassword) {
+            return res.status(400).json({ message: "New password cannot be the same as the current password." });
+        }
+
+        try {
+            const getUserQuery = "SELECT password FROM users WHERE id = ?";
+            const [users] = await executeQuery(getUserQuery, [userId]);
+
+            if (users.length === 0) {
+                console.error(`User not found during password change attempt for ID: ${userId}`);
+                return res.status(404).json({ message: "User not found." });
+            }
+            const storedPassword = users[0].password;
+            const isMatch = await bcrypt.compare(currentPassword, storedPassword);
+            if (!isMatch) {
+                console.warn(`Incorrect current password attempt for user ID: ${userId}`);
+                return res.status(401).json({ message: "Incorrect current password." });
+            }
+
+            const salt = await bcrypt.genSalt(10);
+            const newHashedPassword = await bcrypt.hash(newPassword, salt);
+
+            const updatePassword = "UPDATE users SET password = ? WHERE id = ?";
+            const [updateResult] = await executeQuery(updatePassword, [newHashedPassword, userId]);
+
+            if (updateResult.affectedRows > 0) {
+                console.log(`Password updated successfully for user ID: ${userId}`);
+                //Invalidate any sessions/tokens associated with this user here - "To Be Implemented"
+                res.status(200).json({ message: "Password updated successfully." });
+            } else {
+                 console.error(`Failed to update password in DB for user ID: ${userId}, although user was found initially.`);
+                 res.status(500).json({ message: "Failed to update password due to a database issue." });
+            }
+
+        } catch (error) {
+            console.error(`Error changing password for user ID ${userId}:`, error);
+            res.status(500).json({ message: "Failed to change password due to a server error.", error: "Internal server error" });
+        }
+    });
+};
+
+// FETCH AND PROCESS USER DATA
 const fetchAndProcessUserData = async (userId) => {
     const q = `SELECT
                     u.*,
@@ -110,11 +294,11 @@ const fetchAndProcessUserData = async (userId) => {
                     u.id = ?`;
     const data = await executeQuery(q, [userId]);
     if (!data.length) {
-        return null; // User not found
+        return null;
     }
     const userInfo = data[0];
 
-    // Generate S3 URLs
+    // GENERATE S3 URLs
     if (userInfo.coverPhoto) {
         const coverPhotoKey = s3KeyFromUrl(userInfo.coverPhoto);
         userInfo.coverPhoto = await generateS3Url(coverPhotoKey);
@@ -132,7 +316,6 @@ export const viewProfile = async (req, res) => {
     authenticateUser(req, res, async () => {
         const userId = req.user.id;
 
-        // Check cache
         let userInfo = userProfileCache.get(userId);
         if (!userInfo) {
             try {
@@ -146,7 +329,6 @@ export const viewProfile = async (req, res) => {
                 return res.status(500).json({ message: "Failed to fetch user profile.", error: "DB_ERROR" });
             }
         }
-
         return res.status(200).json(userInfo);
     });
 }; 
@@ -158,7 +340,6 @@ export const viewUserProfile = async (req, res) => {
         return res.status(400).json({ message: "Invalid userId" });
     }
 
-    // Check cache
     let userInfo = userProfileCache.get(userId);
     if (!userInfo) {
         try {
@@ -191,7 +372,6 @@ export const viewUsers = async (req, res) => {
             return res.status(404).json({ message: "No users found" });
         }
 
-        // Process users to get S3 URLs
         const processedUsers = await Promise.all(users.map(async (user) => {
             if (user.profilePic) {
                 const profilePicKey = s3KeyFromUrl(user.profilePic);
@@ -201,7 +381,7 @@ export const viewUsers = async (req, res) => {
                 const coverPhotoKey = s3KeyFromUrl(user.coverPhoto);
                 user.coverPhoto = await generateS3Url(coverPhotoKey);
             }
-            const { password, ...safeUser } = user; // Ensure password is not exposed
+            const { password, ...safeUser } = user;
             return safeUser;
         }));
 
@@ -215,12 +395,12 @@ export const viewUsers = async (req, res) => {
 // API TO DELETE ACCOUNT
 export const deleteAccount = async (req, res) => {
     authenticateUser(req, res, async () => {
-        const userId = req.user.id; // User ID for better readability
+        const userId = req.user.id;
         try {
             const getMedia = "SELECT profilePic, coverPhoto FROM users WHERE id = ?";
             const mediaData = await executeQuery(getMedia, [userId]);
             if (!mediaData.length) {
-                return res.status(404).json("User not found"); // Inform that user could not be found
+                return res.status(404).json("User not found");
             }
             const { profilePic, coverPhoto } = mediaData[0];
 
@@ -238,14 +418,11 @@ export const deleteAccount = async (req, res) => {
                     await s3.send(new DeleteObjectCommand(deleteParams));
                 }
             };
-
-            // Delete images concurrently for improved speed
             await Promise.all([
                 deleteImageFromS3(profilePic),
                 deleteImageFromS3(coverPhoto)
             ]);
-
-            // Finally, delete user from DB
+            //QUERY DB TO DELETE USER
             await executeQuery("DELETE FROM users WHERE id = ?", [userId]);
             userProfileCache.del(userId)
 

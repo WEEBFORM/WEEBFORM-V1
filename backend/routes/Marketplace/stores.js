@@ -4,11 +4,8 @@ import {
     viewStores, 
     editStoreDetails, 
     closeStore, 
-    viewSingleStore,
-    addCatalogueItem,
-    getCatalogueItems,
-    editCatalogueItem
-} from "../controllers/Marketplace/stores.js";
+    viewSingleStore
+} from "../../controllers/Marketplace/stores.js";
 
 const router = express.Router();
 
@@ -18,11 +15,6 @@ router.get('/', viewStores);
 router.get('/:id', viewSingleStore);
 router.put('/edit-store-details/:id', editStoreDetails);
 router.delete('/close-store/:id', closeStore); 
-
-// CATALOGUE ENPOINTS
-router.post('/:id/catalogue', addCatalogueItem);
-router.get('/catalogue/:storeId', getCatalogueItems);
-router.put('/catalogue/edit/:id', editCatalogueItem);
 
 export default router;
   

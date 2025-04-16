@@ -24,7 +24,9 @@ import Likes from './routes/Home/likes.js';
 import Stories from './routes/Home/stories.js';
 import Comments from './routes/Home/comments.js';
 import Replies from './routes/Home/commentReplies.js';
-import Stores from './routes/marketplace.js';
+import Stores from './routes/Marketplace/stores.js';
+import StoreCatalogs from './routes/Marketplace/catalogRoute.js';
+import StoreRatingAndVsits from './routes/Marketplace/ratingsRoute.js';
 import News from './routes/news.js';
 import Communities from './routes/Community/community.js';
 import CommunityGroupActions from './routes/Community/interactionsRoute.js';
@@ -42,7 +44,7 @@ const WHITELIST = [
 
 const app = express();
 
-// CORS options to allow all origins
+// CORS {All Origins}
 const corsOptions = {
     origin: true,
     credentials: true, 
@@ -114,7 +116,7 @@ app.use('/api/v1/likes', Likes);
 app.use('/api/v1/comments', Comments);
 app.use('/api/v1/replies', Replies);
 app.use('/api/v1/stories', Stories);
-app.use('/api/v1/stores', Stores);
+app.use('/api/v1/stores', Stores, StoreCatalogs, StoreRatingAndVsits);
 app.use('/api/v1/news-content', News);
 app.use('/api/v1/communities', Communities);
 app.use('/api/v1/communities/groups', CommunityGroupActions); 
