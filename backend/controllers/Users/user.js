@@ -5,7 +5,7 @@ import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import { cpUpload } from "../../middlewares/storage.js";
-import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
+import { s3, generateS3Url, s3KeyFromUrl, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
 import { executeQuery } from "../../middlewares/dbExecute.js";
 import NodeCache from 'node-cache';
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
@@ -19,35 +19,8 @@ const resizeImage = async (buffer, width, height) => {
         throw new Error("Failed to resize image");
     }
 };
-const deleteS3Object = async (fileUrl) => {
-    // Basic validation for the URL format
-    if (!fileUrl || typeof fileUrl !== 'string' || !fileUrl.startsWith(`https://${process.env.BUCKET_NAME}.s3.`)) {
-         console.warn(`Skipping deletion for invalid or non-matching S3 URL: ${fileUrl}`);
-        return;
-    }
-    try {
-        const key = s3KeyFromUrl(fileUrl);
-        if (key && key.trim() !== '') {
-            const deleteParams = {
-                Bucket: process.env.BUCKET_NAME,
-                Key: key,
-            };
-            console.log(`Attempting to delete S3 object with key: ${key}`);
-            await s3.send(new DeleteObjectCommand(deleteParams));
-            console.log(`Successfully deleted old S3 object: ${key}`);
-        } else {
-             console.warn(`Could not extract a valid key from URL: ${fileUrl}`);
-        }
-    } catch (error) {
-        if (error.name === 'NoSuchKey') {
-             console.warn(`S3 object key not found during deletion attempt (might have been deleted already): ${key}`);
-        } else {
-            console.error(`Failed to delete S3 object with key '${key}' derived from ${fileUrl}:`, error);
-        }
-    }
-};
 
-// API TO EDIT USER INFO (Profile fields, excluding password) - Updated
+// API TO EDIT USER INFO
 export const editProfile = async (req, res) => {
     authenticateUser(req, res, async () => {
         const authenticatedUser = req.user;
@@ -59,7 +32,7 @@ export const editProfile = async (req, res) => {
 
         try {
             cpUpload(req, res, async (uploadErr) => {
-                if (uploadErr /* ... handle upload errors ... */ ) {
+                if (uploadErr) {
                      console.error(`Multer error during profile update for user ${userId}:`, uploadErr);
                      return res.status(400).json({ message: "File upload error", error: uploadErr.message });
                  } else if (uploadErr) {
@@ -73,17 +46,14 @@ export const editProfile = async (req, res) => {
                 const s3UploadPromises = [];
                 const oldImageUrlsToDelete = [];
 
-                // --- Process Image Uploads ---
                 try {
                     if (req.files) {
-                        // Process Profile Picture
                         if (req.files.profilePic && req.files.profilePic[0]) {
                             const profilePicFile = req.files.profilePic[0];
-                             if (profilePicFile.size > 5 * 1024 * 1024) { /* ... size validation ... */
+                             if (profilePicFile.size > 5 * 1024 * 1024) { 
                                 return res.status(400).json({ message: "Profile picture file size exceeds limit (5MB)." });
                              }
                             const resizedBuffer = await resizeImage(profilePicFile.buffer, 300, 300);
-                            // Generate a unique key
                             const profileKey = `uploads/profiles/${userId}_profile_${Date.now()}_${profilePicFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
                             const profileParams = {
                                 Bucket: process.env.BUCKET_NAME, // Use env var directly
@@ -91,16 +61,12 @@ export const editProfile = async (req, res) => {
                                 Body: resizedBuffer,
                                 ContentType: profilePicFile.mimetype
                             };
-                            // Construct the public URL using env vars directly
                             newProfilePicUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${profileKey}`;
-                            // Use the imported s3 client
                             s3UploadPromises.push(s3.send(new PutObjectCommand(profileParams)).catch(err => { throw new Error(`S3 Profile Pic Upload Error: ${err.message}`) }));
                             if (authenticatedUser.profilePic) {
                                 oldImageUrlsToDelete.push(authenticatedUser.profilePic);
                             }
                         }
-
-                        // Process Cover Photo (similar changes)
                         if (req.files.coverPhoto && req.files.coverPhoto[0]) {
                             const coverPhotoFile = req.files.coverPhoto[0];
                              if (coverPhotoFile.size > 10 * 1024 * 1024) { /* ... size validation ... */
@@ -148,10 +114,6 @@ export const editProfile = async (req, res) => {
                      bio: 'bio',
                      dateOfBirth: 'dateOfBirth',
                  };
-
-                 // Add basic validation here (email format, username format etc.)
-                 // ... (validation logic as before)
-
 
                 for (const key in allowedTextFields) {
                     if (Object.prototype.hasOwnProperty.call(req.body, key)) {

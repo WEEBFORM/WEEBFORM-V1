@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { config } from "dotenv";
 config();
@@ -40,4 +40,46 @@ export const decodeNestedKey = (key) => {
     }
 };
 
-export default {s3, generateS3Url, s3KeyFromUrl, decodeNestedKey}
+export const deleteS3Object = async (fileUrl) => {
+    let key = null; // <<< Declare key outside the try block using let
+
+    try {
+        // BASIC URL FORMAT VALIDATION (Optional based on s3KeyFromUrl robustness)
+        // if (!fileUrl || typeof fileUrl !== 'string' /*|| !fileUrl.startsWith(`https://${process.env.BUCKET_NAME}.s3.`)*/) {
+        //      console.warn(`[S3 Helper] Skipping deletion for invalid input URL: ${fileUrl}`);
+        //     return;
+        // }
+
+        key = s3KeyFromUrl(fileUrl); // Assign value inside try
+
+        if (key && key.trim() !== '') {
+             // Decode the key before sending to S3, as keys are often URL-encoded
+             const decodedKey = decodeNestedKey(key);
+
+            const deleteParams = {
+                Bucket: process.env.BUCKET_NAME,
+                Key: decodedKey, // Use the decoded key
+            };
+            console.log(`[S3 Helper] Attempting to delete S3 object with decoded key: ${decodedKey}`);
+            await s3.send(new DeleteObjectCommand(deleteParams));
+            console.log(`[S3 Helper] Successfully deleted S3 object with decoded key: ${decodedKey}`);
+        } else {
+             console.warn(`[S3 Helper] Could not extract a valid key from URL: ${fileUrl}`);
+        }
+    } catch (error) {
+        // 'key' is now accessible here IF it was successfully assigned in the try block
+        const decodedKeyInfo = key ? decodeNestedKey(key) : "N/A";
+        const keyInfoForLog = key ? `'${decodedKeyInfo}' (decoded) derived from ${fileUrl}` : `from URL ${fileUrl} (key extraction may have failed)`;
+
+        if (error.name === 'NoSuchKey') {
+            console.warn(`[S3 Helper] S3 object key not found during deletion attempt (NoSuchKey): ${keyInfoForLog}`);
+        } else {
+            console.error(`[S3 Helper] Failed to delete S3 object with key ${keyInfoForLog}:`, error);
+            // Consider re-throwing if the caller needs to know about the failure
+            // throw error;
+        }
+    }
+};
+
+
+export default {s3, generateS3Url, s3KeyFromUrl, decodeNestedKey, deleteS3Object}

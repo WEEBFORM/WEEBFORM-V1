@@ -1,11 +1,11 @@
 import {db} from "../../config/connectDB.js"
-import errorHandler from "../../middlewares/Transformer.js";
+import { executeQuery } from "../../middlewares/dbExecute.js";
 import {authenticateUser} from "../../middlewares/verify.mjs"
 import moment from "moment"
 import multer from "multer";
 import {cpUpload} from "../../middlewares/storage.js";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
+import { s3, generateS3Url, s3KeyFromUrl, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
 import axios from "axios";
 
 //CREATE NEW STORE
@@ -236,65 +236,153 @@ export const viewSingleStore = async (req, res) => {
     })
 }
 
-//API TO EDIT STORE INFO/DATA
+// API TO EDIT STORE INFO/DATA - REFACTORED
 export const editStoreDetails = async (req, res) => {
-    authenticateUser(req, res, () => {
-        const ownerId = req.user.id;
-        //QUERY DB TO EDIT USER INFO
-        cpUpload(req, res, async (err) => {
-            if (err instanceof multer.MulterError) {
-                return res.status(500).json({ message: "File upload error", error: err });
-            } else if (err) {
-                return res.status(500).json({ message: "Unknown error", error: err });
-            } 
-            const storeId = req.params.id
+    authenticateUser(req, res, async () => {
+        const currentUserId = req.user.id;
+        const storeId = req.params.id;
 
-            let logoImage = null;
-            if (req.files && req.files.logoImage && req.files.logoImage[0]) {
-                try {
-                    const photo = req.files.logoImage[0]; 
-                    
-                    const params = {
-                        Bucket: process.env.BUCKET_NAME,
-                        Key: `uploads/stores/${Date.now()}_${photo.originalname}`,
-                        Body: photo.buffer,
-                        ContentType: photo.mimetype,
-                    };
-                    const command = new PutObjectCommand(params);
-                    await s3.send(command);
-                    logoImage = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
-                } catch (uploadError) {
-                    console.error("Error uploading file:", uploadError);
-                    return res.status(500).json({ message: "Error uploading file to S3", error: uploadError });
-                }
+        if (!storeId || isNaN(Number(storeId))) {
+            return res.status(400).json({ message: "Invalid or missing store ID." });
+        }
+
+        try {
+            // 1. Fetch existing store data & verify ownership
+            const getStoreQuery = "SELECT ownerId, logoImage FROM stores WHERE id = ?";
+            const storeDataRows = await executeQuery(getStoreQuery, [storeId]); // Use executeQuery
+
+            if (!storeDataRows || storeDataRows.length === 0) {
+                return res.status(404).json({ message: "Store not found." });
             }
-            const q = "UPDATE stores SET label = ?, description = ?, logoImage = ?, category = ? WHERE id = ? AND ownerId = ?"
-            const values = [
-                req.body.label,
-                req.body.description,
-                logoImage,
-                req.body.category,
-                storeId,
-                ownerId
-            ];
-            db.query(q, values, (err, store) => {
-                if (err) {
-                    return res.status(500).json(err)
-                }
-                if (!ownerId) {
-                    res.status(403).json("Can't edit, not your store")
-                }
-                if (store.length === 0) {
-                    return res.status(404).json("Store not found!");
-                }
-                else {
-                    res.status(200).json({ message: `${req.body.label} Merch store  updated successfully!`, values })
-                }
-            })
-        })
+            const existingStore = storeDataRows[0];
+            let oldImageUrlToDelete = existingStore.logoImage; // Store current logo URL
 
-    })
-}
+            // Verify user owns this store
+            if (existingStore.ownerId !== currentUserId) {
+                return res.status(403).json({ message: "You are not authorized to edit this store." });
+            }
+
+            // 2. Process uploads within cpUpload middleware
+            cpUpload(req, res, async (uploadErr) => {
+                if (uploadErr instanceof multer.MulterError) {
+                    console.error(`[Store] Multer error during store update for ID ${storeId}:`, uploadErr);
+                    return res.status(400).json({ message: "File upload error", error: uploadErr.message });
+                } else if (uploadErr) {
+                    console.error(`[Store] Unexpected error during file processing middleware for store ID ${storeId}:`, uploadErr);
+                    return res.status(500).json({ message: "File processing failed", error: 'Internal server error during file handling' });
+                }
+
+                let newImageUrl = null;
+
+                // 3. Handle new image upload
+                try {
+                    if (req.files && req.files.logoImage && req.files.logoImage[0]) {
+                        const logoFile = req.files.logoImage[0];
+                        if (logoFile.size > 2 * 1024 * 1024) { // Example limit
+                            return res.status(400).json({ message: "Logo image file size exceeds limit (2MB)." });
+                        }
+                        const imageKey = `uploads/stores/${storeId}_logo_${Date.now()}_${logoFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
+                        const imageParams = {
+                            Bucket: process.env.BUCKET_NAME,
+                            Key: imageKey,
+                            Body: logoFile.buffer,
+                            ContentType: logoFile.mimetype
+                        };
+                        console.log(`[Store] Uploading new logo for store ${storeId} with key: ${imageKey}`);
+                        await s3.send(new PutObjectCommand(imageParams));
+                        newImageUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${imageKey}`;
+                        console.log(`[Store] New logo uploaded successfully for store ${storeId}.`);
+                    }
+                } catch (imageUploadError) {
+                    console.error(`[Store] Error processing or uploading logo image for store ${storeId}:`, imageUploadError);
+                    return res.status(500).json({ message: "Failed to process or upload logo image", error: imageUploadError.message || "Internal server error" });
+                }
+
+                // 4. Dynamically Build Update Query
+                const updateFieldsPayload = {};
+                const values = [];
+                const setClauses = [];
+
+                const allowedTextFields = {
+                    label: 'label',
+                    description: 'description',
+                    category: 'category',
+                    web_link: 'web_link',
+                };
+
+                for (const key in allowedTextFields) {
+                    // Only include field if it exists in the request body
+                    if (Object.prototype.hasOwnProperty.call(req.body, key)) {
+                        const dbColumn = allowedTextFields[key];
+                        setClauses.push(`${dbColumn} = ?`);
+                        values.push(req.body[key]);
+                        updateFieldsPayload[dbColumn] = req.body[key];
+                    }
+                }
+
+                // Add new image URL if it was uploaded
+                if (newImageUrl) {
+                    setClauses.push(`logoImage = ?`);
+                    values.push(newImageUrl);
+                    updateFieldsPayload.logoImage = newImageUrl;
+                }
+
+                // 5. Execute DB Update (only if there are changes)
+                if (setClauses.length > 0) {
+                    values.push(storeId); // Add store ID for the WHERE clause
+                    const sqlQuery = `UPDATE stores SET ${setClauses.join(', ')} WHERE id = ?`;
+
+                    try {
+                        console.log(`[Store] Executing DB update for store ID: ${storeId}.`);
+                        const result = await executeQuery(sqlQuery, values);
+
+                        if (result.affectedRows > 0) {
+                            console.log(`[Store] Store updated successfully in DB for ID: ${storeId}`);
+
+                            // --- Delete Old S3 Object (after successful DB update) ---
+                            if (newImageUrl && oldImageUrlToDelete) {
+                                console.log(`[Store] Attempting to delete old logo image for store ${storeId}: ${oldImageUrlToDelete}`);
+                                await deleteS3Object(oldImageUrlToDelete); // Use helper
+                            }
+
+                            res.status(200).json({
+                                message: "Store details updated successfully",
+                                updatedFields: updateFieldsPayload,
+                            });
+
+                        } else {
+                            // Query executed, but no rows changed (maybe data was identical)
+                            console.warn(`[Store] No rows updated for store ID: ${storeId}. Data might be identical.`);
+                             res.status(200).json({
+                                message: "Store details processed. No changes needed or applied.",
+                                updatedFields: updateFieldsPayload
+                             });
+                        }
+
+                    } catch (dbError) {
+                        console.error(`[Store] Database error updating store ${storeId}:`, dbError);
+                        // --- Attempt S3 Rollback ---
+                        if (newImageUrl) {
+                            console.error(`[Store] Attempting S3 rollback for new logo due to DB error (store ${storeId}).`);
+                            await deleteS3Object(newImageUrl); // Delete the NEW image
+                        }
+                        return res.status(500).json({ message: "Failed to update store details in database", error: "Database error" });
+                    }
+                } else {
+                    // No text fields updated and no new image uploaded
+                    res.status(200).json({ message: "No changes were submitted or detected for the store." });
+                }
+            }); // End cpUpload callback
+
+        } catch (error) {
+            // Catch errors from initial DB fetch or auth check
+            console.error(`[Store] Unexpected error in editStoreDetails handler for store ID ${storeId}:`, error);
+            if (!res.headersSent) {
+                res.status(500).json({ message: "Failed to edit store details due to an unexpected server error", error: "Internal server error" });
+            }
+        }
+    }); // End authenticateUser callback
+};
 
 //API TO DELETE STORE
 export const closeStore = (req, res) => {
