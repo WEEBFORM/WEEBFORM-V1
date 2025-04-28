@@ -4,13 +4,15 @@ import {
     viewStores, 
     editStoreDetails, 
     closeStore, 
-    viewSingleStore
+    viewSingleStore,
+    viewUserStores
 } from "../../controllers/Marketplace/stores.js";
 
 const router = express.Router();
 
 // STORE ENDPOINTS
 router.post('/create', newStore);
+router.get('/view', viewUserStores);
 router.get('/', viewStores);
 router.get('/:id', viewSingleStore);
 router.put('/edit-store-details/:id', editStoreDetails);

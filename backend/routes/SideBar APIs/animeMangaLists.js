@@ -17,7 +17,7 @@ router.post('/lists', createList);
 router.get('/lists', getUserLists);
 router.get('/lists/:listId', getList);
 router.put('/lists/:listId', updateList);
-router.delete('/lists/:listId', deleteList);
+router.delete('/lists/:listId', deleteList); 
 router.post('/lists/:listId/entries', addEntryToList);
 router.delete('/lists/:listId/entries/:entryId', removeEntryFromList);
 router.get('/lists/:listId/entries', getListEntries);

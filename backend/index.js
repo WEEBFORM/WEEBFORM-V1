@@ -27,13 +27,13 @@ import Replies from './routes/Home/commentReplies.js';
 import Stores from './routes/Marketplace/stores.js';
 import StoreCatalogs from './routes/Marketplace/catalogRoute.js';
 import StoreRatingAndVsits from './routes/Marketplace/ratingsRoute.js';
-import News from './routes/news.js';
+import News from './routes/newsAndRecommendations.js';
 import Communities from './routes/Community/community.js';
 import CommunityGroupActions from './routes/Community/interactionsRoute.js';
 
-// Load environment variables early
+// Load environment variables early 
 config();
-
+ 
 // Centralize configuration
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const PORT = process.env.PORT || 8001;

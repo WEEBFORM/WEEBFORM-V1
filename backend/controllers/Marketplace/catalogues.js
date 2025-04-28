@@ -78,7 +78,6 @@ export const addCatalogueItem = (req, res) => {
     });
 };
 
-
 // API TO GET CATALOGUE ITEMS FOR A STORE
 export const getCatalogueItems = (req, res) => {
     authenticateUser(req, res, () => {
@@ -107,7 +106,6 @@ export const getCatalogueItems = (req, res) => {
         });
     });
 };
-
 
 // API TO EDIT CATALOGUE ITEM
 export const editCatalogueItem = async (req, res) => {
@@ -256,12 +254,12 @@ export const deleteCatalogueItem = (req, res) => {
         const itemId = req.params.id;
 
         try {
-            const getItemQuery = "SELECT storeId, product_image FROM catalogue_items WHERE id = ?";
+            const getItemQuery = "SELECT storeId, product_image FROM catalogue_items WHERE id = ?";  
             db.query(getItemQuery, [itemId], async (err, itemData) => {
                 if (err) {
                     return res.status(500).json({ message: "Database query error", error: err });
                 }
-
+ 
                 if (itemData.length === 0) {
                     return res.status(404).json({ message: "Catalogue item not found." });
                 }
