@@ -13,85 +13,118 @@ export const createCommunity = (req, res) => {
             if (err instanceof multer.MulterError) { 
                 return res.status(500).json({ message: "File upload error", error: err });
             } else if (err) {
-                return res.status(500).json({ message: "Unknown error", error: err });
+                return res.status(500).json({ message: "Unknown error", error: err }); 
             }
-            const user = req.user;
-            const title = req.body.title;
-
-            // Check if community already exists
-            const checkQuery = "SELECT * FROM communities WHERE title = ?";
-            db.query(checkQuery, title, (err, data) => {
-                if (data && data.length) {
-                    return res.status(401).json("Community exists");
+            
+            try {
+                const user = req.user; 
+                const title = req.body.title;
+                
+                if (!title) {
+                    return res.status(400).json({ message: "Community title is required" });
                 }
-            });
 
-            // Upload group icon to S3
-            const groupIconFile = req.files["groupIcon"] ? req.files["groupIcon"][0] : null;
-            let groupIconUrl = null;
-
-            if (groupIconFile) {
-                try {
-                    const params = {
-                        Bucket: process.env.BUCKET_NAME,
-                        Key: `uploads/communities/${Date.now()}_${groupIconFile.originalname}`,
-                        Body: groupIconFile.buffer,
-                        ContentType: groupIconFile.mimetype,
-                    };
-                    const command = new PutObjectCommand(params);
-                    await s3.send(command);
-                    groupIconUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
-                } catch (uploadError) {
-                    console.error("Error uploading group icon:", uploadError);
-                    return res.status(500).json({ message: "Error uploading group icon", error: uploadError });
-                }
-            }
-
-            if (!groupIconUrl) {
-                return res.status(400).json("Error uploading community image");
-            }
-
-            const description = `Welcome to ${req.body.title}'s Official Community on Weebform.`;
-
-            // Create community
-            const createQuery = "INSERT INTO communities (`creatorId`, `title`, `description`, `groupIcon`, `createdAt`) VALUES (?)";
-            const values = [
-                user.id,
-                req.body.title,
-                description,
-                groupIconUrl,
-                moment(Date.now()).format("YYYY-MM-DD HH:mm:ss")
-            ];
-
-            db.query(createQuery, [values], (err, data) => {
-                if (err) {
-                    return (err);
-                }
-                const communityId = data.insertId;
-
-                // Create default groups
-                const defaultGroups = [
-                    { title: "General discussion", groupIcon: "uploads/default group icons/announcements-icon.png" },
-                    { title: "Feed", groupIcon: "uploads/default group icons/general-discussion-icon.png" },
-                    { title: "Spoilers", groupIcon: "uploads/default group icons/feedback-icon.jpeg" }
-                ];
-
-                const groupsQuery = "INSERT INTO `groups` (`title`, `communityId`, `groupIcon`, `createdAt`) VALUES ?";
-                const groupValues = defaultGroups.map(group => [
-                    group.title,
-                    communityId,
-                    group.groupIcon,
-                    moment(Date.now()).format("YYYY-MM-DD HH:mm:ss")
-                ]);
-
-                db.query(groupsQuery, [groupValues], (err) => {
+                // Check if community exists with proper error handling
+                const checkQuery = "SELECT * FROM communities WHERE title = ?";
+                
+                db.query(checkQuery, [title], async (err, data) => {
                     if (err) {
-                        console.error("Error creating groups:", err);
-                        return res.status(500).json({ message: "Community created, but failed to create groups." });
+                        console.error("Database error checking community:", err);
+                        return res.status(500).json({ message: "Database error", error: err });
                     }
-                    res.status(200).json({ message: "Community and default groups successfully created." });
+                    
+                    if (data && data.length) {
+                        return res.status(409).json({ message: "Community already exists" });
+                    }
+                    
+                    // S3 UPLOAD
+                    const groupIconFile = req.files && req.files["groupIcon"] ? req.files["groupIcon"][0] : null;
+                    let groupIconUrl = null;
+
+                    if (groupIconFile) {
+                        try {
+                            const params = {
+                                Bucket: process.env.BUCKET_NAME,
+                                Key: `uploads/communities/${Date.now()}_${groupIconFile.originalname}`,
+                                Body: groupIconFile.buffer,
+                                ContentType: groupIconFile.mimetype,
+                            };
+                            const command = new PutObjectCommand(params);
+                            await s3.send(command);
+                            groupIconUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
+                        } catch (uploadError) {
+                            console.error("Error uploading group icon:", uploadError);
+                            return res.status(500).json({ message: "Error uploading group icon", error: uploadError });
+                        }
+                    } else {
+                        return res.status(400).json({ message: "Community image is required" });
+                    }
+
+                    const description = req.body.description || `Welcome to ${title}'s Official Community on Weebform.`;
+                    const timestamp = moment(Date.now()).format("YYYY-MM-DD HH:mm:ss");
+
+                    // CREATE COMMUNITY QUERY
+                    const createQuery = "INSERT INTO communities (`creatorId`, `title`, `description`, `groupIcon`, `createdAt`) VALUES (?)";
+                    const values = [
+                        user.id,
+                        title,
+                        description,
+                        groupIconUrl,
+                        timestamp
+                    ];
+
+                    db.query(createQuery, [values], (err, communityResult) => {
+                        if (err) {
+                            console.error("Error creating community:", err);
+                            return res.status(500).json({ message: "Error creating community", error: err });
+                        }
+                        
+                        const communityId = communityResult.insertId;
+
+                        // Add creator as admin
+                        const addAdminQuery = "INSERT INTO members (`comId`, `memberId`, `role`) VALUES (?)";
+                        const addAdminValues = [
+                            communityId,
+                            user.id,
+                            'admin'
+                        ];
+                        
+                        db.query(addAdminQuery, [addAdminValues], (adminErr, adminResult) => {
+                            if (adminErr) {
+                                console.error( "Error setting creator as Admin", adminErr );
+                                return res.status(500).json({ message: "Community created but failed to set admin", error: adminErr });
+                            }
+
+                            const defaultGroups = [
+                                { title: `${title} Chat` }, 
+                                { title: `${title} Main` } 
+                            ];
+
+                            const groupsQuery = "INSERT INTO `groups` (`title`, `communityId`, `createdAt`) VALUES ?";
+                            const groupValues = defaultGroups.map(group => [
+                                group.title,
+                                communityId,
+                                timestamp
+                            ]);
+
+                            db.query(groupsQuery, [groupValues], (groupErr, groupResult) => {
+                                if (groupErr) {
+                                    console.error("Error creating groups:", groupErr);
+                                    return res.status(500).json({ message: "Community created, but failed to create groups." });
+                                }
+                                
+                                return res.status(201).json({ 
+                                    message: "Community and default groups successfully created.",
+                                    communityId: communityId
+                                });
+                            });
+                        });               
+                    });
                 });
-            });
+            } catch (error) {
+                console.error("Unexpected error:", error);
+                return res.status(500).json({ message: "An unexpected error occurred", error: error.message });
+            }
         });
     });
 };
@@ -135,38 +168,144 @@ export const yourCommunities = (req, res) => {
 // API TO VIEW ALL COMMUNITIES
 export const communities = (req, res) => {
     authenticateUser(req, res, () => {
-        const query = `
-            SELECT 
-                c.*, 
-                (SELECT COUNT(*) FROM members WHERE comId = c.id) AS memberCount 
-            FROM 
-                communities AS c 
-            ORDER BY 
-                c.createdAt ASC
-        `;
+        const userId = req.user.id;
+        
+        try {
+            // FETCH ALL COMMUNITIES
+            const communitiesQuery = `
+                SELECT 
+                    c.*, 
+                    (SELECT COUNT(*) FROM members WHERE comId = c.id) AS memberCount 
+                FROM 
+                    communities AS c 
+                ORDER BY 
+                    c.createdAt ASC
+            `;
+            
+            db.query(communitiesQuery, async (err, allCommunities) => {
+                if (err) {
+                    console.error("Error fetching communities:", err);
+                    return res.status(500).json({ message: "Database error", error: err });
+                }
 
-        db.query(query, async (err, data) => {
-            if (err) return res.status(500).json(err);
-
-            const processedCommunities = await Promise.all(
-                data.map(async (community) => {
-                    if (community.groupIcon) {
-                        try {
-                            const groupIconKey = s3KeyFromUrl(community.groupIcon);
-                            community.groupIcon = await generateS3Url(groupIconKey);
-                        } catch (error) {
-                            console.error("Error generating group icon URL:", error);
-                            community.groupIcon = null;
+                // S3 PROCESS FOR ALL URLs
+                const processedCommunities = await Promise.all(
+                    allCommunities.map(async (community) => {
+                        if (community.groupIcon) {
+                            try {
+                                const groupIconKey = s3KeyFromUrl(community.groupIcon);
+                                community.groupIcon = await generateS3Url(groupIconKey);
+                            } catch (error) {
+                                console.error("Error generating group icon URL:", error);
+                                community.groupIcon = null;
+                            }
+                        }
+                        return community;
+                    })
+                );
+                
+                // FIND COMMUNITIES WHERE FRIENDS ARE MEMBERS
+                const friendsQuery = `
+                    SELECT f.followed
+                    FROM reach f
+                    WHERE f.follower = ?
+                `;
+                
+                db.query(friendsQuery, [userId], (err, friendsResult) => {
+                    if (err) {
+                        console.error("Error fetching friends:", err);
+                        return res.status(500).json({ message: "Database error", error: err });
+                    }
+                    
+                    // EXTRACT IDs
+                    const followed = friendsResult.map(friend => friend.followed);
+                    
+                    if (followed.length > 0) {
+                        const friendsCommunitiesQuery = `
+                            SELECT DISTINCT m.comId
+                            FROM members m
+                            WHERE m.memberId IN (?)
+                        `;
+                        
+                        db.query(friendsCommunitiesQuery, [followed], (err, friendCommunitiesResult) => {
+                            if (err) {
+                                console.error("Error fetching friend communities:", err);
+                                return res.status(500).json({ message: "Database error", error: err });
+                            }
+                            
+                            const friendCommunityIds = friendCommunitiesResult.map(fc => fc.comId);
+                            
+                            const recommended = processedCommunities.filter(c => friendCommunityIds.includes(c.id));
+                            const popular = [...processedCommunities].sort((a, b) => b.memberCount - a.memberCount).slice(0, 5);
+                            
+                            // For explore/others, exclude communities that are in recommended
+                            const others = processedCommunities.filter(c => !friendCommunityIds.includes(c.id));
+                            
+                            const section = req.query.section;
+                            
+                            if (section === 'recommended') {
+                                return res.status(200).json({ 
+                                    section: 'recommended',
+                                    communities: recommended 
+                                });
+                            } else if (section === 'popular') {
+                                return res.status(200).json({ 
+                                    section: 'popular',
+                                    communities: popular 
+                                });
+                            } else if (section === 'explore' || section === 'others') {
+                                return res.status(200).json({ 
+                                    section: 'explore',
+                                    communities: others 
+                                });
+                            } else {
+                                return res.status(200).json({
+                                    recommended,
+                                    popular,
+                                    others,
+                                    all: processedCommunities
+                                });
+                            }
+                        });
+                    } else {
+                        //IN EVENT USER HAS NO FRIENDS
+                        const popular = [...processedCommunities].sort((a, b) => b.memberCount - a.memberCount).slice(0, 5);
+                        const others = processedCommunities;
+                        
+                        // CHECK REQUESTED SECTION
+                        const section = req.query.section;
+                        
+                        if (section === 'recommended') {
+                            return res.status(200).json({ 
+                                section: 'recommended',
+                                communities: [] 
+                            });
+                        } else if (section === 'popular') {
+                            return res.status(200).json({ 
+                                section: 'popular',
+                                communities: popular 
+                            });
+                        } else if (section === 'explore' || section === 'others') {
+                            return res.status(200).json({ 
+                                section: 'explore',
+                                communities: others 
+                            });
+                        } else {
+                            // RETERN ALL CATEGORIES
+                            return res.status(200).json({
+                                recommended: [],
+                                popular,
+                                others,
+                                all: processedCommunities
+                            });
                         }
                     }
-                    return community;
-                })
-            );   
-
-            // Shuffle communities before returning
-            const shuffled = processedCommunities.sort(() => Math.random() - 0.5);
-            res.status(200).json(shuffled);
-        });
+                });
+            });
+        } catch (error) {
+            console.error("Unexpected error:", error);
+            return res.status(500).json({ message: "An unexpected error occurred", error: error.message });
+        }
     });
 };
 

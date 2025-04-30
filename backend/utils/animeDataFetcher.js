@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// --- Randomization Helpers ---
-
+//RANDOMIZATION HELPERS
 const getRandomInt = (min, max) => {
     min = Math.ceil(min);
     max = Math.floor(max);
@@ -10,8 +9,7 @@ const getRandomInt = (min, max) => {
 
 const getRandomYear = () => {
     const currentYear = new Date().getFullYear();
-    // Go back ~30 years for a decent range, adjust as needed
-    return getRandomInt(currentYear - 30, currentYear);
+    return getRandomInt(currentYear - 25, currentYear); //25 YEARS AGO TILL PRESENT
 };
 
 const seasons = ['spring', 'summer', 'fall', 'winter'];
@@ -20,11 +18,11 @@ const getRandomSeason = () => seasons[getRandomInt(0, seasons.length - 1)];
 const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const getRandomDay = () => days[getRandomInt(0, days.length - 1)];
 
-// Common anime types for the /top/anime endpoint
+// ANIME TYPES
 const animeTypes = ['tv', 'movie', 'ova', 'special', 'ona', 'music'];
 const getRandomAnimeType = () => animeTypes[getRandomInt(0, animeTypes.length - 1)];
 
-// Expand this list for more variety!
+// SEARCH KEYWORDS
 const animeSearchKeywords = [
     'action', 'adventure', 'isekai', 'magic', 'fantasy', 'shonen', 'mecha',
     'romance', 'comedy', 'slice of life', 'school', 'vampire', 'ninja',
@@ -34,10 +32,10 @@ const animeSearchKeywords = [
 ];
 const getRandomSearchQuery = () => {
     const query = animeSearchKeywords[getRandomInt(0, animeSearchKeywords.length - 1)];
-    return encodeURIComponent(query); // URL-encode the query
+    return encodeURIComponent(query); 
 };
 
-// Helper function to shuffle arrays (Fisher-Yates)
+//I'LL ADD THIS AS A MIDDLEWARE LATER AS IT'S REOCCURING
 const shuffleArray = (array) => {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -52,7 +50,7 @@ const shuffleArray = (array) => {
 // Using sfw=true to filter potentially explicit content
 
 const endpointConfigurations = [
-    // Current and Upcoming (Good for relevance)
+    // CURRENT AND UPCOMING
     { name: 'seasons_now', generateUrl: () => `https://api.jikan.moe/v4/seasons/now?limit=25&sfw=true` },
     { name: 'seasons_upcoming', generateUrl: () => `https://api.jikan.moe/v4/seasons/upcoming?limit=25&sfw=true` },
     // Top Anime (Different types)

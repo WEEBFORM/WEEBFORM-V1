@@ -86,10 +86,9 @@ export const getFollowers = async (req, res) => {
     });
 };
 
-// API TO GET FOLLOWING
+// API TO GET FOLLOWING (MUTUAL FOLLOWERS)
 export const getFollowing = async (req, res) => {
     authenticateUser(req, res, async () => {
-        // Updated: Now gets userId from req.params.userId
         const userId = req.params.userId;
 
         if (!Number.isInteger(Number(userId))) {
@@ -98,40 +97,60 @@ export const getFollowing = async (req, res) => {
 
         const cacheKey = `following:${userId}`;
         try {
+            // CHECK CACHE
             const cachedData = followerCache.get(cacheKey);
             if (cachedData) {
                 return res.status(200).json(cachedData);
             }
+
+            // QUERY FOR MUTUAL FOLLOWERS
             const q = `
                 SELECT u.id, u.full_name, u.profilePic 
-                FROM reach AS r 
-                JOIN users AS u ON r.followed = u.id 
-                WHERE r.follower = ?
+                FROM users AS u 
+                WHERE u.id IN (
+                    -- Users who the specified user follows
+                    SELECT r1.followed 
+                    FROM reach AS r1 
+                    WHERE r1.follower = ?
+                    
+                    INTERSECT
+                    
+                    -- Users who follow the specified user
+                    SELECT r2.follower 
+                    FROM reach AS r2 
+                    WHERE r2.followed = ?
+                )
             `;
-            const [data] = await db.promise().query(q, [userId]);
+            
+            const [data] = await db.promise().query(q, [userId, userId]);
 
             if (data && data.length > 0) {
                 const followingWithS3Urls = await Promise.all(
                     data.map(async (following) => {
                         if (following.profilePic) {
-                            const profilePicKey = s3KeyFromUrl(following.profilePic);
-                            following.profilePic = await generateS3Url(profilePicKey);
+                            try {
+                                const profilePicKey = s3KeyFromUrl(following.profilePic);
+                                following.profilePic = await generateS3Url(profilePicKey);
+                            } catch (error) {
+                                console.error("Error generating profile pic URL:", error);
+                                following.profilePic = null;
+                            }
                         }
                         return following;
                     })
                 );
+                
                 followerCache.set(cacheKey, followingWithS3Urls);
                 return res.status(200).json(followingWithS3Urls);
             } else {
                 return res.status(200).json([]);
             }
         } catch (err) {
-            console.error("Error fetching following:", err);
+            console.error("Error fetching mutual followers:", err);
             return res.status(500).json({ message: "Failed to get following users", error: err.message });
         }
     });
 };
-
 
 //API TO UNFOLLOW USERS
 export const unfollowUser = async (req, res) => {
