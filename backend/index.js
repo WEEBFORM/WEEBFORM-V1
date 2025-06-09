@@ -9,12 +9,11 @@ import http from 'http';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import { initializeMessageSocket } from './controllers/community/interactions/generalDiscussions.js';
-import { initializeSpoilersSocket } from './controllers/community/interactions/Spoilers.js';
+import { initializeMessageSocket } from './controllers/community/socket/chats.js';
 import AppError from './utils/appError.js';
 import logger from './utils/logger.js';
 
-// ROUTES
+// ROUTES 
 import authRoute from './routes/Users/auth.js';
 import Users from './routes/Users/users.js';
 import forgottenPasswordRoute from './routes/Users/resetpasswordRoute.js';
@@ -29,16 +28,19 @@ import StoreCatalogs from './routes/Marketplace/catalogRoute.js';
 import StoreRatingAndVsits from './routes/Marketplace/ratingsRoute.js';
 import News from './routes/newsAndRecommendations.js';
 import Communities from './routes/Community/community.js';
-import CommunityGroupActions from './routes/Community/interactionsRoute.js';
+import Groups from './routes/Community/communityGroups.js';
 
 // Load environment variables early 
 config();
  
 // Centralize configuration
 const NODE_ENV = process.env.NODE_ENV || 'development';
+
 const PORT = process.env.PORT || 8001;
+
 const WHITELIST = [
     'http://localhost:3001',
+    'http://localhost:3002',
     'https://beta.weebform.com',
 ];
 
@@ -46,13 +48,36 @@ const app = express();
 
 // CORS {All Origins}
 const corsOptions = {
-    origin: true,
+    origin: true, 
     credentials: true, 
     allowedHeaders: [
       'Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Cache-Control'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
-  }; 
+}; 
+
+  // CORS Configuration
+app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (WHITELIST.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+        res.setHeader(
+            'Access-Control-Allow-Headers',
+            'Content-Type, Authorization'
+        );
+        res.setHeader(
+            'Access-Control-Allow-Methods',
+            'GET, POST, PUT, DELETE, OPTIONS'
+        );
+    }
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).json({});
+    }
+
+    next();
+});
   
 // USE CORS MIDDLEWARE
 app.use(cors(corsOptions));
@@ -83,29 +108,6 @@ app.use((req, res, next) => {
 // });    
 // app.use('/api', apiLimiter);
 
-// CORS Configuration
-app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (WHITELIST.includes(origin)) {
-        res.setHeader('Access-Control-Allow-Origin', origin);
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
-        res.setHeader(
-            'Access-Control-Allow-Headers',
-            'Content-Type, Authorization'
-        );
-        res.setHeader(
-            'Access-Control-Allow-Methods',
-            'GET, POST, PUT, DELETE, OPTIONS'
-        );
-    }
-
-    if (req.method === 'OPTIONS') {
-        return res.status(200).json({});
-    }
-
-    next();
-});
-
 // Routes
 app.use('/api/v1/user', authRoute);
 app.use('/api/v1/user', Users);
@@ -119,8 +121,9 @@ app.use('/api/v1/stories', Stories);
 app.use('/api/v1/stores', Stores, StoreCatalogs, StoreRatingAndVsits);
 app.use('/api/v1/news-content', News);
 app.use('/api/v1/communities', Communities);
-app.use('/api/v1/communities/groups', CommunityGroupActions); 
-
+app.use('/api/v1/communities/groups', Groups);
+// app.use('/api/v1/communities/groups', CommunityGroupActions); 
+ 
 // Health Check Endpoint
 app.get('/health', async (req, res) => {
     try {
@@ -173,7 +176,7 @@ process.on('uncaughtException', (err) => {
 
 // Clustering Setup
 if (cluster.isPrimary) {
-    const numCPUs = os.cpus().length;
+    const numCPUs = os.cpus(1);
 
     logger.info(`Master ${process.pid} is running`);
 
@@ -200,7 +203,6 @@ if (cluster.isPrimary) {
 
         // Initialize WebSocket functionality
         initializeMessageSocket(server);
-        initializeSpoilersSocket(server);
         server.listen(PORT, () => {
             logger.info(`Server listening on port ${PORT} in ${NODE_ENV} mode`);
         });

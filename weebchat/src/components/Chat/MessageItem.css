@@ -1,0 +1,123 @@
+.message-item {
+    display: flex;
+    margin-bottom: 15px;
+    max-width: 70%;
+    align-items: flex-start; /* Align items to the top */
+  }
+  
+  .my-message {
+    color: white;
+    margin-left: auto;
+    flex-direction: row-reverse; /* Avatar on the right */
+  }
+  
+  .my-message .message-content {
+    background-color: #C67612; /* Light green for own messages */
+    align-items: flex-end;
+  }
+  .my-message .message-sender {
+      text-align: right;
+  }
+  
+  .other-message .message-content {
+    background-color: #fff; /* White for other messages */
+  }
+  
+  .message-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin: 0 10px;
+    object-fit: cover;
+  }
+  
+  .message-content {
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    min-width: 150px; /* Ensure some minimum width */
+  }
+  
+  .message-sender {
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #000000;
+    margin-bottom: 5px;
+  }
+  .message-sender .message-timestamp {
+      font-weight: normal;
+      font-size: 0.8em;
+      color: #999;
+      margin-left: 8px;
+  }
+  
+  .message-text {
+    font-size: 1em;
+    word-wrap: break-word; /* Ensure long words break */
+    white-space: pre-wrap; /* Respect newlines and spaces */
+  }
+  
+  .message-text.spoiler {
+    background-color: #333;
+    color: #333;
+    padding: 5px;
+    border-radius: 3px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .message-text.spoiler:hover {
+      background-color: #555;
+      color: #555;
+  }
+  
+  .message-media img {
+    max-width: 100%; /* Make images responsive within message */
+    border-radius: 5px;
+    margin-top: 5px;
+  }
+  .message-audio audio {
+      width: 100%;
+      margin-top: 5px;
+  }
+  .message-reply-context {
+      background-color: rgba(0,0,0,0.05);
+      padding: 5px;
+      border-radius: 5px;
+      margin-bottom: 5px;
+      font-size: 0.9em;
+  }
+  .message-reply-context p {
+      margin: 3px 0 0 0;
+      font-style: italic;
+      color: #666;
+  }
+  
+  .message-actions {
+    margin-top: 8px;
+    font-size: 0.8em;
+  }
+  
+  .message-actions button {
+    background: none;
+    border: none;
+    color: #FDC9AA;
+    cursor: pointer;
+    padding: 2px 5px;
+    font-size: 0.9em;
+  }
+  .message-actions button:hover {
+    text-decoration: underline;
+  }
+  
+  .message-reactions-display {
+      margin-top: 5px;
+  }
+  .reaction-emoji {
+      font-size: 1.1em;
+      margin-right: 3px;
+      padding: 2px;
+      background-color: #f0f0f0;
+      border-radius: 5px;
+  }
