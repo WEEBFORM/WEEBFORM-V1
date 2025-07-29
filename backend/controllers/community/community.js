@@ -21,8 +21,13 @@ export const createCommunity = (req, res) => {
             }
 
             try {
+                if (!req.user) {
+                    console.error("[Community Create] CRITICAL: User object not found after authentication middleware.");
+                    return res.status(401).json({ message: "Authentication failed. Please log in." });
+                }
+
                 const user = req.user;
-                const title = req.body.title;
+                const { title, description, visibility, isDefault } = req.body;
 
                 if (!title) {
                     console.warn("[Community Create] Community title is required for user:", user.username);
@@ -30,119 +35,199 @@ export const createCommunity = (req, res) => {
                 }
 
                 const checkCommunityExistsQuery = "SELECT id FROM communities WHERE title = ?";
-                db.query(checkCommunityExistsQuery, [title], async (err, data) => {
-                    if (err) {
-                        console.error("[DB Error] Database error checking community existence during creation:", err);
-                        return res.status(500).json({ message: "Database error", error: err.message });
-                    }
-                    if (data && data.length) {
-                        console.warn(`[Community Create] Community with title '${title}' already exists.`);
-                        return res.status(409).json({ message: "Community already exists" });
-                    }
+                const [existingCommunities] = await db.promise().query(checkCommunityExistsQuery, [title]);
+                
+                if (existingCommunities.length > 0) {
+                    console.warn(`[Community Create] Community with title '${title}' already exists.`);
+                    return res.status(409).json({ message: "Community already exists" });
+                }
 
-                    // UPLOAD TO S3
-                    const groupIconFile = req.files && req.files["groupIcon"] ? req.files["groupIcon"][0] : null;
-                    let groupIconUrl = null;
+                const groupIconFile = req.files && req.files["groupIcon"] ? req.files["groupIcon"][0] : null;
+                let groupIconUrl = null;
 
-                    if (groupIconFile) {
-                        try {
-                            const params = {
-                                Bucket: process.env.BUCKET_NAME,
-                                Key: `uploads/communities/${Date.now()}_${groupIconFile.originalname}`,
-                                Body: groupIconFile.buffer,
-                                ContentType: groupIconFile.mimetype,
-                            };
-                            const command = new PutObjectCommand(params);
-                            await s3.send(command);
-                            groupIconUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
-                            console.log(`[S3] Community icon uploaded for '${title}': ${groupIconUrl}`);
-                        } catch (uploadError) {
-                            console.error("[S3 Error] Error uploading community icon to S3:", uploadError);
-                            return res.status(500).json({ message: "Error uploading community icon", error: uploadError.message });
-                        }
-                    } else {
-                        console.warn("Community image (groupIcon) is required.");
-                        return res.status(400).json({ message: "Community image is required" });
-                    }
+                if (groupIconFile) {
+                    const params = {
+                        Bucket: process.env.BUCKET_NAME,
+                        Key: `uploads/communities/${Date.now()}_${groupIconFile.originalname}`,
+                        Body: groupIconFile.buffer,
+                        ContentType: groupIconFile.mimetype,
+                    };
+                    const command = new PutObjectCommand(params);
+                    await s3.send(command);
+                    groupIconUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
+                    console.log(`[S3] Community icon uploaded for '${title}': ${groupIconUrl}`);
+                } else {
+                    console.warn("Community image (groupIcon) is required.");
+                    return res.status(400).json({ message: "Community image is required" });
+                }
+                
+                let finalVisibility = 0; // Default to private (0)
+                if (visibility !== undefined) {
+                    finalVisibility = (visibility == 1) ? 1 : 0;
+                } else if (isDefault !== undefined) {
+                    finalVisibility = (isDefault == 1) ? 1 : 0;
+                }
 
-                    const description = req.body.description || `Welcome to ${title}'s Official Community on Weebform.`;
-                    const timestamp = moment().format("YYYY-MM-DD HH:mm:ss");
+                const finalDescription = description || `Welcome to ${title}'s Official Community on Weebform.`;
+                const timestamp = moment().format("YYYY-MM-DD HH:mm:ss");
 
-                    //Step 3: INSERT INTO `communities` TABLE
-                    const createCommunityQuery = "INSERT INTO communities (`creatorId`, `title`, `description`, `groupIcon`, `createdAt`) VALUES (?)";
-                    const communityValues = [user.id, title, description, groupIconUrl, timestamp];
+                const createCommunityQuery = "INSERT INTO communities (`creatorId`, `title`, `description`, `groupIcon`, `visibility`, `createdAt`) VALUES (?)";
+                const communityValues = [user.id, title, finalDescription, groupIconUrl, finalVisibility, timestamp];
 
-                    db.query(createCommunityQuery, [communityValues], (err, communityResult) => {
-                        if (err) {
-                            console.error("[DB Error] Error creating community record in DB:", err);
-                            return res.status(500).json({ message: "Error creating community", error: err.message });
-                        }
-                        const communityId = communityResult.insertId;
-                        console.log(`[Community Create] Community '${title}' created with ID: ${communityId}`);
+                const [communityResult] = await db.promise().query(createCommunityQuery, [communityValues]);
+                const communityId = communityResult.insertId;
+                console.log(`[Community Create] Community '${title}' created with ID: ${communityId}`);
 
-                        // Step 4: ADD CREATOR AS COMMUNITY MEMBER FIRST
-                        const addCreatorAsMemberQuery = "INSERT INTO community_members (`communityId`, `userId`, `isAdmin`) VALUES (?, ?, ?)";
-                        const memberValues = [communityId, user.id, 1]; // 1 indicates admin
+                const addCreatorAsMemberQuery = "INSERT INTO community_members (`communityId`, `userId`, `isAdmin`) VALUES (?, ?, ?)";
+                await db.promise().query(addCreatorAsMemberQuery, [communityId, user.id, 1]);
+                console.log(`[Community Create] Creator ${user.username} added as 'admin member' to community with id: ${communityId}.`);
 
-                        db.query(addCreatorAsMemberQuery, memberValues, (memberErr, memberResult) => {
-                            if (memberErr) {
-                                console.error("[DB Error] Error adding creator as community member:", memberErr);
-                                return res.status(500).json({ message: "Community created but failed to add creator as member", error: memberErr.message });
-                            }
-                            console.log(`[Community Create] Creator ${user.username} added as 'admin member' to community with id: ${communityId}.`);
+                const defaultChatGroups = [
+                    { title: `${title} General Chat`, type: 'text', isDefault: true, groupIcon: null },
+                    { title: `${title} Filler arc / Banned`, type: 'filler', isDefault: true, groupIcon: null }
+                ];
 
-                            //CREATE DEFAULT CHAT GROUPS FOR NEW COMMUNITY IN `chat_groups` TABLE
-                            const defaultChatGroups = [
-                                { title: `${title} General Chat`, type: 'text', isDefault: true, groupIcon: null },
-                                { title: `${title} Filler arc / Banned`, type: 'filler', isDefault: true, groupIcon: null }
-                            ];
+                const createGroupsQuery = "INSERT INTO `chat_groups` (`name`, `communityId`, `type`, `isDefault`, `groupIcon`, `createdAt`) VALUES ?";
+                const groupValues = defaultChatGroups.map(group => [
+                    group.title, communityId, group.type, group.isDefault ? 1 : 0, group.groupIcon, timestamp
+                ]);
+                const [groupResult] = await db.promise().query(createGroupsQuery, [groupValues]);
+                console.log(`[Community Create] Created ${defaultChatGroups.length} default chat groups for community ${communityId}.`);
 
-                            const createGroupsQuery = "INSERT INTO `chat_groups` (`name`, `communityId`, `type`, `isDefault`, `groupIcon`, `createdAt`) VALUES ?";
-                            const groupValues = defaultChatGroups.map(group => [
-                                group.title,
-                                communityId,
-                                group.type,
-                                group.isDefault ? 1 : 0,
-                                group.groupIcon,
-                                timestamp
-                            ]);
+                const firstCreatedGroupId = groupResult.insertId;
+                const createdGroupIds = defaultChatGroups.map((_, i) => firstCreatedGroupId + i);
 
-                            db.query(createGroupsQuery, [groupValues], async (groupErr, groupResult) => {
-                                if (groupErr) {
-                                    console.error("[DB Error] Error creating default chat groups:", groupErr)
-                                    // This is also critical, respond with an error
-                                    return res.status(500).json({ message: "Community created, but failed to create default chat groups.", error: groupErr.message });
-                                }
-                                console.log(`[Community Create] Created ${defaultChatGroups.length} default chat groups for community ${communityId}.`);
+                for (const chatGroupId of createdGroupIds) {
+                    await joinChatGroupInternal(user.id, chatGroupId);
+                    console.log(`[Community Create] Creator ${user.id} automatically joined chat group ${chatGroupId}.`);
+                }
 
-                                // Automatically add the COMMUNITY CREATOR to the newly created DEFAULT CHAT GROUPS
-                                // These are chat groups, so membership is in `chat_group_members`.
-                                const firstCreatedGroupId = groupResult.insertId;
-                                const createdGroupIds = [];
-                                for (let i = 0; i < defaultChatGroups.length; i++) {
-                                    createdGroupIds.push(firstCreatedGroupId + i);
-                                }
-
-                                try {
-                                    for (const chatGroupId of createdGroupIds) {
-                                        await joinChatGroupInternal(user.id, chatGroupId); //IMPORTED HELPER FUNCTION
-                                        console.log(`[Community Create] Creator ${user.id} automatically joined chat group ${chatGroupId}.`);
-                                    }
-                                } catch (autoJoinCreatorErr) {
-                                    console.error("[Error] Error automatically joining creator to default chat groups (non-blocking for community creation):", autoJoinCreatorErr);
-                                }
-
-                                return res.status(201).json({
-                                    message: "Community, default chat groups, and creator membership successfully established.",
-                                    communityId: communityId
-                                });
-                            });
-                        });
-                    });
+                return res.status(201).json({
+                    message: "Community, default chat groups, and creator membership successfully established.",
+                    communityId: communityId
                 });
+                
             } catch (error) {
                 console.error("[Unexpected Error] An unexpected error occurred in createCommunity:", error);
+                if (error.code === 'ER_DUP_ENTRY') {
+                    return res.status(409).json({ message: "A community with this title already exists." });
+                }
                 return res.status(500).json({ message: "An unexpected error occurred", error: error.message });
+            }
+        });
+    });
+};
+
+// --- API TO EDIT COMMUNITY DETAILS ---
+export const editCommunity = (req, res) => {
+    authenticateUser(req, res, () => {
+        cpUpload(req, res, async (err) => {
+            if (err instanceof multer.MulterError) {
+                console.error("[Multer Error] File upload error during community edit:", err);
+                return res.status(500).json({ message: "File upload error", error: err.message });
+            } else if (err) {
+                console.error("[Multer Error] Unknown file upload error during community edit:", err);
+                return res.status(500).json({ message: "Unknown error during file upload", error: err.message });
+            }
+
+            try {
+                if (!req.user) {
+                    console.error("[Community Edit] CRITICAL: User object not found after authentication middleware.");
+                    return res.status(401).json({ message: "Authentication failed. Please log in." });
+                }
+
+                const userId = req.user.id;
+                const communityId = req.params.id;
+                const { title, description, visibility, isDefault } = req.body;
+                
+                console.log(`[Community Edit] User ${userId} attempting to edit community ${communityId}.`);
+
+                const getCommunityQuery = "SELECT creatorId, groupIcon FROM communities WHERE id = ?";
+                const [communityData] = await db.promise().query(getCommunityQuery, [communityId]);
+
+                if (communityData.length === 0) {
+                    console.warn(`[Community Edit] Community ${communityId} not found.`);
+                    return res.status(404).json({ message: "Community not found." });
+                }
+
+                const community = communityData[0];
+                if (community.creatorId !== userId) {
+                    console.error(`[AUTH_FAILURE] User ${userId} attempted to edit community ${communityId} owned by creator ${community.creatorId}.`);
+                    return res.status(403).json({ message: "You are not authorized to edit this community." });
+                }
+
+                const oldGroupIconUrl = community.groupIcon;
+                let newGroupIconUrl = null;
+                const groupIconFile = req.files && req.files["groupIcon"] ? req.files["groupIcon"][0] : null;
+
+                if (groupIconFile) {
+                    console.log(`[Community Edit] New group icon provided for community ${communityId}. Uploading to S3.`);
+                    
+                    const s3Key = `uploads/communities/${Date.now()}_${groupIconFile.originalname}`;
+                    const params = {
+                        Bucket: process.env.BUCKET_NAME,
+                        Key: s3Key,
+                        Body: groupIconFile.buffer,
+                        ContentType: groupIconFile.mimetype,
+                    };
+
+                    const command = new PutObjectCommand(params);
+                    await s3.send(command);
+                    newGroupIconUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${s3Key}`;
+                    console.log(`[S3] New community icon uploaded: ${newGroupIconUrl}`);
+
+                    if (oldGroupIconUrl) {
+                        const oldKey = s3KeyFromUrl(oldGroupIconUrl);
+                        if (oldKey) {
+                            console.log(`[S3] Deleting old community icon: ${oldKey}`);
+                            const deleteCommand = new DeleteObjectCommand({ Bucket: process.env.BUCKET_NAME, Key: oldKey });
+                            await s3.send(deleteCommand);
+                            console.log(`[S3] Old community icon deleted successfully.`);
+                        }
+                    }
+                }
+
+                const updateFields = [];
+                const updateValues = [];
+
+                if (title) { updateFields.push("`title` = ?"); updateValues.push(title); }
+                if (description) { updateFields.push("`description` = ?"); updateValues.push(description); }
+                if (newGroupIconUrl) { updateFields.push("`groupIcon` = ?"); updateValues.push(newGroupIconUrl); }
+                
+                let visibilityValueToUpdate;
+                if (visibility !== undefined) {
+                    visibilityValueToUpdate = visibility;
+                } else if (isDefault !== undefined) {
+                    visibilityValueToUpdate = isDefault;
+                }
+
+                if (visibilityValueToUpdate !== undefined) {
+                    updateFields.push("`visibility` = ?");
+                    const finalVisibilityValue = (visibilityValueToUpdate == 1) ? 1 : 0;
+                    updateValues.push(finalVisibilityValue);
+                }
+
+                if (updateFields.length === 0) {
+                    console.log(`[Community Edit] No fields to update for community ${communityId}.`);
+                    return res.status(400).json({ message: "No fields to update were provided." });
+                }
+
+                const updateQuery = `UPDATE communities SET ${updateFields.join(", ")} WHERE id = ? AND creatorId = ?`;
+                updateValues.push(communityId, userId);
+
+                const [result] = await db.promise().query(updateQuery, updateValues);
+
+                if (result.affectedRows > 0) {
+                    console.log(`[Community Edit] Community ${communityId} updated successfully by creator ${userId}.`);
+                    return res.status(200).json({ message: "Community updated successfully." });
+                } else {
+                    console.warn(`[Community Edit] Update query affected 0 rows for community ${communityId}.`);
+                    return res.status(404).json({ message: "Update failed. Community not found or you are not the creator." });
+                }
+
+            } catch (error) {
+                console.error("[Community Edit] An unexpected error occurred in the edit process:", error);
+                return res.status(500).json({ message: "An internal server error occurred while editing the community.", error: error.message });
             }
         });
     });

@@ -17503,3 +17503,271 @@
 [2025-06-09 21:11:32] [32minfo[39m: Master 23380 is running
 [2025-06-09 21:11:32] [32minfo[39m: Database connection established.
 [2025-06-09 21:11:32] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-09 21:30:29] [32minfo[39m: Master 8972 is running
+[2025-06-09 21:30:29] [32minfo[39m: Database connection established.
+[2025-06-09 21:30:29] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-09 23:30:43] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-06-10 20:54:07] [32minfo[39m: Master 22744 is running
+[2025-06-10 20:54:07] [32minfo[39m: Database connection established.
+[2025-06-10 20:54:07] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-10 20:54:08] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.76.254' (using password: YES)
+[2025-06-10 20:56:03] [32minfo[39m: Master 23724 is running
+[2025-06-10 20:56:03] [32minfo[39m: Database connection established.
+[2025-06-10 20:56:03] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-10 20:56:03] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.76.254' (using password: YES)
+[2025-06-10 20:56:30] [32minfo[39m: Master 17136 is running
+[2025-06-10 20:56:30] [32minfo[39m: Database connection established.
+[2025-06-10 20:56:30] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-10 20:56:31] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.76.254' (using password: YES)
+[2025-06-10 20:56:32] [32minfo[39m: Master 3552 is running
+[2025-06-10 20:56:32] [32minfo[39m: Database connection established.
+[2025-06-10 20:56:32] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-10 20:56:33] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.76.254' (using password: YES)
+[2025-06-10 21:24:53] [32minfo[39m: Master 24100 is running
+[2025-06-10 21:24:53] [32minfo[39m: Database connection established.
+[2025-06-10 21:24:53] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-10 21:24:54] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.76.254' (using password: YES)
+[2025-06-10 21:27:24] [32minfo[39m: Master 25756 is running
+[2025-06-10 21:27:24] [32minfo[39m: Database connection established.
+[2025-06-10 21:27:24] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-11 01:38:15] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-06-11 22:19:29] [32minfo[39m: Master 25636 is running
+[2025-06-11 22:19:29] [32minfo[39m: Database connection established.
+[2025-06-11 22:19:29] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-11 22:19:30] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.83.134' (using password: YES)
+[2025-06-11 22:19:42] [32minfo[39m: Master 29076 is running
+[2025-06-11 22:19:42] [32minfo[39m: Database connection established.
+[2025-06-11 22:19:42] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-11 22:19:43] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.83.134' (using password: YES)
+[2025-06-11 22:31:15] [32minfo[39m: Master 26212 is running
+[2025-06-11 22:31:15] [32minfo[39m: Database connection established.
+[2025-06-11 22:31:15] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-11 22:35:27] [32minfo[39m: Master 3876 is running
+[2025-06-11 22:35:27] [32minfo[39m: Database connection established.
+[2025-06-11 22:35:27] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-11 22:36:22] [32minfo[39m: Master 700 is running
+[2025-06-11 22:36:22] [32minfo[39m: Database connection established.
+[2025-06-11 22:36:22] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-11 22:40:37] [32minfo[39m: Master 11996 is running
+[2025-06-11 22:40:37] [32minfo[39m: Database connection established.
+[2025-06-11 22:40:37] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-11 22:40:51] [32minfo[39m: Master 2560 is running
+[2025-06-11 22:40:51] [32minfo[39m: Database connection established.
+[2025-06-11 22:40:51] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-11 22:40:57] [32minfo[39m: Master 25452 is running
+[2025-06-11 22:40:57] [32minfo[39m: Database connection established.
+[2025-06-11 22:40:57] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-11 22:41:04] [32minfo[39m: Master 31684 is running
+[2025-06-11 22:41:04] [32minfo[39m: Database connection established.
+[2025-06-11 22:41:04] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-11 22:41:09] [32minfo[39m: Master 27516 is running
+[2025-06-11 22:41:09] [32minfo[39m: Database connection established.
+[2025-06-11 22:41:09] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-06-11 22:41:15] [32minfo[39m: Master 21572 is running
+[2025-06-11 22:41:15] [32minfo[39m: Database connection established.
+[2025-06-11 22:41:15] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 11:54:55] [32minfo[39m: Master 23124 is running
+[2025-07-04 11:54:55] [32minfo[39m: Database connection established.
+[2025-07-04 11:54:55] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 11:54:55] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.90.101.205' (using password: YES)
+[2025-07-04 12:08:39] [32minfo[39m: Master 18808 is running
+[2025-07-04 12:08:39] [32minfo[39m: Database connection established.
+[2025-07-04 12:08:39] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:01:13] [32minfo[39m: Master 28912 is running
+[2025-07-04 14:01:13] [32minfo[39m: Database connection established.
+[2025-07-04 14:01:13] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:01:17] [31merror[39m: Uncaught Exception: getaddrinfo EAI_AGAIN weeb-social-db.cjgqoamaeprc.eu-north-1.rds.amazonaws.com
+[2025-07-04 14:09:32] [32minfo[39m: Master 22832 is running
+[2025-07-04 14:09:32] [32minfo[39m: Database connection established.
+[2025-07-04 14:09:32] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:09:33] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.90.79.107' (using password: YES)
+[2025-07-04 14:10:04] [32minfo[39m: Master 16132 is running
+[2025-07-04 14:10:04] [32minfo[39m: Database connection established.
+[2025-07-04 14:10:04] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:52:58] [32minfo[39m: Master 29084 is running
+[2025-07-04 14:52:58] [32minfo[39m: Database connection established.
+[2025-07-04 14:52:58] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:53:05] [32minfo[39m: Master 12320 is running
+[2025-07-04 14:53:05] [32minfo[39m: Database connection established.
+[2025-07-04 14:53:05] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:53:09] [32minfo[39m: Master 13716 is running
+[2025-07-04 14:53:09] [32minfo[39m: Database connection established.
+[2025-07-04 14:53:09] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:53:13] [32minfo[39m: Master 26660 is running
+[2025-07-04 14:53:13] [32minfo[39m: Database connection established.
+[2025-07-04 14:53:13] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:53:17] [32minfo[39m: Master 29796 is running
+[2025-07-04 14:53:17] [32minfo[39m: Database connection established.
+[2025-07-04 14:53:17] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:53:19] [32minfo[39m: Master 27864 is running
+[2025-07-04 14:53:19] [32minfo[39m: Database connection established.
+[2025-07-04 14:53:19] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:53:20] [32minfo[39m: Master 15968 is running
+[2025-07-04 14:53:20] [32minfo[39m: Database connection established.
+[2025-07-04 14:53:20] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:53:24] [32minfo[39m: Master 31080 is running
+[2025-07-04 14:53:24] [32minfo[39m: Database connection established.
+[2025-07-04 14:53:24] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:53:26] [32minfo[39m: Master 26860 is running
+[2025-07-04 14:53:26] [32minfo[39m: Database connection established.
+[2025-07-04 14:53:26] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:53:46] [32minfo[39m: Master 29824 is running
+[2025-07-04 14:53:46] [32minfo[39m: Database connection established.
+[2025-07-04 14:53:46] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:53:49] [32minfo[39m: Master 29136 is running
+[2025-07-04 14:53:49] [32minfo[39m: Database connection established.
+[2025-07-04 14:53:49] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:53:57] [32minfo[39m: Master 17840 is running
+[2025-07-04 14:53:57] [32minfo[39m: Database connection established.
+[2025-07-04 14:53:57] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:01] [32minfo[39m: Master 13168 is running
+[2025-07-04 14:54:01] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:01] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:08] [32minfo[39m: Master 19960 is running
+[2025-07-04 14:54:08] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:08] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:17] [32minfo[39m: Master 27616 is running
+[2025-07-04 14:54:17] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:17] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:19] [32minfo[39m: Master 13004 is running
+[2025-07-04 14:54:19] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:19] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:23] [32minfo[39m: Master 22736 is running
+[2025-07-04 14:54:23] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:23] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:26] [32minfo[39m: Master 15132 is running
+[2025-07-04 14:54:26] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:26] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:28] [32minfo[39m: Master 23940 is running
+[2025-07-04 14:54:28] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:28] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:31] [32minfo[39m: Master 5460 is running
+[2025-07-04 14:54:31] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:31] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:43] [32minfo[39m: Master 4300 is running
+[2025-07-04 14:54:43] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:43] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:47] [32minfo[39m: Master 7140 is running
+[2025-07-04 14:54:47] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:47] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:53] [32minfo[39m: Master 25952 is running
+[2025-07-04 14:54:53] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:53] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:54] [32minfo[39m: Master 26156 is running
+[2025-07-04 14:54:54] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:54] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:54:56] [32minfo[39m: Master 22580 is running
+[2025-07-04 14:54:56] [32minfo[39m: Database connection established.
+[2025-07-04 14:54:56] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:04] [32minfo[39m: Master 5060 is running
+[2025-07-04 14:55:04] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:04] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:14] [32minfo[39m: Master 5760 is running
+[2025-07-04 14:55:14] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:14] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:17] [32minfo[39m: Master 18384 is running
+[2025-07-04 14:55:17] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:17] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:27] [32minfo[39m: Master 28368 is running
+[2025-07-04 14:55:27] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:27] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:30] [32minfo[39m: Master 28364 is running
+[2025-07-04 14:55:30] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:30] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:40] [32minfo[39m: Master 30148 is running
+[2025-07-04 14:55:40] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:40] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:46] [32minfo[39m: Master 18540 is running
+[2025-07-04 14:55:46] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:46] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:48] [32minfo[39m: Master 31312 is running
+[2025-07-04 14:55:48] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:48] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:51] [32minfo[39m: Master 4356 is running
+[2025-07-04 14:55:51] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:51] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:53] [32minfo[39m: Master 23432 is running
+[2025-07-04 14:55:53] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:53] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:56] [32minfo[39m: Master 29448 is running
+[2025-07-04 14:55:56] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:56] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:55:58] [32minfo[39m: Master 15752 is running
+[2025-07-04 14:55:58] [32minfo[39m: Database connection established.
+[2025-07-04 14:55:58] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:56:00] [32minfo[39m: Master 3700 is running
+[2025-07-04 14:56:00] [32minfo[39m: Database connection established.
+[2025-07-04 14:56:00] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:56:08] [32minfo[39m: Master 10148 is running
+[2025-07-04 14:56:08] [32minfo[39m: Database connection established.
+[2025-07-04 14:56:08] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 14:56:51] [32minfo[39m: Master 4296 is running
+[2025-07-04 14:56:51] [32minfo[39m: Database connection established.
+[2025-07-04 14:56:51] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-04 19:55:34] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-07-29 22:28:48] [32minfo[39m: Master 29424 is running
+[2025-07-29 22:28:48] [32minfo[39m: Database connection established.
+[2025-07-29 22:28:48] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:28:49] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.215.57.251' (using password: YES)
+[2025-07-29 22:29:37] [32minfo[39m: Master 28228 is running
+[2025-07-29 22:29:37] [32minfo[39m: Database connection established.
+[2025-07-29 22:29:37] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:29:42] [31merror[39m: Unhandled Rejection at:
+[2025-07-29 22:30:19] [32minfo[39m: Master 13440 is running
+[2025-07-29 22:30:19] [32minfo[39m: Database connection established.
+[2025-07-29 22:30:20] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:30:58] [32minfo[39m: Master 18124 is running
+[2025-07-29 22:30:58] [32minfo[39m: Database connection established.
+[2025-07-29 22:30:58] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:31:05] [31merror[39m: Unhandled Rejection at:
+[2025-07-29 22:35:10] [32minfo[39m: Master 5516 is running
+[2025-07-29 22:35:10] [32minfo[39m: Database connection established.
+[2025-07-29 22:35:10] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:36:32] [32minfo[39m: Master 25984 is running
+[2025-07-29 22:36:32] [32minfo[39m: Database connection established.
+[2025-07-29 22:36:32] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:36:45] [32minfo[39m: Master 7920 is running
+[2025-07-29 22:36:45] [32minfo[39m: Database connection established.
+[2025-07-29 22:36:45] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:36:48] [32minfo[39m: Master 5580 is running
+[2025-07-29 22:36:48] [32minfo[39m: Database connection established.
+[2025-07-29 22:36:48] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:36:54] [32minfo[39m: Master 23980 is running
+[2025-07-29 22:36:54] [32minfo[39m: Database connection established.
+[2025-07-29 22:36:54] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:37:00] [32minfo[39m: Master 25488 is running
+[2025-07-29 22:37:00] [32minfo[39m: Database connection established.
+[2025-07-29 22:37:00] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:37:03] [32minfo[39m: Master 29468 is running
+[2025-07-29 22:37:03] [32minfo[39m: Database connection established.
+[2025-07-29 22:37:03] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:38:03] [32minfo[39m: Master 15216 is running
+[2025-07-29 22:38:03] [32minfo[39m: Database connection established.
+[2025-07-29 22:38:03] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:39:26] [32minfo[39m: Master 18992 is running
+[2025-07-29 22:39:26] [32minfo[39m: Database connection established.
+[2025-07-29 22:39:26] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:44:12] [32minfo[39m: Master 4396 is running
+[2025-07-29 22:44:12] [32minfo[39m: Database connection established.
+[2025-07-29 22:44:12] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:44:17] [32minfo[39m: Master 18600 is running
+[2025-07-29 22:44:17] [32minfo[39m: Database connection established.
+[2025-07-29 22:44:17] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:44:28] [32minfo[39m: Master 26704 is running
+[2025-07-29 22:44:28] [32minfo[39m: Database connection established.
+[2025-07-29 22:44:28] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:56:38] [32minfo[39m: Master 5456 is running
+[2025-07-29 22:56:38] [32minfo[39m: Database connection established.
+[2025-07-29 22:56:38] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 22:57:29] [32minfo[39m: Master 5052 is running
+[2025-07-29 22:57:29] [32minfo[39m: Database connection established.
+[2025-07-29 22:57:29] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 23:03:09] [32minfo[39m: Master 24880 is running
+[2025-07-29 23:03:09] [32minfo[39m: Database connection established.
+[2025-07-29 23:03:09] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 23:13:44] [32minfo[39m: Master 23656 is running
+[2025-07-29 23:13:44] [32minfo[39m: Database connection established.
+[2025-07-29 23:13:44] [32minfo[39m: Server listening on port 8000 in development mode
+[2025-07-29 23:13:55] [32minfo[39m: Master 13652 is running
+[2025-07-29 23:13:55] [32minfo[39m: Database connection established.
+[2025-07-29 23:13:55] [32minfo[39m: Server listening on port 8000 in development mode

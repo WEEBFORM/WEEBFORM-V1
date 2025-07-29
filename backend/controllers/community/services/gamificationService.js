@@ -76,7 +76,7 @@ export const incrementUserActivity = async (userId, chatGroupId, activityType) =
   return stats;
 };
 
-// GET USER STATS DEOM DATABASE
+// GET USER STATS FROM DATABASE
 export const getUserStats = async (userId, chatGroupId) => { 
   const query = `
     SELECT 

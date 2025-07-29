@@ -6,7 +6,8 @@ import {
     getCommunityDetails,
     yourCommunities,
     exitCommunity,
-    deleteCommunity
+    deleteCommunity,
+    editCommunity
 } from "../../controllers/community/community.js";
 //COMMUNITY POST INTERACTIONS/FEATURES
 import {
@@ -24,6 +25,7 @@ router.get('/existing/joined', yourCommunities);
 router.get('/:id', getCommunityDetails);
 router.post('/join/:id', joinCommunity);
 router.delete('/leave/:id', exitCommunity);
+router.put('/:id/edit', editCommunity);
 router.delete('/:id', deleteCommunity);
 
 //COMMUNITY FEED/POSTS 
@@ -32,4 +34,4 @@ router.get('/:id/community-feed', fetchCommunityPosts);
 router.delete('/community-feed/:id', deleteCommunityPost);
 
 
-export default router;
+export default router; 

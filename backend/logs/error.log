@@ -2232,3 +2232,19 @@
 [2025-06-07 23:26:58] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.91.4.95' (using password: YES)
 [2025-06-08 23:07:55] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.82.243' (using password: YES)
 [2025-06-09 15:00:10] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.85.69' (using password: YES)
+[2025-06-09 23:30:43] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-06-10 20:54:08] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.76.254' (using password: YES)
+[2025-06-10 20:56:03] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.76.254' (using password: YES)
+[2025-06-10 20:56:31] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.76.254' (using password: YES)
+[2025-06-10 20:56:33] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.76.254' (using password: YES)
+[2025-06-10 21:24:54] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.76.254' (using password: YES)
+[2025-06-11 01:38:15] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-06-11 22:19:30] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.83.134' (using password: YES)
+[2025-06-11 22:19:43] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.89.83.134' (using password: YES)
+[2025-07-04 11:54:55] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.90.101.205' (using password: YES)
+[2025-07-04 14:01:17] [31merror[39m: Uncaught Exception: getaddrinfo EAI_AGAIN weeb-social-db.cjgqoamaeprc.eu-north-1.rds.amazonaws.com
+[2025-07-04 14:09:33] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.90.79.107' (using password: YES)
+[2025-07-04 19:55:34] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-07-29 22:28:49] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.215.57.251' (using password: YES)
+[2025-07-29 22:29:42] [31merror[39m: Unhandled Rejection at:
+[2025-07-29 22:31:05] [31merror[39m: Unhandled Rejection at:

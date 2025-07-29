@@ -1,32 +1,27 @@
 import jwt from 'jsonwebtoken';
-import { db } from '../config/connectDB.js'; // Import database connection
+import { db } from '../config/connectDB.js';
+import AppError from './appError.js';
 
-export const verifyToken = (token) => {
+const promisePool = db.promise();
+
+export const verifyToken = async (token) => {
     try {
         const decoded = jwt.verify(token, process.env.SECRET_KEY);
 
-        // Fetch user details from the database to get the latest premium status and role
-        return new Promise((resolve, reject) => {
-            const q = "SELECT id, username, role FROM users WHERE id = ?";
-            db.query(q, [decoded.id], (err, data) => {
-                if (err) {
-                    console.error("Error fetching user:", err);
-                    return reject(new Error('Invalid token - user not found')); // Reject on database error
-                }
-                if (!data.length) {
-                    return reject(new Error('Invalid token - user not found')); // Reject if user doesn't exist
-                }
+        const q = "SELECT id, username, role FROM users WHERE id = ?";
+        const [users] = await promisePool.query(q, [decoded.id]);
 
-                const user = data[0];
-                resolve({
-                    id: user.id,
-                    username: user.username,
-                    role: user.role // Include the role
-                });
-            });
-        });
+        if (users.length === 0) {
+            throw new AppError('User belonging to this token no longer exists.', 401);
+        }
 
+        const user = users[0];
+        return {
+            id: user.id,
+            username: user.username,
+            role: user.role
+        };
     } catch (err) {
-        throw new Error('Invalid token');
+        throw err;
     }
 };

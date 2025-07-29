@@ -1,18 +1,18 @@
 import { verifyToken } from './utils.js';
+import AppError from '../utils/appError.js';
 
 export async function authenticateUser(req, res, next) {
     const token = req.cookies.accessToken;
 
     if (!token) {
-        return res.status(401).json({ error: 'Unauthorized - No token provided' });
+        return next(new AppError('You are not logged in. Please log in to get access.', 401));
     }
 
     try {
-        req.user = await verifyToken(token); // Await the promise
+        req.user = await verifyToken(token);
         next();
     } catch (err) {
-        console.error("Authentication error:", err); // Log the error
-        return res.status(403).json({ error: 'Invalid token' });
+        next(err); //Passing to global error handler
     }
 }
 

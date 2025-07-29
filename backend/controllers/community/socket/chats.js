@@ -17,9 +17,9 @@ import {
 import {
   getGroupAdminInfo,
   checkUserPermissions,
-  applySlowMode,
-  temporarilyMuteUser,
-  exileUserToFillerRoom,
+  toggleUserSlowMode,
+  toggleUserMute,
+  toggleUserExile,
   removeUserFromGroup
 } from "../services/moderationService.js";
 import { incrementUserActivity } from "../services/gamificationService.js";
@@ -241,7 +241,7 @@ export const initializeMessageSocket = (server) => {
 
         const slowModeEnabled = await redisClient.get(`slowmode:${chatGroupId}`);
         if (slowModeEnabled) {
-          await applySlowMode(socket.user.id, chatGroupId, parseInt(slowModeEnabled, 10));
+          await toggleUserSlowMode(socket.user.id, chatGroupId, parseInt(slowModeEnabled, 10));
           console.log(`[Moderation] Slow mode applied for user ${socket.user.id} in chat group ${chatGroupId} for ${slowModeEnabled}s due to group setting.`);
         }
 
@@ -510,15 +510,15 @@ export const initializeMessageSocket = (server) => {
 
         switch (action) {
           case ADMIN_ACTIONS.SLOW_MODE:
-            actionResult = await applySlowMode(targetUserId, chatGroupId, duration, adminId);
+            actionResult = await toggleUserSlowMode(targetUserId, chatGroupId, duration, adminId);
             console.log(`[Moderation] Admin ${adminId} applied slow mode to ${targetUserId} in chat group ${chatGroupId}.`);
             break;
           case ADMIN_ACTIONS.MUTE:
-            actionResult = await temporarilyMuteUser(targetUserId, chatGroupId, duration, adminId);
+            actionResult = await toggleUserMute(targetUserId, chatGroupId, duration, adminId);
             console.log(`[Moderation] Admin ${adminId} muted ${targetUserId} in chat group ${chatGroupId}.`);
             break;
           case ADMIN_ACTIONS.EXILE:
-            actionResult = await exileUserToFillerRoom(targetUserId, chatGroupId, duration, adminId);
+            actionResult = await toggleUserExile(targetUserId, chatGroupId, duration, adminId);
             console.log(`[Moderation] Admin ${adminId} exiled ${targetUserId} in chat group ${chatGroupId}.`);
             break;
           case ADMIN_ACTIONS.REMOVE:

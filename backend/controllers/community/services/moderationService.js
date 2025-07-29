@@ -51,7 +51,7 @@ export const checkUserPermissions = async (userId, chatGroupId, action) => {
       return false;
     }
   }
-
+  
   // EXILED TO FILLER ROOM?
   const isExiled = await redisClient.get(`exile:${chatGroupId}:${userId}`); 
   if (isExiled) {
@@ -78,116 +78,196 @@ export const checkUserPermissions = async (userId, chatGroupId, action) => {
   });
 };
 
-// APPLY SLOW MODE TO GROUP (admin action)
-export const applySlowMode = async (userId, chatGroupId, duration, adminId) => { 
-  console.log(`[Moderation] Applying slow mode for user ${userId} in chat group ${chatGroupId} for ${duration}s.`); 
-  //APPLY SLOW MODE
-  await redisClient.set(`slowmode:${chatGroupId}:${userId}`, '1', 'EX', duration);
-  console.log(`[Redis] Slow mode set for user ${userId} in chat group ${chatGroupId}.`); 
-  // Publish event
-  publishEvent('user.slowmode.applied', {
-    userId,
-    chatGroupId,
-    duration,
-    timestamp: Date.now()
-  });
-  console.log(`[EventBus] Published 'user.slowmode.applied' event.`);
-  //LOG MODERATION ACTION
-  if (adminId) {
-    const logQuery = `
-      INSERT INTO moderation_actions
-      (adminId, targetUserId, chatGroupId, action, duration, createdAt)
-      VALUES (?, ?, ?, 'slow_mode', ?, NOW())
-    `;
-    db.query(logQuery, [adminId, userId, chatGroupId, duration], (err) => {
-      if (err) console.error("[DB Service] Error logging slow mode moderation action:", err);
-    });
+// TOGGLE SLOW MODE FOR A SPECIFIC USER (admin action)
+export const toggleUserSlowMode = async (targetUserId, chatGroupId, duration, adminId) => { 
+  const userSlowModeKey = `slowmode:${chatGroupId}:${targetUserId}`;
+  const isSlowModeActive = await redisClient.get(userSlowModeKey);
+  let actionPerformed;
+  let logAction;
+
+  if (isSlowModeActive) {
+    // Unapply slow mode
+    await redisClient.del(userSlowModeKey);
+    actionPerformed = false;
+    logAction = 'remove_slow_mode';
+    console.log(`[Moderation] Removed slow mode for user ${targetUserId} in chat group ${chatGroupId}.`); 
+  } else {
+    // Apply slow mode
+    if (!duration || duration <= 0) {
+        throw new Error("Duration is required to apply slow mode.");
+    }
+    await redisClient.set(userSlowModeKey, '1', 'EX', duration);
+    actionPerformed = true;
+    logAction = 'apply_slow_mode';
+    console.log(`[Moderation] Applied slow mode for user ${targetUserId} in chat group ${chatGroupId} for ${duration}s.`); 
   }
 
-  return { success: true, userId, chatGroupId, duration };
+  // LOG MODERATION ACTION
+  const logQuery = `
+    INSERT INTO moderation_actions
+    (adminId, targetUserId, chatGroupId, action, duration, createdAt)
+    VALUES (?, ?, ?, ?, ?, NOW())
+  `;
+  db.query(logQuery, [adminId, targetUserId, chatGroupId, logAction, duration], (err) => {
+    if (err) console.error("[DB Service] Error logging slow mode moderation action:", err);
+  });
+  
+  // Publish event
+  publishEvent('user.slowmode.toggled', {
+    userId: targetUserId,
+    chatGroupId,
+    isSlowModeActive: actionPerformed,
+    duration,
+    adminId,
+    timestamp: Date.now()
+  });
+  console.log(`[EventBus] Published 'user.slowmode.toggled' event: ${logAction}.`);
+
+  return { success: true, userId: targetUserId, chatGroupId, isSlowModeActive: actionPerformed, duration };
 };
 
 // TOGGLE GROUP SLOW MODE (admin action)
-export const toggleGroupSlowMode = async (chatGroupId, duration) => {
-  console.log(`[Moderation] Toggling group slow mode for group ${chatGroupId}. Duration: ${duration || 'disabled'}.`); 
-  if (!duration) {
-    // Disable slow mode
-    await redisClient.del(`slowmode:${chatGroupId}`);
-    console.log(`[Redis] Group slow mode disabled for group ${chatGroupId}.`); 
-    return { enabled: false, chatGroupId };
+export const toggleGroupSlowMode = async (chatGroupId, duration, adminId) => { // Added adminId for logging
+  const groupSlowModeKey = `slowmode:${chatGroupId}:group_wide`; // Use a distinct key for group-wide slow mode
+  const isGroupSlowModeActive = await redisClient.get(groupSlowModeKey);
+  let actionPerformed;
+  let logAction;
+
+  if (isGroupSlowModeActive) {
+    // Disable group-wide slow mode
+    await redisClient.del(groupSlowModeKey);
+    actionPerformed = false;
+    logAction = 'disable_group_slow_mode';
+    console.log(`[Moderation] Disabled group-wide slow mode for group ${chatGroupId}.`); 
   } else {
-    await redisClient.set(`slowmode:${chatGroupId}`, duration);
-    console.log(`[Redis] Group slow mode enabled for group ${chatGroupId} for ${duration}s.`);
-    return { enabled: true, chatGroupId, duration };
+    // Enable group-wide slow mode
+    if (!duration || duration <= 0) {
+        throw new Error("Duration is required to enable group slow mode.");
+    }
+    await redisClient.set(groupSlowModeKey, duration, 'EX', duration); // Store duration in Redis, set expiration
+    actionPerformed = true;
+    logAction = 'enable_group_slow_mode';
+    console.log(`[Moderation] Enabled group slow mode for group ${chatGroupId} for ${duration}s.`);
   }
-};
-
-//TEMPORARILY MUTE USER IN GROUP (admin action)
-export const temporarilyMuteUser = async (userId, chatGroupId, duration, adminId) => { 
-  console.log(`[Moderation] Temporarily muting user ${userId} in chat group ${chatGroupId} for ${duration}s.`); 
-  await redisClient.set(`mute:${chatGroupId}:${userId}`, '1', 'EX', duration);
-  console.log(`[Redis] Mute set for user ${userId} in chat group ${chatGroupId}.`);
 
   // LOG MODERATION ACTION
-  const query = `
+  const logQuery = `
     INSERT INTO moderation_actions
     (adminId, targetUserId, chatGroupId, action, duration, createdAt)
-    VALUES (?, ?, ?, 'mute', ?, NOW())
+    VALUES (?, ?, ?, ?, ?, NOW())
   `;
-
-  return new Promise((resolve, reject) => {
-    db.query(query, [adminId, userId, chatGroupId, duration], (err, result) => {
-      if (err) {
-        console.error("[DB Service] Error logging mute moderation action:", err);
-        return reject(err);
-      }
-      console.log(`[DB Service] Mute action logged for user ${userId} in chat group ${chatGroupId}.`); 
-      
-      //PUBLISH EVENT
-      publishEvent('user.muted', {
-        userId,
-        chatGroupId,
-        duration,
-        timestamp: Date.now()
-      });
-      console.log(`[EventBus] Published 'user.muted' event.`);
-
-      return resolve({ success: true, userId, chatGroupId, duration });
-    });
+  // targetUserId is null for group-wide actions
+  db.query(logQuery, [adminId, null, chatGroupId, logAction, duration], (err) => {
+    if (err) console.error("[DB Service] Error logging group slow mode moderation action:", err);
   });
+  
+  // Publish event
+  publishEvent('group.slowmode.toggled', {
+    chatGroupId,
+    isGroupSlowModeActive: actionPerformed,
+    duration,
+    adminId,
+    timestamp: Date.now()
+  });
+  console.log(`[EventBus] Published 'group.slowmode.toggled' event: ${logAction}.`);
+
+  return { success: true, chatGroupId, isGroupSlowModeActive: actionPerformed, duration };
 };
 
-//EXILE USER TO FILLER ROOM (admin action)
-export const exileUserToFillerRoom = async (userId, chatGroupId, duration, adminId) => {
-  console.log(`[Moderation] Exiling user ${userId} to filler room in chat group ${chatGroupId} for ${duration}s.`);
-  await redisClient.set(`exile:${chatGroupId}:${userId}`, '1', 'EX', duration); 
-  console.log(`[Redis] Exile status set for user ${userId} in chat group ${chatGroupId}.`);
+// TOGGLE MUTE USER IN GROUP (admin action)
+export const toggleUserMute = async (targetUserId, chatGroupId, duration, adminId) => { 
+  const muteKey = `mute:${chatGroupId}:${targetUserId}`;
+  const isMuted = await redisClient.get(muteKey);
+  let actionPerformed;
+  let logAction;
+
+  if (isMuted) {
+    // Unmute user
+    await redisClient.del(muteKey);
+    actionPerformed = false;
+    logAction = 'unmute';
+    console.log(`[Moderation] Unmuted user ${targetUserId} in chat group ${chatGroupId}.`); 
+  } else {
+    // Mute user
+    if (!duration || duration <= 0) {
+        throw new Error("Duration is required to mute user.");
+    }
+    await redisClient.set(muteKey, '1', 'EX', duration);
+    actionPerformed = true;
+    logAction = 'mute';
+    console.log(`[Moderation] Muted user ${targetUserId} in chat group ${chatGroupId} for ${duration}s.`); 
+  }
+
   // LOG MODERATION ACTION
-  const query = `
+  const logQuery = `
     INSERT INTO moderation_actions
     (adminId, targetUserId, chatGroupId, action, duration, createdAt)
-    VALUES (?, ?, ?, 'exile', ?, NOW())
+    VALUES (?, ?, ?, ?, ?, NOW())
   `;
-
-  return new Promise((resolve, reject) => {
-    db.query(query, [adminId, userId, chatGroupId, duration], (err, result) => { 
-      if (err) {
-        console.error("[DB Service] Error logging exile moderation action:", err);
-        return reject(err);
-      }
-      console.log(`[DB Service] Exile action logged for user ${userId} in chat group ${chatGroupId}.`); 
-      //PUBLISH EVENT
-      publishEvent('user.exiled', {
-        userId, 
-        chatGroupId, 
-        duration,
-        timestamp: Date.now()
-      });
-      console.log(`[EventBus] Published 'user.exiled' event.`);
-
-      return resolve({ success: true, userId, chatGroupId, duration });
-    });
+  db.query(logQuery, [adminId, targetUserId, chatGroupId, logAction, duration], (err) => {
+    if (err) console.error("[DB Service] Error logging mute moderation action:", err);
   });
+  
+  // PUBLISH EVENT
+  publishEvent('user.muted.toggled', {
+    userId: targetUserId,
+    chatGroupId,
+    isMuted: actionPerformed,
+    duration,
+    adminId,
+    timestamp: Date.now()
+  });
+  console.log(`[EventBus] Published 'user.muted.toggled' event: ${logAction}.`);
+
+  return { success: true, userId: targetUserId, chatGroupId, isMuted: actionPerformed, duration };
+};
+
+// TOGGLE EXILE USER TO FILLER ROOM (admin action)
+export const toggleUserExile = async (targetUserId, chatGroupId, duration, adminId) => {
+  const exileKey = `exile:${chatGroupId}:${targetUserId}`;
+  const isExiled = await redisClient.get(exileKey);
+  let actionPerformed;
+  let logAction;
+
+  if (isExiled) {
+    // Unexile user
+    await redisClient.del(exileKey);
+    actionPerformed = false;
+    logAction = 'unexile';
+    console.log(`[Moderation] Unexiled user ${targetUserId} from chat group ${chatGroupId}.`);
+  } else {
+    // Exile user
+    if (!duration || duration <= 0) {
+        throw new Error("Duration is required to exile user.");
+    }
+    await redisClient.set(exileKey, '1', 'EX', duration); 
+    actionPerformed = true;
+    logAction = 'exile';
+    console.log(`[Moderation] Exiled user ${targetUserId} to filler room in chat group ${chatGroupId} for ${duration}s.`);
+  }
+
+  // LOG MODERATION ACTION
+  const logQuery = `
+    INSERT INTO moderation_actions
+    (adminId, targetUserId, chatGroupId, action, duration, createdAt)
+    VALUES (?, ?, ?, ?, ?, NOW())
+  `;
+  db.query(logQuery, [adminId, targetUserId, chatGroupId, logAction, duration], (err) => {
+    if (err) console.error("[DB Service] Error logging exile moderation action:", err);
+  });
+  
+  //PUBLISH EVENT
+  publishEvent('user.exiled.toggled', {
+    userId: targetUserId, 
+    chatGroupId, 
+    isExiled: actionPerformed,
+    duration,
+    adminId,
+    timestamp: Date.now()
+  });
+  console.log(`[EventBus] Published 'user.exiled.toggled' event: ${logAction}.`);
+
+  return { success: true, userId: targetUserId, chatGroupId, isExiled: actionPerformed, duration };
 };
 
 export const removeUserFromGroup = async (userId, chatGroupId, adminId) => {
@@ -204,7 +284,13 @@ export const removeUserFromGroup = async (userId, chatGroupId, adminId) => {
         console.error("[DB Service] Error removing user from chat group members:", err);
         return reject(err);
       }
+      if (result.affectedRows === 0) {
+        // User was already not a member, or invalid userId/chatGroupId
+        return resolve({ success: false, message: "User not found in group or already removed." });
+      }
       console.log(`[DB Service] User ${userId} removed from chat group ${chatGroupId}. Rows affected: ${result.affectedRows}`); 
+      
+      // Clear any active moderation for this user in this specific chat group
       redisClient.del(`mute:${chatGroupId}:${userId}`)
         .then(() => console.log(`[Redis] Cleared mute status for ${userId} in ${chatGroupId}.`))
         .catch(err => console.error(`[Redis] Error clearing mute status for ${userId} in ${chatGroupId}:`, err));
@@ -217,7 +303,6 @@ export const removeUserFromGroup = async (userId, chatGroupId, adminId) => {
       redisClient.del(`admin:${chatGroupId}:${userId}`)
         .then(() => console.log(`[Redis] Cleared admin status cache for ${userId} in ${chatGroupId}.`))
         .catch(err => console.error(`[Redis] Error clearing admin cache for ${userId} in ${chatGroupId}:`, err));
-
 
       // LOG MODERATION ACTION
       const logQuery = `
@@ -241,7 +326,7 @@ export const removeUserFromGroup = async (userId, chatGroupId, adminId) => {
       });
       console.log(`[EventBus] Published 'user.removed' event.`);
 
-      return resolve({ success: true, userId, chatGroupId });
+      return resolve({ success: true, userId, chatGroupId, message: "User removed from group." });
     });
   });
-};
+}; 

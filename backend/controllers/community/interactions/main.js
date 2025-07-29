@@ -57,7 +57,7 @@ export const newCommunityPost = async (req, res) => {
                 // INSERT POST INTO communityposts TABLE
                 const insertPostQuery = `
                     INSERT INTO communityposts 
-                    (\`userId\`, \`communityId\`, \`description\`, \`media\`, \`createdAt\`) 
+                    (\`userId\`, \`communityId\`, \`description\`, \`media\`, \`category\`, \`createdAt\`) 
                     VALUES (?)
                 `;
                 const values = [
@@ -65,6 +65,7 @@ export const newCommunityPost = async (req, res) => {
                     communityId,
                     req.body.description,
                     uploadedMediaUrls.join(","),
+                    req.body.category,
                     moment(Date.now()).format("YYYY-MM-DD HH:mm:ss"),
                 ];
                 db.query(insertPostQuery, [values], (err, post) => {
