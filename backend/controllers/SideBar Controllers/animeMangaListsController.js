@@ -118,17 +118,13 @@ export const addEntryToList = async (req, res) => {
   authenticateUser(req, res, async () => {
     const userId = req.user.id;
     const listId = req.params.listId;
-    const { malId, type } = req.body;
 
       if (!Number.isInteger(Number(listId))) {
             return res.status(400).json({ message: "Invalid listId" });
         }
-    if (!malId || !type) {
-      return res.status(400).json({ message: "malId and type are required" });
-    }
-    const q = "INSERT INTO listEntries (listId, malId, type) VALUES (?, ?, ?)";
+    const q = "INSERT INTO listEntries (listId, listItem, type) VALUES (?, ?, ?)";
     try {
-        const [result] = await db.promise().query(q, [listId, malId, type]);
+        const [result] = await db.promise().query(q, [listId, listItem, type]);
         return res.status(201).json({ message: "Entry added successfully", entryId: result.insertId });
     } catch (error) {
         return handleAPIError(error, res, "Failed to add entry to list");
@@ -193,7 +189,7 @@ export const updateEntry = async (req, res) => {
         const userId = req.user.id;
         const listId = req.params.listId;
         const entryId = req.params.entryId;
-        const { malId, type } = req.body;
+        const { listItem, type } = req.body;
 
         if (!Number.isInteger(Number(listId))) {
             return res.status(400).json({ message: "Invalid listId" });
@@ -203,13 +199,9 @@ export const updateEntry = async (req, res) => {
             return res.status(400).json({ message: "Invalid entryId" });
         }
 
-        if (!malId || !type) {
-            return res.status(400).json({ message: "malId and type are required" });
-        }
-
-        const q = "UPDATE listEntries SET malId = ?, type = ? WHERE id = ? AND listId = (SELECT id FROM lists WHERE userId = ?)";
+        const q = "UPDATE listEntries SET listItem = ?, type = ? WHERE id = ? AND listId = (SELECT id FROM lists WHERE userId = ?)";
         try {
-            const [result] = await db.promise().query(q, [malId, type, entryId, userId]);
+            const [result] = await db.promise().query(q, [listItem, type, entryId, userId]);
             if (result.affectedRows === 0) {
                 return res.status(404).json({ message: "Entry not found or unauthorized" });
             }

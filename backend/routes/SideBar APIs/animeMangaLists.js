@@ -9,7 +9,7 @@ import {
     removeEntryFromList,
     getListEntries,
     updateEntry
-} from '../../controllers/SideBar Controllers/animeMangaListsController'; // Import all functions
+} from '../../controllers/SideBar Controllers/animeMangaListsController'; 
 
 const router = express.Router();
 

@@ -6,7 +6,7 @@ import multer from "multer";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3, generateS3Url, s3KeyFromUrl, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
 
-const isCommunityAdmin = async (userId, communityId) => {
+export const isCommunityAdmin = async (userId, communityId) => {
     const query = "SELECT isAdmin FROM community_members WHERE communityId = ? AND userId = ? AND isAdmin = 1";
     try {
         const [results] = await db.promise().query(query, [communityId, userId]);

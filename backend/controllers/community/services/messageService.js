@@ -103,7 +103,7 @@ export const getUserInfo = async (userId) => {
       }
     });
   });
-}; 
+};
 
 //GET MESSAGE BY id
 export const getMessageById = async (messageId) => {
