@@ -2289,3 +2289,4 @@
 [2025-07-31 02:24:10] [31merror[39m: Unhandled Error: read ECONNRESET
 [2025-07-31 02:26:34] [31merror[39m: Unhandled Rejection at:
 [2025-07-31 02:27:11] [31merror[39m: Unhandled Rejection at:
+[2025-07-31 02:57:46] [31merror[39m: Uncaught Exception: read ECONNRESET

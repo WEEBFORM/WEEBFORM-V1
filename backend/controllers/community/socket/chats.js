@@ -172,9 +172,9 @@ export const initializeMessageSocket = (server) => {
           }
           const params = {
             Bucket: process.env.BUCKET_NAME,
-            Key: `uploads/${Date.now()}_audio.webm`,
+            Key: `uploads/audio/${Date.now()}_audio.mp4`,
             Body: Buffer.from(base64Data, 'base64'),
-            ContentType: "audio/webm",
+            ContentType: "audio/mp4",
           };
           console.log(`[S3] Attempting to upload audio to S3. Key: ${params.Key}`);
           const command = new PutObjectCommand(params);

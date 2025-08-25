@@ -285,7 +285,7 @@ export const deletePost = async (req, res) => {
             const [data] = await db.promise().query(getPost, [postId, userId]);
 
             if (!data.length) {
-                return res.status(404).json({ message: "Post not found!" });
+                return res.status(404).json({ message: "Post not found! or user not authorized" });
             }
 
             const { mediaUrl } = data[0];

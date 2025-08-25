@@ -32,7 +32,7 @@ export const uploadMessageMedia = async (req, res) => {
 
 export const fetchGroupMessages = async (req, res) => {
     authenticateUser(req, res, async () => {
-        const { chatGroupId } = req.params; // Updated to use chatGroupId
+        const { chatGroupId } = req.params;
 
         try {
             const query = `
@@ -76,6 +76,11 @@ export const fetchGroupMessages = async (req, res) => {
                                 return await generateS3Url(mediaKey);
                             }));
                         }
+                        let audioUrl = null;
+                        if (row.audio) {
+                            const audioKey = s3KeyFromUrl(row.audio);
+                            audioUrl = await generateS3Url(audioKey);
+                        }
 
                         const replyTo = row.replyToMessageId
                             ? {
@@ -100,7 +105,7 @@ export const fetchGroupMessages = async (req, res) => {
                         return {
                             id: row.id,
                             senderId: row.senderId,
-                            chatGroupId: row.chatGroupId, // Updated to use chatGroupId
+                            chatGroupId: row.chatGroupId,
                             message: row.message,
                             media: mediaUrls,
                             createdAt: row.createdAt,
@@ -109,7 +114,7 @@ export const fetchGroupMessages = async (req, res) => {
                             firstName: row.firstName,
                             lastName: row.lastName,
                             replyTo: replyTo,
-                            audio: row.audio,
+                            audio: audioUrl,
                             threadId: row.threadId,
                             spoiler: row.spoiler === 1,
                             mentions: mentionedUsers,
@@ -123,7 +128,7 @@ export const fetchGroupMessages = async (req, res) => {
             res.status(500).json({ message: "Internal server error" });
         }
     });
-};
+}; 
 
 export const editMessage = async (req, res) => {
     authenticateUser(req, res, async () => {

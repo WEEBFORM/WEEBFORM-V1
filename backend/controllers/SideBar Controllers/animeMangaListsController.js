@@ -122,9 +122,9 @@ export const addEntryToList = async (req, res) => {
       if (!Number.isInteger(Number(listId))) {
             return res.status(400).json({ message: "Invalid listId" });
         }
-    const q = "INSERT INTO listEntries (listId, listItem, type) VALUES (?, ?, ?)";
+    const q = "INSERT INTO listEntries (listId, listItem) VALUES (?, ?, ?) WHERE userId = ?";
     try {
-        const [result] = await db.promise().query(q, [listId, listItem, type]);
+        const [result] = await db.promise().query(q, [listId, listItemr ]);
         return res.status(201).json({ message: "Entry added successfully", entryId: result.insertId });
     } catch (error) {
         return handleAPIError(error, res, "Failed to add entry to list");
