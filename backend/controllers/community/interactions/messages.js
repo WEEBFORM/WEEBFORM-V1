@@ -93,7 +93,7 @@ export const fetchGroupMessages = async (req, res) => {
                             }
                             : null;
 
-                        let mentionedUsers = [];
+                        let mentionedUsers = []; 
                         if (row.mentions) {
                             try {
                                 mentionedUsers = JSON.parse(row.mentions);

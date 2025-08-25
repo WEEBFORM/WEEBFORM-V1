@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import moment from "moment";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { s3 } from "../../../middlewares/S3bucketConfig.js";
+import { s3, generateS3Url } from "../../../middlewares/S3bucketConfig.js";
 import { authenticateSocket } from "../../../middlewares/socketVerification.js";
 import { publishEvent } from "../services/eventBus.js";
 import {
@@ -170,16 +170,19 @@ export const initializeMessageSocket = (server) => {
             console.warn(`[S3] Invalid audio base64 format for user ${socket.user.id}: ${audio.substring(0, 50)}...`);
             return socket.emit("error", { message: "Invalid audio format provided." });
           }
+
+          const key = `uploads/audio/${Date.now()}_audio.mp3`;  // use mp3 consistently
           const params = {
             Bucket: process.env.BUCKET_NAME,
-            Key: `uploads/audio/${Date.now()}_audio.mp4`,
-            Body: Buffer.from(base64Data, 'base64'),
-            ContentType: "audio/mp4",
+            Key: key,
+            Body: Buffer.from(base64Data, "base64"),
+            ContentType: "audio/mpeg",
           };
-          console.log(`[S3] Attempting to upload audio to S3. Key: ${params.Key}`);
+
+          console.log(`[S3] Attempting to upload audio to S3. Key: ${key}`);
           const command = new PutObjectCommand(params);
           await s3.send(command);
-          audioUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`;
+          audioUrl = await generateS3Url(params.Key);
           console.log(`[S3] Audio uploaded successfully: ${audioUrl}`);
         }
 

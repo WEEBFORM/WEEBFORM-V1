@@ -2290,3 +2290,5 @@
 [2025-07-31 02:26:34] [31merror[39m: Unhandled Rejection at:
 [2025-07-31 02:27:11] [31merror[39m: Unhandled Rejection at:
 [2025-07-31 02:57:46] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-08-25 10:13:34] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'135.129.124.104' (using password: YES)
+[2025-08-25 10:14:51] [31merror[39m: Uncaught Exception: server is not defined
