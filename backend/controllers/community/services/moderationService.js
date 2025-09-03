@@ -1,5 +1,6 @@
 import { db } from "../../../config/connectDB.js";
 import { redisClient } from "../../../config/redisConfig.js";
+import { isCommunityAdmin } from "../communityGroups.js"; 
 import { publishEvent } from "./eventBus.js";
 
 // VERIFY ADMIN STATUS
@@ -23,10 +24,8 @@ export const getGroupAdminInfo = async (userId, chatGroupId) => {
     }
     const communityId = groupInfo[0].communityId;
 
-    // VERIFY COMMUNITY ADMIN STATUS
-    const [results] = await db.promise().query("SELECT isAdmin FROM community_members WHERE communityId = ? AND userId = ? AND isAdmin = 1", [communityId, userId]);
-
-    const isAdmin = results.length > 0;
+    // VERIFY COMMUNITY ADMIN STATUS using the imported isCommunityAdmin function
+    const isAdmin = await isCommunityAdmin(userId, communityId);
     console.log(`[DB Service] Admin status for user ${userId} in community ${communityId} (via chat group ${chatGroupId}): ${isAdmin}.`);
 
     redisClient.set(cacheKey, String(isAdmin), 'EX', 300)
@@ -36,6 +35,10 @@ export const getGroupAdminInfo = async (userId, chatGroupId) => {
     return isAdmin;
   } catch (err) {
     console.error("[DB Service] Error checking admin status in database:", err);
+    // Propagate the original error message for better debugging if it's from our helper
+    if (err.message.startsWith("Database error")) {
+        throw err;
+    }
     throw new Error("Database error checking admin status."); 
   }
 };
@@ -329,4 +332,4 @@ export const removeUserFromGroup = async (userId, chatGroupId, adminId) => {
       return resolve({ success: true, userId, chatGroupId, message: "User removed from group." });
     });
   });
-}; 
+};

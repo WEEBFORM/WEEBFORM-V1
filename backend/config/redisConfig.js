@@ -9,7 +9,7 @@ if (process.env.REDIS_URL) {
   
   // Explicitly disable TLS for non-secure redis://
   redisClient = new Redis(process.env.REDIS_URL, {
-    tls: isSecure ? { minVersion: 'TLSv1.2' } : false, // Disable TLS for non-secure redis://
+    tls: isSecure ? { minVersion: 'TLSv1.2' } : false,
     maxRetriesPerRequest: process.env.NODE_ENV === 'production' ? 10 : 3,
     enableReadyCheck: true,
     retryStrategy(times) {
