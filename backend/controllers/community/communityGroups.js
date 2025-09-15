@@ -1,4 +1,4 @@
-import { db } from "../../config/connectDB.js"; // Ensure this import supports promises (e.g., mysql2/promise)
+import { db } from "../../config/connectDB.js"; 
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import moment from "moment";
 import { cpUpload } from "../../middlewares/storage.js"; // For group icon uploads
@@ -19,7 +19,7 @@ export const isCommunityAdmin = async (userId, communityId) => {
 
 export const joinChatGroupInternal = async (userId, chatGroupId) => {
     try {
-        // Check if user is already a member of this specific chat group
+        // //VERIFY MEMBERSHIP
         const checkQuery = "SELECT id FROM chat_group_members WHERE chatGroupId = ? AND userId = ?";
         const [results] = await db.promise().query(checkQuery, [chatGroupId, userId]);
 
@@ -40,7 +40,7 @@ export const joinChatGroupInternal = async (userId, chatGroupId) => {
     }
 };
 
-// const deleteS3Object = async (url) => {
+
 //     const key = s3KeyFromUrl(url);
 //     if (!key) {
 //         console.warn(`[S3 Helper] Invalid S3 object URL for deletion (skipped): ${url}`);
@@ -60,7 +60,7 @@ export const joinChatGroupInternal = async (userId, chatGroupId) => {
 // };
 
 // --- API TO CREATE A NEW CHAT GROUP (by Community Admin) ---
-
+// Create New Chat Group
 export const createGroup = (req, res) => {
     authenticateUser(req, res, async () => {
         cpUpload(req, res, async (err) => {
@@ -149,7 +149,7 @@ export const createGroup = (req, res) => {
     });
 };
 
-// --- API TO EDIT AN EXISTING CHAT GROUP (by Community Admin) ---
+// API TO EDIT AN EXISTING CHAT GROUP (by Community Admin)
 export const editGroup = (req, res) => {
     authenticateUser(req, res, async () => {
         cpUpload(req, res, async (err) => {
@@ -332,24 +332,28 @@ export const getGroupDetails = (req, res) => {
         }
 
         try {
-            // Step 1: Fetch chat group details from `chat_groups`
-            // Aliasing `name` as `title` for consistent frontend property.
+            // MODIFICATION: Added a new CASE statement to the query.
+            // This subquery checks if the requesting user has the 'isAdmin' flag in the 'community_members' table
+            // for the community associated with this chat group.
             const query = `
                 SELECT
                     g.id,
                     g.communityId,
-                    g.name AS title, -- Using 'name' column for group title
+                    g.name AS title,
                     g.groupIcon,
                     g.type,
                     g.isDefault,
                     g.createdAt,
-                    CASE WHEN (SELECT COUNT(*) FROM chat_group_members WHERE chatGroupId = g.id AND userId = ?) > 0 THEN TRUE ELSE FALSE END AS isJoined
+                    CASE WHEN (SELECT COUNT(*) FROM chat_group_members WHERE chatGroupId = g.id AND userId = ?) > 0 THEN TRUE ELSE FALSE END AS isJoined,
+                    CASE WHEN (SELECT COUNT(*) FROM community_members WHERE communityId = g.communityId AND userId = ? AND isAdmin = 1) > 0 THEN TRUE ELSE FALSE END AS isAdmin
                 FROM
                     \`chat_groups\` AS g
                 WHERE
                     g.id = ?;
             `;
-            const [results] = await db.promise().query(query, [userId, chatGroupId]);
+            
+            // MODIFICATION: Added the userId a second time to match the new placeholder in the query for the isAdmin check.
+            const [results] = await db.promise().query(query, [userId, userId, chatGroupId]);
 
             if (results.length === 0) {
                 console.warn(`[Chat Group API] Chat group ${chatGroupId} not found.`);
@@ -358,7 +362,7 @@ export const getGroupDetails = (req, res) => {
 
             const chatGroup = results[0];
 
-            // Generate S3 URL for group icon
+            // Generate S3 URL for group icon (no changes here)
             if (chatGroup.groupIcon) {
                 try {
                     chatGroup.groupIcon = await generateS3Url(s3KeyFromUrl(chatGroup.groupIcon));
@@ -368,6 +372,8 @@ export const getGroupDetails = (req, res) => {
                 }
             }
             console.log(`[Chat Group API] Fetched details for chat group ${chatGroupId}.`);
+            
+            // The response will now automatically include the 'isAdmin' boolean field.
             res.status(200).json(chatGroup);
 
         } catch (error) {
