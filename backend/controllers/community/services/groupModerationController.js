@@ -5,10 +5,7 @@ import {
     removeUserFromGroup as removeUserService // Alias to avoid naming conflicts
 } from './moderationService.js';
 
-/**
- * Controller to toggle mute for a user in a specific group.
- * Expects { targetUserId, duration } in the request body.
- */
+// Controller to toggle mute for a user in a specific group.
 export const muteUserInGroup = async (req, res) => {
     try {
         const { chatGroupId } = req.params;

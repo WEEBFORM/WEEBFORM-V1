@@ -12,8 +12,29 @@ export const getGroupMembers = async (req, res) => {
         const { chatGroupId } = req.params;
         console.log(`[DEBUG] Fetching members for chatGroupId: ${chatGroupId} (Type: ${typeof chatGroupId})`);
 
-        const memberQuery = 'SELECT userId FROM chat_group_members WHERE chatGroupId = ?';
-        const [memberRows] = await db.promise().query(memberQuery, [chatGroupId]);
+        // Get the communityId from the chatGroupId
+        const communityQuery = 'SELECT communityId FROM chat_groups WHERE id = ?';
+        const [chatGroupRows] = await db.promise().query(communityQuery, [chatGroupId]);
+
+        if (chatGroupRows.length === 0) {
+            return res.status(404).json({ message: "Chat group not found." });
+        }
+        const communityId = chatGroupRows[0].communityId;
+        console.log(`[DEBUG] Found communityId: ${communityId} for chatGroupId: ${chatGroupId}`);
+
+        // Fetch userIds and their admin status using a JOIN.
+        const memberQuery = `
+            SELECT
+                cgm.userId,
+                cm.isAdmin
+            FROM
+                chat_group_members AS cgm
+            INNER JOIN
+                community_members AS cm ON cgm.userId = cm.userId
+            WHERE
+                cgm.chatGroupId = ? AND cm.communityId = ?
+        `;
+        const [memberRows] = await db.promise().query(memberQuery, [chatGroupId, communityId]);
 
         console.log(`[DEBUG] Query returned ${memberRows.length} member rows.`);
         
@@ -21,13 +42,11 @@ export const getGroupMembers = async (req, res) => {
             return res.status(200).json([]);
         }
 
-        const memberIds = memberRows.map(row => row.userId);
-
         // Create an array of promises to fetch info for each member
-        const memberDataPromises = memberIds.map(userId => {
+        const memberDataPromises = memberRows.map(member => {
             return Promise.all([
-                fetchAndProcessUserData(userId),
-                getUserStats(userId, chatGroupId)
+                fetchAndProcessUserData(member.userId),
+                getUserStats(member.userId, chatGroupId)
             ]);
         });
 
@@ -36,20 +55,20 @@ export const getGroupMembers = async (req, res) => {
 
         const members = [];
         // Loop through the results of allSettled
-        for (const result of results) {
+        for (const [index, result] of results.entries()) { // Using .entries() to get index
             if (result.status === 'fulfilled') {
-                // The promise was successful
                 const [userInfo, userStats] = result.value;
-                if (userInfo) { // Check if user info was found
+                if (userInfo) {
+                    // Add the 'isAdmin' value from our initial JOIN query
                     members.push({
                         ...userInfo,
-                        stats: userStats
+                        stats: userStats,
+                        isAdmin: memberRows[index].isAdmin
                     });
                 } else {
                     console.warn(`[WARN] User info not found for a member, skipping.`); 
                 }
             } else {
-                // A promise was rejected. Log the error but don't crash.
                 console.error('[ERROR] Failed to fetch data for a member:', result.reason);
             }
         }
@@ -57,7 +76,6 @@ export const getGroupMembers = async (req, res) => {
         res.status(200).json(members);
 
     } catch (error) {
-        // This outer catch will now handle any truly unexpected errors
         console.error("Error in getGroupMembers controller:", error);
         res.status(500).json({ message: "Failed to fetch group members", error: error.message });
     }
