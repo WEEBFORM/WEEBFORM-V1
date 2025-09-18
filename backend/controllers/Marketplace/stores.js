@@ -87,69 +87,65 @@ async function handleNewStore(req, res, user){
             });
 }
 
-//API TO VIEW A USER'S STORE
-export const viewUserStores = async (req, res) => {
+// API TO VIEW STORES CREATED BY THE USER
+export const getCreatedStores = async (req, res) => {
     authenticateUser(req, res, async () => {
-        const userId = req.user.id
-      try {
-        const q = `
-                    SELECT
-                        s.*,
-                        u.username AS ownerUsername,
-                        u.profilePic AS ownerProfilePic,
-                        COALESCE(AVG(sr.rating), 0) AS averageRating,
-                        COUNT(sr.rating) AS totalRatings
-                    FROM
-                        stores AS s
-                    JOIN
-                        users AS u ON u.id = s.ownerId
-                    LEFT JOIN
-                        store_ratings AS sr ON s.id = sr.storeId
-                    WHERE
-                        u.id = ?
-                    GROUP BY
-                        s.id
-                  `;
-        db.query(q, [userId], async (err, data) => { 
-          if (err) { 
-            console.error("Database query error:", err);
-            return res.status(500).json({ message: "Database error", error: err }); 
-          }
-  
-          const processedStores = await Promise.all(
-            data.map(async (store) => {
-              if (store.logoImage) {
-                try {
-                  store.logoImage = await generateS3Url(s3KeyFromUrl(store.logoImage));
-                } catch (error) {
-                  console.error("Error generating logo image URL:", error);
-                  store.logoImage = null;
-                }
-              }
-  
-              if (store.ownerProfilePic) {
-                try {
-                  store.ownerProfilePic = await generateS3Url(
-                    s3KeyFromUrl(store.ownerProfilePic)
-                  );
-                } catch (error) {
-                  console.error("Error generating owner profilePic URL:", error);
-                  store.ownerProfilePic = null;
-                }
-              }
-              return store;
-            })
-          );
-          const stores = shuffleStores(processedStores)
-  
-          res.status(200).json(stores);
-        });
-      } catch (error) {
-        console.error("Error in viewStores:", error);
-        res.status(500).json({ message: "Failed to fetch stores", error: error });
-      }
+        const userId = req.user.id;
+        console.log(`[Store API] Fetching stores created by user ${userId}.`);
+
+        try {
+            const q = `
+                SELECT
+                    s.*,
+                    u.username AS ownerUsername,
+                    u.profilePic AS ownerProfilePic,
+                    COALESCE(AVG(sr.rating), 0) AS averageRating,
+                    COUNT(sr.id) AS totalRatings
+                FROM
+                    stores AS s
+                JOIN
+                    users AS u ON u.id = s.ownerId
+                LEFT JOIN
+                    store_ratings AS sr ON s.id = sr.storeId
+                WHERE
+                    s.ownerId = ?
+                GROUP BY
+                    s.id
+            `;
+
+            const [data] = await db.promise().query(q, [userId]);
+
+            const processedStores = await Promise.all(
+                data.map(async (store) => {
+                    if (store.logoImage) {
+                        try {
+                            store.logoImage = await generateS3Url(s3KeyFromUrl(store.logoImage));
+                        } catch (error) {
+                            console.error(`Error generating S3 URL for store logo ${store.id}:`, error);
+                            store.logoImage = null;
+                        }
+                    }
+                    if (store.ownerProfilePic) {
+                        try {
+                            store.ownerProfilePic = await generateS3Url(s3KeyFromUrl(store.ownerProfilePic));
+                        } catch (error) {
+                            console.error(`Error generating S3 URL for owner pic ${store.ownerId}:`, error);
+                            store.ownerProfilePic = null;
+                        }
+                    }
+                    return store;
+                })
+            );
+
+            console.log(`[Store API] Found ${processedStores.length} stores created by user ${userId}.`);
+            res.status(200).json(processedStores);
+
+        } catch (error) {
+            console.error("Error in getCreatedStores:", error);
+            res.status(500).json({ message: "Failed to fetch created stores", error: error.message });
+        }
     });
-  };
+};
 
 //API TO VIEW ALL STORES
 export const viewStores = async (req, res) => {

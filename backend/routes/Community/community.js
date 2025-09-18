@@ -5,6 +5,7 @@ import {
     communities,
     getCommunityDetails,
     yourCommunities,
+    getCreatedCommunities,
     exitCommunity,
     deleteCommunity,
     editCommunity
@@ -22,6 +23,7 @@ const router = express.Router();
 router.post('/create', createCommunity);
 router.get('/', communities);
 router.get('/existing/joined', yourCommunities);
+router.get('/existing/created', getCreatedCommunities);
 router.get('/:id', getCommunityDetails);
 router.post('/join/:id', joinCommunity);
 router.delete('/leave/:id', exitCommunity);

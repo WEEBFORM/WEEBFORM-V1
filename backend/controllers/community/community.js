@@ -6,7 +6,7 @@ import multer from "multer";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
 import { fetchCommunityInfo, getUserJoinedCommunityIds, getFriendCommunityIds } from "./communityHelpers.js" 
-import { joinChatGroupInternal } from './communityGroups.js';//HELPER FUNCTION FOR JOINING CHAT GROUPS
+import { joinChatGroupInternal } from './communityGroups.js';
 
 // --- API TO CREATE NEW COMMUNITY ---
 export const createCommunity = (req, res) => {
@@ -262,6 +262,38 @@ export const yourCommunities = (req, res) => {
         }
     });
 }
+
+export const getCreatedCommunities = (req, res) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
+        console.log(`[Community API] Fetching communities created by user ${userId}.`);
+
+        try {
+            //  IDs OF COMMUNITIES CREATED BY USER
+            const getCreatedIdsQuery = "SELECT id FROM communities WHERE creatorId = ?";
+            const [createdCommunityRows] = await db.promise().query(getCreatedIdsQuery, [userId]);
+
+            const createdCommunityIds = createdCommunityRows.map(c => c.id);
+
+            if (createdCommunityIds.length === 0) {
+                console.log(`[Community API] User ${userId} has not created any communities.`);
+                return res.status(200).json([]); // Return empty array, not a 404
+            }
+
+            // FETCH DETAILS FOR THE IDs
+            const communities = await fetchCommunityInfo(createdCommunityIds, userId, {
+                includeMemberCount: true,
+                includeUserMembership: true,
+            });
+
+            console.log(`[Community API] Fetched ${communities.length} created communities for user ${userId}.`);
+            res.status(200).json(communities);
+        } catch (error) {
+            console.error("[DB Error] Error fetching created communities:", error);
+            return res.status(500).json({ message: "Database error fetching created communities." });
+        }
+    });
+};
 
 // --- API TO VIEW ALL COMMUNITIES (categorized) ---
 export const communities = (req, res) => {
