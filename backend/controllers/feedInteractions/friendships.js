@@ -1,8 +1,28 @@
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import NodeCache from 'node-cache';
-import { generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js"; // Import S3 utility functions
+import { generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
 const followerCache = new NodeCache({ stdTTL: 300 });
+
+const processUsersWithS3Urls = async (users) => {
+    if (!users || users.length === 0) {
+        return [];
+    }
+    return Promise.all(
+        users.map(async (user) => {
+            if (user.profilePic) {
+                try {
+                    const profilePicKey = s3KeyFromUrl(user.profilePic);
+                    user.profilePic = await generateS3Url(profilePicKey);
+                } catch (error) {
+                    console.error(`Error generating S3 URL for user ${user.id}:`, error);
+                    user.profilePic = null; // Set to null on error
+                }
+            }
+            return user;
+        })
+    );
+};
 
 //API TO FOLLOW USER
 export const followUser = async (req, res) => {
@@ -148,6 +168,120 @@ export const getFollowing = async (req, res) => {
         } catch (err) {
             console.error("Error fetching mutual followers:", err);
             return res.status(500).json({ message: "Failed to get following users", error: err.message });
+        }
+    });
+};
+
+// API TO GET SOCIAL DIRECTORY (FOLLOWERS, FOLLOWING, SUGGESTED)
+export const getSocialDirectory = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
+        const cacheKey = `socialDirectory:${userId}`;
+
+        try {
+            const cachedData = followerCache.get(cacheKey);
+            if (cachedData) {
+                console.log(`[Cache] Serving social directory for user ${userId} from cache.`);
+                return res.status(200).json(cachedData);
+            }
+
+            //QUERY TO GET ALL BLOCKED USERS
+            const blockedUsersSubquery = `
+                (SELECT userId FROM blocked_users WHERE blockedUserId = ? UNION SELECT blockedUserId FROM blocked_users WHERE userId = ?)
+            `;
+
+            // GET FOLLOWERS, FOLLOWING, SUGGESTED IN PARALLEL
+            const followersQuery = `
+                SELECT u.id, u.full_name, u.username, u.profilePic 
+                FROM reach AS r 
+                JOIN users AS u ON r.follower = u.id 
+                WHERE r.followed = ? AND u.id NOT IN (${blockedUsersSubquery})
+            `;
+
+            const followingQuery = `
+                SELECT u.id, u.full_name, u.username, u.profilePic 
+                FROM users AS u 
+                WHERE u.id IN (
+                    SELECT r1.followed FROM reach AS r1 WHERE r1.follower = ?
+                    INTERSECT
+                    SELECT r2.follower FROM reach AS r2 WHERE r2.followed = ?
+                ) AND u.id NOT IN (${blockedUsersSubquery})
+            `;
+
+            const suggestedQuery = `
+                SELECT u.id, u.full_name, u.username, u.profilePic, COUNT(DISTINCT friends.friend_id) AS mutualConnections
+                FROM (SELECT followed AS friend_id FROM reach WHERE follower = ?) AS friends
+                JOIN reach AS fof ON friends.friend_id = fof.follower
+                JOIN users AS u ON fof.followed = u.id
+                LEFT JOIN user_settings AS us ON u.id = us.userId
+                WHERE
+                    fof.followed != ?
+                    AND fof.followed NOT IN (SELECT followed FROM reach WHERE follower = ?)
+                    AND fof.followed NOT IN (${blockedUsersSubquery})
+                    AND COALESCE(us.profile_visibility, 'public') = 'public'
+                GROUP BY u.id
+                ORDER BY mutualConnections DESC
+                LIMIT 30;
+            `;
+
+            const popularQuery = `
+                SELECT u.id, u.full_name, u.username, u.profilePic
+                FROM users AS u
+                JOIN (
+                    SELECT followed AS userId, COUNT(*) AS followerCount
+                    FROM reach
+                    GROUP BY followed
+                    ORDER BY followerCount DESC
+                    LIMIT 100
+                ) AS top_users ON u.id = top_users.userId
+                LEFT JOIN user_settings AS us ON u.id = us.userId
+                WHERE 
+                    u.id != ? 
+                    AND u.id NOT IN (${blockedUsersSubquery})
+                    AND COALESCE(us.profile_visibility, 'public') = 'public'
+                ORDER BY RAND()
+                LIMIT 30;
+            `;
+
+            // QUERY EXECUTION
+            const [
+                [followers], 
+                [following], 
+                [suggested],
+                [popular]
+            ] = await Promise.all([
+                db.promise().query(followersQuery, [userId, userId, userId]),
+                db.promise().query(followingQuery, [userId, userId, userId, userId]),
+                db.promise().query(suggestedQuery, [userId, userId, userId, userId, userId]),
+                db.promise().query(popularQuery, [userId, userId, userId])
+            ]);
+            
+            // PROCESS S3 URLS FOR DATA IN PARALLEL
+            const [
+                processedFollowers, 
+                processedFollowing, 
+                processedSuggested,
+                processedPopular
+            ] = await Promise.all([
+                processUsersWithS3Urls(followers),
+                processUsersWithS3Urls(following),
+                processUsersWithS3Urls(suggested),
+                processUsersWithS3Urls(popular)
+            ]);
+            
+            const result = {
+                followers: processedFollowers,
+                following: processedFollowing,
+                suggested: processedSuggested,
+                popular: processedPopular 
+            };
+
+            followerCache.set(cacheKey, result);
+            return res.status(200).json(result);
+
+        } catch (err) {
+            console.error(`Error fetching social directory for user ${userId}:`, err);
+            return res.status(500).json({ message: "Failed to get social directory", error: err.message });
         }
     });
 };

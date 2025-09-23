@@ -2,12 +2,7 @@ import { db } from '../config/connectDB.js'; // Adjust path as needed
 import { generateS3Url, s3KeyFromUrl } from '../middlewares/S3bucketConfig.js';
 import { executeQuery } from '../middlewares/dbExecute.js';
 
-/**
- * Fetches a user's full profile information from the database and processes it.
- * This is a reusable service function.
- * @param {number|string} userId The ID of the user to fetch.
- * @returns {Promise<object|null>} The user's profile data or null if not found.
- */
+//FETCH AND PROCESS USER DATA
 export const fetchAndProcessUserData = async (userId) => {
     const q = `SELECT
                     u.id, u.full_name, u.username, u.email, u.profilePic, u.coverPhoto, u.bio, u.nationality, u.dateOfBirth,

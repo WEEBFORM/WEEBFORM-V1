@@ -19,6 +19,58 @@ const shufflePosts = (array) => {
     return array;
 };
 
+
+export const fetchAndProcessPostDetails = async (postIds, requestingUserId) => {
+    if (!postIds || postIds.length === 0) {
+        return []; // Return empty array if no IDs are provided
+    }
+
+    // This is the core query logic, now made reusable
+    const q = `
+        SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
+        COUNT(DISTINCT l.id) AS likeCount,
+        COUNT(DISTINCT c.id) AS commentCount,
+        CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END AS liked,
+        CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isBookmarked
+        FROM posts AS p
+        JOIN users AS u ON u.id = p.userId
+        LEFT JOIN likes AS l ON l.postId = p.id
+        LEFT JOIN comments AS c ON c.postId = p.id
+        LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+        LEFT JOIN bookmarked_posts AS bp ON bp.postId = p.id AND bp.userId = ?
+        WHERE p.id IN (?)
+        GROUP BY p.id, u.id
+    `;
+
+    try {
+        const [data] = await db.promise().query(q, [requestingUserId, requestingUserId, postIds]);
+
+        // CORE S3KEY TO URL LOGIC
+        const posts = await Promise.all(
+            data.map(async (post) => {
+                if (post.media) {
+                    const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
+                    try {
+                        post.media = await Promise.all(mediaKeys.map(generateS3Url));
+                    } catch (mediaErr) {
+                        console.warn("Failed to generate all media URLs:", mediaErr);
+                        post.media = null;
+                    }
+                }
+                if (post.profilePic) {
+                    post.profilePic = await generateS3Url(s3KeyFromUrl(post.profilePic));
+                }
+                return post;
+            })
+        );
+        return posts;
+
+    } catch (error) {
+        console.error("Error in fetchAndProcessPostDetails:", error);
+        throw error; 
+    }
+};
+
 // API TO CREATE NEW POST
 export const newPost = async (req, res) => {
     authenticateUser(req, res, async () => {
@@ -82,7 +134,7 @@ const fetchPostsData = async (q, params) => {
         return rows;
     } catch (error) {
         console.error("Error fetching posts:", error);
-        throw new Error("DB_ERROR"); // More specific error code
+        throw new Error("DB_ERROR");
     }
 };
 
@@ -93,54 +145,67 @@ const getPosts = async (req, res, queryType) => {
         const searchTerm = req.query.searchTerm || '';
         const searchValue = `%${searchTerm}%`;
         let q;
-        let params = [userId, userId, searchValue, searchValue, searchValue]; // Default params
+        let params;
+
+        // Reusable subquery for blocked users
+        const blockedUsersSubquery = `(SELECT userId FROM blocked_users WHERE blockedUserId = ? UNION SELECT blockedUserId FROM blocked_users WHERE userId = ?)`;
+
+        const commonQueryParts = `
+            SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
+            COUNT(DISTINCT l.id) AS likeCount,
+            COUNT(DISTINCT c.id) AS commentCount,
+            CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END AS liked,
+            CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isBookmarked
+            FROM posts AS p
+            JOIN users AS u ON u.id = p.userId
+            LEFT JOIN user_settings AS us ON u.id = us.userId
+            LEFT JOIN likes AS l ON l.postId = p.id
+            LEFT JOIN comments AS c ON c.postId = p.id
+            LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+            LEFT JOIN bookmarked_posts AS bp ON bp.postId = p.id AND bp.userId = ?
+        `;
 
         switch (queryType) {
             case 'all':
-                q = `SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
-                    COUNT(DISTINCT l.id) AS likeCount, COUNT(DISTINCT c.id) AS commentCount,
-                    CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
-                    FROM posts AS p JOIN users AS u ON u.id = p.userId
-                    LEFT JOIN likes AS l ON l.postId = p.id LEFT JOIN comments AS c ON c.postId = p.id
-                    LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
-                    WHERE (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
+                q = `${commonQueryParts}
+                    LEFT JOIN reach r_check ON (p.userId = r_check.followed AND r_check.follower = ?)
+                    WHERE 
+                        p.userId NOT IN (${blockedUsersSubquery})
+                        AND (COALESCE(us.profile_visibility, 'public') = 'public' OR (us.profile_visibility = 'private' AND r_check.follower IS NOT NULL))
+                        AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
                     GROUP BY p.id, u.id ORDER BY p.createdAt DESC`;
+                params = [userId, userId, userId, userId, userId, searchValue, searchValue, searchValue];
                 break;
             case 'following':   
-                q = `SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
-                    COUNT(DISTINCT l.id) AS likeCount, COUNT(DISTINCT c.id) AS commentCount,
-                    CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
-                    FROM posts AS p JOIN users AS u ON u.id = p.userId
-                    LEFT JOIN likes AS l ON l.postId = p.id LEFT JOIN comments AS c ON c.postId = p.id
-                    LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
-                    LEFT JOIN reach AS r ON (p.userId = r.followed)
-                    WHERE (r.follower = ? OR p.userId = ?)
-                    AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
+                q = `${commonQueryParts}
+                    JOIN reach AS r ON (p.userId = r.followed)
+                    WHERE 
+                        p.userId NOT IN (${blockedUsersSubquery})
+                        AND (r.follower = ? OR p.userId = ?)
+                        AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
                     GROUP BY p.id, u.id ORDER BY p.createdAt DESC`;
-                params = [userId,userId, userId, userId, searchValue, searchValue, searchValue];
+                params = [userId, userId, userId, userId, userId, userId, searchValue, searchValue, searchValue];
                 break; 
-            case 'user':   
-                 q = `SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
-                    COUNT(DISTINCT l.id) AS likeCount, COUNT(DISTINCT c.id) AS commentCount,
-                    CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
-                    FROM posts AS p JOIN users AS u ON u.id = p.userId
-                    LEFT JOIN likes AS l ON l.postId = p.id LEFT JOIN comments AS c ON c.postId = p.id
-                    LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
-                    WHERE u.id = ? AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
+            case 'user':
+                 q = `${commonQueryParts}
+                    WHERE 
+                        u.id = ? 
+                        AND p.userId NOT IN (${blockedUsersSubquery})
+                        AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
                     GROUP BY p.id, u.id ORDER BY p.createdAt DESC`;
-                params = [userId, userId, req.params.id, searchValue, searchValue, searchValue];
+                params = [userId, userId, req.params.id, userId, userId, searchValue, searchValue, searchValue];
                 break;
             default:
                 return res.status(400).json({ message: "Invalid query type" });
         }
 
         try {
-            let cacheKey = `posts:${queryType}:${userId}:${searchTerm}`;  // Construct a cache key that includes everything
-            let cachedPosts = postCache.get(cacheKey);  // Try to retrieve from cache
+            let cacheKey = `posts:${queryType}:${userId}:${searchTerm}`;
+            let cachedPosts = postCache.get(cacheKey);
             let posts;
 
             if (cachedPosts) {
-                posts = cachedPosts;  // Serve from cache
+                posts = cachedPosts;
                 console.log("Serving posts from cache", cacheKey);
             } else {
             let data = await fetchPostsData(q, params);
@@ -188,11 +253,14 @@ export const postCategory = async (req, res) => {
         try {
             const q = `SELECT p.*, u.id AS userId, u.username, full_name, u.profilePic,
                       COUNT(DISTINCT l.id) AS likeCount, COUNT(DISTINCT c.id) AS commentCount,
-                      CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
-                    FROM posts AS p JOIN users AS u ON u.id = p.userId 
+                      CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END AS liked,
+                      CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isBookmarked
+                    FROM posts AS p 
+                    JOIN users AS u ON u.id = p.userId 
                     LEFT JOIN likes AS l ON l.postId = p.id
-                     LEFT JOIN comments AS c ON c.postId = p.id
-                     LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+                    LEFT JOIN comments AS c ON c.postId = p.id
+                    LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+                    LEFT JOIN bookmarked_posts AS bp ON bp.postId = p.id AND bp.userId = ?
                     WHERE p.category = ? AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
                     GROUP BY p.id, u.id 
                     ORDER BY createdAt DESC`;
@@ -237,12 +305,14 @@ export const getPostById = async (req, res) => {
             const q = `
                 SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
                 COUNT(DISTINCT l.id) AS likeCount, COUNT(DISTINCT c.id) AS commentCount,
-                CASE WHEN l2.userId = ? THEN TRUE ELSE FALSE END AS liked
+                CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END AS liked,
+                CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isBookmarked
                 FROM posts AS p
                 JOIN users AS u ON u.id = p.userId
                 LEFT JOIN likes AS l ON l.postId = p.id
                 LEFT JOIN comments AS c ON c.postId = p.id
                 LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+                LEFT JOIN bookmarked_posts AS bp ON bp.postId = p.id AND bp.userId = ?
                 WHERE p.id = ?
                 GROUP BY p.id, u.id
             `;
@@ -271,6 +341,87 @@ export const getPostById = async (req, res) => {
         } catch (error) {
             console.error("Error fetching post by ID:", error);
             res.status(500).json({ message: "Failed to fetch post", error });
+        }
+    });
+};
+
+// API TO BOOKMARK / UN-BOOKMARK A POST
+export const bookmarkPost = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
+        const postId = req.params.id;
+
+        try {
+            // Check if the post is already bookmarked
+            const checkQuery = "SELECT id FROM bookmarked_posts WHERE userId = ? AND postId = ?";
+            const [existing] = await db.promise().query(checkQuery, [userId, postId]);
+
+            if (existing.length > 0) {
+                // If it exists, un-bookmark it (DELETE)
+                const deleteQuery = "DELETE FROM bookmarked_posts WHERE userId = ? AND postId = ?";
+                await db.promise().query(deleteQuery, [userId, postId]);
+                postCache.flushAll(); // Invalidate cache on state change
+                return res.status(200).json({ message: "Post removed from bookmarks." });
+            } else {
+                // If it doesn't exist, bookmark it (INSERT)
+                const insertQuery = "INSERT INTO bookmarked_posts (userId, postId, createdAt) VALUES (?, ?, ?)";
+                await db.promise().query(insertQuery, [userId, postId, moment().format("YYYY-MM-DD HH:mm:ss")]);
+                postCache.flushAll(); // Invalidate cache on state change
+                return res.status(200).json({ message: "Post saved to bookmarks." });
+            }
+        } catch (error) {
+            console.error("Error toggling bookmark:", error);
+            res.status(500).json({ message: "Failed to update bookmark status", error: error.message });
+        }
+    });
+};
+
+// API TO GET ALL BOOKMARKED POSTS
+export const getBookmarkedPosts = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
+
+        try {
+            const q = `
+                SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
+                COUNT(DISTINCT l.id) AS likeCount,
+                COUNT(DISTINCT c.id) AS commentCount,
+                CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END AS liked,
+                TRUE AS isBookmarked
+                FROM bookmarked_posts AS bp
+                JOIN posts AS p ON bp.postId = p.id
+                JOIN users AS u ON p.userId = u.id
+                LEFT JOIN likes AS l ON l.postId = p.id
+                LEFT JOIN comments AS c ON c.postId = p.id
+                LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
+                WHERE bp.userId = ?
+                GROUP BY p.id, u.id
+                ORDER BY bp.createdAt DESC
+            `;
+            const [data] = await db.promise().query(q, [userId, userId]);
+
+            const posts = await Promise.all(
+                data.map(async (post) => {
+                    if (post.media) {
+                        const mediaKeys = post.media.split(",").map(s3KeyFromUrl);
+                        try {
+                            post.media = await Promise.all(mediaKeys.map(generateS3Url));
+                        } catch (mediaErr) {
+                            console.warn("Failed to generate all media URLs:", mediaErr);
+                            post.media = null;
+                        }
+                    }
+                    if (post.profilePic) {
+                        post.profilePic = await generateS3Url(s3KeyFromUrl(post.profilePic));
+                    }
+                    return post;
+                })
+            );
+
+            res.status(200).json(posts);
+        } catch (error) {
+            console.error("Error fetching bookmarked posts:", error);
+            res.status(500).json({ message: "Failed to fetch bookmarked posts", error: error.message });
         }
     });
 };

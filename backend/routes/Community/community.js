@@ -35,5 +35,4 @@ router.post('/:id/new-post', newCommunityPost);
 router.get('/:id/community-feed', fetchCommunityPosts);
 router.delete('/community-feed/:id', deleteCommunityPost);
 
-
 export default router; 

@@ -23,6 +23,7 @@ import Likes from './routes/Home/likes.js';
 import Stories from './routes/Home/stories.js';
 import Comments from './routes/Home/comments.js';
 import Replies from './routes/Home/commentReplies.js';
+import Actions from  './routes/Users/userActions.js';
 import Stores from './routes/Marketplace/stores.js';
 import StoreCatalogs from './routes/Marketplace/catalogRoute.js';
 import StoreRatingAndVsits from './routes/Marketplace/ratingsRoute.js';
@@ -111,6 +112,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/v1/user', authRoute);
 app.use('/api/v1/user', Users);
+app.use('/api/v1/user/actions', Actions);
 app.use('/api/v1/user', forgottenPasswordRoute);
 app.use('/api/v1/posts/', postRoute);
 app.use('/api/v1/reach/', followRoute);

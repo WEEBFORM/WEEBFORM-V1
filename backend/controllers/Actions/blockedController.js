@@ -19,15 +19,15 @@ export const blockUser = async (req, res) => {
         }
 
         try {
-            const q = "SELECT * FROM blocked_users WHERE blocked_id = ? AND user_id = ?";
+            const q = "SELECT * FROM blocked_users WHERE blockedUserId = ? AND userId = ?";
             const blocked = await executeQuery(q, [blockedUser, userId]);
 
             if (blocked && blocked.length > 0) {
                 return res.status(409).json({ message: "User has been blocked already!" });
             }
 
-            const insertQuery = "INSERT INTO blocked_users (blocked_id, user_id) VALUES(?, ?)";
-            await executeQuery(insertQuery, [blockedUser, userId]);
+            const insertQuery = "INSERT INTO blocked_users (blockedUserId, userId) VALUES(?, ?)";
+            await executeQuery(insertQuery, [blockedUser, userId]); 
             blockedUsersCache.flushAll();
             return res.status(200).json({ message: "User blocked successfully" });
         } catch (err) {
@@ -48,7 +48,7 @@ export const unblockUser = async (req, res) => {
         }
 
         try {
-            const deleteQuery = "DELETE FROM blocked_users WHERE blocked_id = ? AND user_id = ?";
+            const deleteQuery = "DELETE FROM blocked_users WHERE blockedUserId = ? AND userId = ?";
             const result = await executeQuery(deleteQuery, [blockedUser, userId]);
 
             if (result.affectedRows === 0) {
@@ -70,9 +70,9 @@ export const getBlockedUsers = async (req, res) => {
         const userId = req.user.id;
 
         try {
-            const q = "SELECT blocked_id FROM blocked_users WHERE user_id = ?";
+            const q = "SELECT blockedUserId FROM blocked_users WHERE userId = ?";
             const blockedUsers = await executeQuery(q, [userId]);
-            const blockedUserIds = blockedUsers.map(user => user.blocked_id);
+            const blockedUserIds = blockedUsers.map(user => user.blockedUserId);
 
             return res.status(200).json(blockedUserIds);
         } catch (err) {

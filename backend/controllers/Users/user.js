@@ -297,27 +297,79 @@ export const viewProfile = async (req, res) => {
   
 // API TO GET ANOTHER USER'S INFORMATION
 export const viewUserProfile = async (req, res) => {
-    const userId = req.params.id;
-    if (!Number.isInteger(Number(userId))) {
-        return res.status(400).json({ message: "Invalid userId" });
-    }
+    authenticateUser(req, res, async () => {
+        const profileId = req.params.id;
+        const requestingUserId = req.user.id;
 
-    let userInfo = userProfileCache.get(userId);
-    if (!userInfo) {
-        try {
-            userInfo = await fetchAndProcessUserData(userId);
-            if (!userInfo) {
-                return res.status(404).json("User not found");
-            }
-            userProfileCache.set(userId, userInfo);
-        } catch (err) {
-            console.error("Database error:", err);
-            return res.status(500).json({ message: "Failed to fetch user profile.", error: "DB_ERROR" });
+        if (!Number.isInteger(Number(profileId))) {
+            return res.status(400).json({ message: "Invalid user ID" });
         }
-    }
 
-    const { password, ...safeUserInfo } = userInfo;
-    return res.status(200).json(safeUserInfo);
+        // USER IS REQUESTING THEIR OWN PROFILE
+        if (Number(profileId) === requestingUserId) {
+            try {
+                const selfInfo = await fetchAndProcessUserData(requestingUserId);
+                if (!selfInfo) return res.status(404).json("User not found");
+                return res.status(200).json(selfInfo);
+            } catch (err) {
+                 return res.status(500).json({ message: "Failed to fetch your profile.", error: "DB_ERROR" });
+            }
+        }
+        
+        try {
+            // PERMISSION CHECKS
+            const settingsQuery = "SELECT profile_visibility FROM user_settings WHERE userId = ?";
+            const blockQuery = "SELECT COUNT(*) AS count FROM blocked_users WHERE (userId = ? AND blockedUserId = ?) OR (userId = ? AND blockedUserId = ?)";
+            const followQuery = "SELECT COUNT(*) AS count FROM reach WHERE follower = ? AND followed = ?";
+
+            const [
+                [settingsRows],
+                [blockRows],
+                [followRows]
+            ] = await Promise.all([
+                db.promise().query(settingsQuery, [profileId]),
+                db.promise().query(blockQuery, [requestingUserId, profileId, profileId, requestingUserId]),
+                db.promise().query(followQuery, [requestingUserId, profileId])
+            ]);
+
+            // CHECK BLOCK STATUS
+            const isBlocked = blockRows[0].count > 0;
+            if (isBlocked) {
+                // Return 404 to hide the fact that a block is the reason for privacy
+                return res.status(403).json({ message: "Restricted access" });
+            }
+
+            // cCHECK PROFILE VISIBILITY
+            const visibility = settingsRows.length > 0 ? settingsRows[0].profile_visibility : 'public';
+            
+            if (visibility === 'private') {
+                const isFollower = followRows[0].count > 0;
+                if (!isFollower) {
+                    return res.status(403).json({
+                        message: "This account is private. Follow this user to see their profile.",
+                        isPrivate: true
+                    });
+                }
+            }
+
+            // IF PASSES ALL CHECKS, FETCH PROFILE
+            let userInfo = userProfileCache.get(profileId);
+            if (!userInfo) {
+                userInfo = await fetchAndProcessUserData(profileId);
+                if (!userInfo) {
+                    return res.status(404).json("User not found");
+                }
+                userProfileCache.set(profileId, userInfo);
+            }
+
+            const { password, ...safeUserInfo } = userInfo;
+            return res.status(200).json(safeUserInfo);
+
+        } catch (err) {
+            console.error(`Error fetching user profile for ID ${profileId}:`, err);
+            return res.status(500).json({ message: "Failed to fetch user profile due to a server error.", error: "DB_ERROR" });
+        }
+    });
 };
 
 export const viewUsers = async (req, res) => {
