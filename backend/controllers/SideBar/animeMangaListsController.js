@@ -1,5 +1,5 @@
-import { db } from "../config/connectDB.js";
-import { authenticateUser } from "../middlewares/verify.mjs";
+import { db } from "../../config/connectDB.js";
+import { authenticateUser } from "../../middlewares/verify.mjs";
 
 const handleAPIError = (error, res, message = 'Internal Server Error') => {
     console.error(message + ':', error);

@@ -16,7 +16,7 @@ import logger from './utils/logger.js';
 // ROUTES 
 import authRoute from './routes/Users/auth.js';
 import Users from './routes/Users/users.js';
-import SideBar from  './routes/SideBar APIs/animeMangaLists.js';
+import SideBar from  './routes/SideBarRoutes/animeMangaLists.js';
 import forgottenPasswordRoute from './routes/Users/resetpasswordRoute.js';
 import postRoute from './routes/Home/posts.js';
 import followRoute from './routes/Home/followers.js';

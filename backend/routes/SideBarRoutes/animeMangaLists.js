@@ -9,9 +9,9 @@ import {
     removeEntryFromList,
     getListEntries,
     updateEntry
-} from '../../controllers/SideBar Controllers/animeMangaListsController'; 
+} from '../../controllers/SideBar/animeMangaListsController.js'; 
 
-const router = express.Router();
+const router = express.Router(); 
 
 router.post('/lists', createList);
 router.get('/lists', getUserLists);

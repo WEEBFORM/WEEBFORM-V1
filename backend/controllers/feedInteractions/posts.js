@@ -347,34 +347,33 @@ export const getPostById = async (req, res) => {
 
 // API TO BOOKMARK / UN-BOOKMARK A POST
 export const bookmarkPost = async (req, res) => {
-    authenticateUser(req, res, async () => {
-        const userId = req.user.id;
-        const postId = req.params.id;
+    const userId = req.user.id;
+    const postId = req.params.id;
 
-        try {
-            // Check if the post is already bookmarked
-            const checkQuery = "SELECT id FROM bookmarked_posts WHERE userId = ? AND postId = ?";
-            const [existing] = await db.promise().query(checkQuery, [userId, postId]);
+    try {
+        // Check if the post is already bookmarked
+        const checkQuery = "SELECT id FROM bookmarked_posts WHERE userId = ? AND postId = ?";
+        const [existing] = await db.promise().query(checkQuery, [userId, postId]);
 
-            if (existing.length > 0) {
-                // If it exists, un-bookmark it (DELETE)
-                const deleteQuery = "DELETE FROM bookmarked_posts WHERE userId = ? AND postId = ?";
-                await db.promise().query(deleteQuery, [userId, postId]);
-                postCache.flushAll(); // Invalidate cache on state change
-                return res.status(200).json({ message: "Post removed from bookmarks." });
-            } else {
-                // If it doesn't exist, bookmark it (INSERT)
-                const insertQuery = "INSERT INTO bookmarked_posts (userId, postId, createdAt) VALUES (?, ?, ?)";
-                await db.promise().query(insertQuery, [userId, postId, moment().format("YYYY-MM-DD HH:mm:ss")]);
-                postCache.flushAll(); // Invalidate cache on state change
-                return res.status(200).json({ message: "Post saved to bookmarks." });
-            }
-        } catch (error) {
-            console.error("Error toggling bookmark:", error);
-            res.status(500).json({ message: "Failed to update bookmark status", error: error.message });
+        if (existing.length > 0) {
+            // Un-bookmark it
+            const deleteQuery = "DELETE FROM bookmarked_posts WHERE userId = ? AND postId = ?";
+            await db.promise().query(deleteQuery, [userId, postId]);
+            postCache.flushAll();
+            return res.status(200).json({ message: "Post removed from bookmarks." });
+        } else {
+            // Bookmark it
+            const insertQuery = "INSERT INTO bookmarked_posts (userId, postId, createdAt) VALUES (?, ?, ?)";
+            await db.promise().query(insertQuery, [userId, postId, moment().format("YYYY-MM-DD HH:mm:ss")]);
+            postCache.flushAll();
+            return res.status(200).json({ message: "Post saved to bookmarks." });
         }
-    });
+    } catch (error) {
+        console.error("Error toggling bookmark:", error);
+        return res.status(500).json({ message: "Failed to update bookmark status", error: error.message });
+    }
 };
+
 
 // API TO GET ALL BOOKMARKED POSTS
 export const getBookmarkedPosts = async (req, res) => {

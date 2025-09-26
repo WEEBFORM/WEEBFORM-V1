@@ -1,9 +1,9 @@
 import express from 'express';
-import {
-    bookmarkPost,
-    unBookmarkPost,
-    getBookmarkedPosts
-} from '../../controllers/Actions/bookmarkPost.js';
+// import {
+//     bookmarkPost,
+//     unBookmarkPost,
+//     getBookmarkedPosts
+// } from '../../controllers/Actions/bookmarkPost.js';
 const router = express.Router();
 
 import { blockUser,
@@ -29,8 +29,8 @@ router.delete('/unblock/:blockedUser', unblockUser);
 router.get('/blockedUsers', getBlockedUsers)
 
 //BOOKMARK POSTS
-router.get('/', getBookmarkedPosts);
-router.post('/:postId', bookmarkPost);
-router.delete('/:postId', unBookmarkPost);
+// router.get('/bookmarks', getBookmarkedPosts);
+// router.post('/bookmarks/:postId', bookmarkPost);
+// router.delete('/bookmarks/:postId', unBookmarkPost);
 
 export default router;
