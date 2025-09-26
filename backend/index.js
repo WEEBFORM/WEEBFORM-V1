@@ -16,6 +16,7 @@ import logger from './utils/logger.js';
 // ROUTES 
 import authRoute from './routes/Users/auth.js';
 import Users from './routes/Users/users.js';
+import SideBar from  './routes/SideBar APIs/animeMangaLists.js';
 import forgottenPasswordRoute from './routes/Users/resetpasswordRoute.js';
 import postRoute from './routes/Home/posts.js';
 import followRoute from './routes/Home/followers.js';
@@ -113,6 +114,7 @@ app.use((req, res, next) => {
 app.use('/api/v1/user', authRoute);
 app.use('/api/v1/user', Users);
 app.use('/api/v1/user/actions', Actions);
+app.use('/api/v1/user/sidebar', SideBar);
 app.use('/api/v1/user', forgottenPasswordRoute);
 app.use('/api/v1/posts/', postRoute);
 app.use('/api/v1/reach/', followRoute);
