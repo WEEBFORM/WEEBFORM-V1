@@ -1,5 +1,6 @@
 import { executeQuery } from "../../middlewares/dbExecute.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
+import { generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
 import NodeCache from 'node-cache';
 
 const blockedUsersCache = new NodeCache({ stdTTL: 300 });
@@ -68,13 +69,50 @@ export const unblockUser = async (req, res) => {
 export const getBlockedUsers = async (req, res) => {
     authenticateUser(req, res, async () => {
         const userId = req.user.id;
+        const cacheKey = `blockedUsers:${userId}`;
 
         try {
-            const q = "SELECT blockedUserId FROM blocked_users WHERE userId = ?";
-            const blockedUsers = await executeQuery(q, [userId]);
-            const blockedUserIds = blockedUsers.map(user => user.blockedUserId);
+            const cachedData = blockedUsersCache.get(cacheKey);
+            if (cachedData) {
+                return res.status(200).json(cachedData);
+            }
 
-            return res.status(200).json(blockedUserIds);
+            const q = `
+                SELECT
+                    u.id,
+                    u.full_name,
+                    u.username,
+                    u.profilePic
+                FROM blocked_users AS bu
+                JOIN users AS u ON bu.blockedUserId = u.id
+                WHERE bu.userId = ?
+            `;
+            
+            const blockedUsers = await executeQuery(q, [userId]);
+
+            if (blockedUsers.length === 0) {
+                return res.status(200).json([]);
+            }
+
+            const processedBlockedUsers = await Promise.all(
+                blockedUsers.map(async (user) => {
+                    if (user.profilePic) {
+                        try {
+                            const profilePicKey = s3KeyFromUrl(user.profilePic);
+                            user.profilePic = await generateS3Url(profilePicKey);
+                        } catch (error) {
+                            console.error(`Error generating S3 URL for blocked user ${user.id}:`, error);
+                            user.profilePic = null;
+                        }
+                    }
+                    return user;
+                })
+            );
+            
+            blockedUsersCache.set(cacheKey, processedBlockedUsers);
+
+            return res.status(200).json(processedBlockedUsers);
+
         } catch (err) {
             console.error("Get Blocked Users error:", err);
             return res.status(500).json({ message: "Failed to get blocked users", error: err.message });

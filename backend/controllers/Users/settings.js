@@ -7,7 +7,14 @@ import { authenticateUser } from "../../middlewares/verify.mjs";
  */
 export const getSettings = async (req, res) => {
     authenticateUser(req, res, async () => {
+        
+        console.log('DEBUG: req.user object is:', req.user);
+
         const userId = req.user.id;
+
+        if (!userId) { 
+            return res.status(400).json({ message: "User ID could not be determined from token." });
+        }
 
         try {
             const getQuery = "SELECT * FROM user_settings WHERE userId = ?";
@@ -45,7 +52,7 @@ export const updateSettings = async (req, res) => {
         // Define a list of fields that are allowed to be updated to prevent malicious input
         // This should match the columns in your user_settings table
         const allowedFields = [
-            'anime_genres', 'profile_visibility', 'is_tfa_enabled', 'tfa_secret', 
+            'anime_genres', 'profile_visibility', 
             'show_online_status', 'notifications_push', 'notifications_new_episodes',
             'notifications_community', 'notifications_marketplace', 'notifications_email',
             'app_theme', 'app_language', 'autoplay_videos', 'data_saver_mode', 'store_settings'

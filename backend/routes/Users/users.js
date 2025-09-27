@@ -14,12 +14,12 @@ router.get('/all', viewUsers);
 router.get('/user', viewProfile);
 router.get('/:id', viewUserProfile);
 
-router.get('/settings', getSettings);
+router.get('/settings/all', getSettings);
 router.put('/settings/update', updateSettings);
 
 router.put('/edit', editProfile);
 router.put('/change-password', editPassword);
-router.delete('/delete', deleteAccount);
+router.delete('/delete', deleteAccount); 
 
 
 export default router;
