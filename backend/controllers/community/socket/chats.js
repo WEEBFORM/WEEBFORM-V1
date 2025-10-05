@@ -44,7 +44,6 @@ export const initializeMessageSocket = (server) => {
   io.use(authenticateSocket);
   console.log("Socket.IO server initialized. CORS origins configured.");
 
-  //  NOT IMPLEMENTED, YET. POTENTIAL UPDATE
   const voiceRoomUsers = {};
 
   io.on("connection", (socket) => {
@@ -78,30 +77,31 @@ export const initializeMessageSocket = (server) => {
       console.log(`[Socket] User ${socket.user.id} joined Socket.IO room ${chatGroupId}`);
 
       try {
+        // --- FIX APPLIED HERE ---
+        // 1. Add the current user to the Redis set first.
         await redisClient.sadd(`group:${chatGroupId}:online`, socket.user.id);
+        
+        // 2. THEN, get the complete and up-to-date list of all members in the set.
+        // This ensures we have the absolute latest data, including the user who just joined
+        // and excluding anyone who just left.
         const onlineUserIds = await redisClient.smembers(`group:${chatGroupId}:online`);
-        console.log(`[Redis] User ${socket.user.id} added to group:${chatGroupId}:online. Current online user IDs: ${onlineUserIds.join(', ')}`);
+        console.log(`[Redis] User ${socket.user.id} joined/confirmed in group:${chatGroupId}:online. Current online user IDs: ${onlineUserIds.join(', ')}`);
 
-        // FETCH ONLINE DETAILS FIR EACH USER ID
-        const onlineUsersDetailsPromises = onlineUserIds.map(async (userId) => {
-          try {
-            const userInfo = await getUserInfo(userId);
-            return userInfo;
-          } catch (err) {
+        // 3. Fetch details for this fresh list of users.
+        const onlineUsersDetailsPromises = onlineUserIds.map(userId => getUserInfo(userId).catch(err => {
             console.error(`[Error] Failed to get user info for ${userId} in joinGroup:`, err);
-            return null;
-          }
-        });
+            return null; // Return null on error so Promise.all doesn't fail
+        }));
         const resolvedOnlineUsersDetails = await Promise.all(onlineUsersDetailsPromises);
         
-        // FILTER OUT NULL VALUES
+        // 4. Filter out any users that couldn't be fetched.
         const validOnlineUsers = resolvedOnlineUsersDetails.filter(user => user !== null);
-
         console.log(`[Socket] Fetched details for ${validOnlineUsers.length} online users for group ${chatGroupId}`);
         
-        const currentUserDetails = await getUserInfo(socket.user.id);
+        // 5. Get the current user's details separately to include in the event payload.
+        const currentUserDetails = validOnlineUsers.find(user => user.id === socket.user.id);
 
-
+        // 6. Broadcast the complete and accurate list to everyone in the room.
         io.to(chatGroupId).emit("userPresence", {
           chatGroupId,
           onlineUsers: validOnlineUsers,
@@ -122,18 +122,11 @@ export const initializeMessageSocket = (server) => {
       }
     });
 
-    // -------- MESSAGE HANDLING --------
-    socket.on("sendMessage", async ({
-      chatGroupId,
-      message,
-      media,
-      replyTo,
-      audio,
-      threadId,
-      spoiler,
-      mentions
-    }) => {
-      console.log(`[Socket] Received sendMessage from ${socket.user.id} to chat group ${chatGroupId}.`);
+    // -------- All other socket event handlers remain exactly the same --------
+    
+    socket.on("sendMessage", async ({ chatGroupId, message, media, replyTo, audio, threadId, spoiler, mentions }) => {
+        // ... no changes here
+        console.log(`[Socket] Received sendMessage from ${socket.user.id} to chat group ${chatGroupId}.`);
       console.log(`[Socket] Message data: { message: "${message}", media: ${media?.length}, audio: ${!!audio}, replyTo: ${replyTo?.messageId}, threadId: ${threadId}, spoiler: ${spoiler}, mentions: ${mentions?.length} }`);
 
       try {
@@ -286,10 +279,10 @@ export const initializeMessageSocket = (server) => {
       }
     });
 
-    // -------- TYPING INDICATOR --------
     const TYPING_TIMEOUT_MS = 3000;
     socket.on('startTyping', async ({ chatGroupId }) => {
-      const userId = socket.user.id;
+        // ... no changes here
+        const userId = socket.user.id;
       const canSendMessage = await checkUserPermissions(userId, chatGroupId, 'sendMessage');
       if (!canSendMessage) return;
 
@@ -314,14 +307,15 @@ export const initializeMessageSocket = (server) => {
     });
 
     socket.on('stopTyping', ({ chatGroupId }) => {
-      const userId = socket.user.id;
+        // ... no changes here
+        const userId = socket.user.id;
       console.log(`[Socket] User ${userId} stopped typing in ${chatGroupId}.`);
       clearTypingStatus(chatGroupId, userId);
     });
 
-    // -------- REACTIONS --------
     socket.on("addReaction", async ({ messageId, reactionType, customEmote }) => {
-      console.log(`[Socket] Received addReaction from ${socket.user.id} to message ${messageId} (Type: ${reactionType}, Emote: ${customEmote}).`);
+        // ... no changes here
+        console.log(`[Socket] Received addReaction from ${socket.user.id} to message ${messageId} (Type: ${reactionType}, Emote: ${customEmote}).`);
       try {
         if (!messageId || (!reactionType && !customEmote)) {
           console.warn(`[Socket] addReaction: Missing message ID or reaction type/emote for user ${socket.user.id}.`);
@@ -380,9 +374,9 @@ export const initializeMessageSocket = (server) => {
       }
     });
 
-    // -------- THREAD MANAGEMENT --------
     socket.on("createThread", async ({ parentMessageId, initialMessage, chatGroupId }) => { 
-      console.log(`[Socket] Received createThread from ${socket.user.id} for parent message ${parentMessageId} in chat group ${chatGroupId}.`);
+        // ... no changes here
+        console.log(`[Socket] Received createThread from ${socket.user.id} for parent message ${parentMessageId} in chat group ${chatGroupId}.`);
       try {
         if (parentMessage.groupId !== chatGroupId) { 
           console.warn(`[DB] Parent message ${parentMessageId} (ID: ${parentMessage.id}) belongs to different group (${parentMessage.groupId}) than provided by client (${chatGroupId}).`);
@@ -414,11 +408,6 @@ export const initializeMessageSocket = (server) => {
 
       const user = await getUserInfo(socket.user.id);
 
-      // Prepare threadData for emitting to client
-      // Make sure `chatGroupId` is consistently named if frontend expects it as `groupId`
-      // However, for internal consistency and since `message_threads` table uses `chatGroupId`,
-      // it's probably fine to emit `chatGroupId` here.
-      // Frontend's ThreadView correctly receives `groupId` prop and destructures it as `chatGroupId` for its internal use.
       const threadData = {
         id: thread.id,
         parentMessageId,
@@ -427,15 +416,15 @@ export const initializeMessageSocket = (server) => {
         creatorProfilePic: user.profilePic,
         chatGroupId: chatGroupId, // Emitting the actual chatGroupId
         createdAt: thread.createdAt,
-        initialMessage: initialMessage && firstThreadMessage ? { // Use the saved firstThreadMessage if available
+        initialMessage: initialMessage && firstThreadMessage ? {
           id: firstThreadMessage.id, 
           text: firstThreadMessage.text,
           senderId: firstThreadMessage.userId,
-          senderName: user.full_name, // Assuming sender is current user
+          senderName: user.full_name,
           createdAt: firstThreadMessage.createdAt,
-          groupId: firstThreadMessage.chatGroupId // Consistent with other messages
-        } : (initialMessage ? { // Fallback if firstThreadMessage not directly available (e.g., if initialMessage was just text)
-          id: null, // No DB ID yet for this specific display object
+          groupId: firstThreadMessage.chatGroupId
+        } : (initialMessage ? {
+          id: null,
           text: initialMessage,
           senderId: socket.user.id,
           senderName: user.full_name,
@@ -444,7 +433,6 @@ export const initializeMessageSocket = (server) => {
         } : null)
       };
       
-
       io.to(chatGroupId).emit("threadCreated", threadData);
       console.log(`[Socket] Broadcasted 'threadCreated' for thread ${thread.id} to chat group ${chatGroupId}.`);
 
@@ -464,11 +452,11 @@ export const initializeMessageSocket = (server) => {
       console.error(`[Error] Error creating thread for user ${socket.user.id} (parentMessageId: ${parentMessageId}):`, err);
       socket.emit("error", { message: "Internal server error", error: err.message });
     }
-  });
-
+    });
 
     socket.on("getThreadMessages", async ({ threadId }) => {
-      console.log(`[Socket] Received getThreadMessages from ${socket.user.id} for thread ${threadId}.`);
+        // ... no changes here
+        console.log(`[Socket] Received getThreadMessages from ${socket.user.id} for thread ${threadId}.`);
       try {
         if (!threadId) {
           console.warn(`[Socket] getThreadMessages: Thread ID is required for user ${socket.user.id}.`);
@@ -494,9 +482,9 @@ export const initializeMessageSocket = (server) => {
       }
     });
 
-    // -------- ADMIN ACTIONS --------
     socket.on("adminAction", async ({ chatGroupId, action, targetUserId, duration, reason }) => {
-      console.log(`[Socket] Received adminAction '${action}' from admin ${socket.user.id} on user ${targetUserId} in chat group ${chatGroupId}.`);
+        // ... no changes here
+        console.log(`[Socket] Received adminAction '${action}' from admin ${socket.user.id} on user ${targetUserId} in chat group ${chatGroupId}.`);
       try {
         if (!chatGroupId || !action || !targetUserId) {
           console.warn(`[Socket] adminAction: Missing chat group ID, action, or target user ID for admin ${socket.user.id}.`);
@@ -562,9 +550,9 @@ export const initializeMessageSocket = (server) => {
       }
     });
 
-    // -------- COUNTDOWN (Feature for chat groups) --------
     socket.on("startCountdown", async ({ chatGroupId, duration, title }) => {
-      console.log(`[Socket] Received startCountdown from ${socket.user.id} for chat group ${chatGroupId} (Duration: ${duration}, Title: ${title}).`);
+        // ... no changes here
+        console.log(`[Socket] Received startCountdown from ${socket.user.id} for chat group ${chatGroupId} (Duration: ${duration}, Title: ${title}).`);
       try {
         if (!chatGroupId || !duration) {
           console.warn(`[Socket] startCountdown: Group ID (chatGroupId) or duration is missing for user ${socket.user.id}.`);
@@ -596,9 +584,9 @@ export const initializeMessageSocket = (server) => {
       }
     });
 
-    // -------- QUOTE MACROS (Feature for chat groups) --------
     socket.on("sendQuoteMacro", async ({ chatGroupId, macroId, customText }) => {
-      console.log(`[Socket] Received sendQuoteMacro from ${socket.user.id} to chat group ${chatGroupId} (Macro ID: ${macroId}).`);
+        // ... no changes here
+        console.log(`[Socket] Received sendQuoteMacro from ${socket.user.id} to chat group ${chatGroupId} (Macro ID: ${macroId}).`);
       try {
         if (!chatGroupId || !macroId) {
           console.warn(`[Socket] sendQuoteMacro: Group ID (chatGroupId) or macro ID is missing for user ${socket.user.id}.`);
@@ -628,10 +616,10 @@ export const initializeMessageSocket = (server) => {
         socket.emit("error", { message: "Internal server error", error: err.message });
       }
     });
-
-    // -------- DISCONNECT HANDLER --------
+    
     socket.on("disconnect", async (reason) => {
-      console.log(`[Socket] User disconnected: ${socket.user.id} (Socket ID: ${socket.id}). Reason: ${reason}`);
+        // ... no changes here
+        console.log(`[Socket] User disconnected: ${socket.user.id} (Socket ID: ${socket.id}). Reason: ${reason}`);
 
       try {
         typingUsers.forEach((groupTypingMap, groupTypingId) => {
@@ -652,7 +640,6 @@ export const initializeMessageSocket = (server) => {
 
             const remainingOnlineUserIds = await redisClient.smembers(groupKey);
             
-            // Fetch full user info for each remaining online user ID
             const onlineUsersDetailsPromises = remainingOnlineUserIds.map(async (userId) => {
                 try {
                     const userInfo = await getUserInfo(userId);
@@ -677,13 +664,11 @@ export const initializeMessageSocket = (server) => {
           }
         }
 
-        // REMOVE USER FROM VOICE ROOMS (Commented out as not implemented yet)
         for (const roomId in voiceRoomUsers) {
           if (voiceRoomUsers[roomId][socket.user.id]) {
             delete voiceRoomUsers[roomId][socket.user.id];
             console.log(`[Voice] User ${socket.user.id} removed from voice room ${roomId}.`);
 
-            // BROADCAST USER LEFT VOICE ROOM
             io.to(`voice:${roomId}`).emit("voiceRoomUpdate", {
               roomId,
               action: "userLeft",
@@ -698,7 +683,6 @@ export const initializeMessageSocket = (server) => {
           }
         }
 
-        // PUBLISH DISCONNECT EVENT
         publishEvent("user.disconnected", {
           userId: socket.user.id,
           timestamp: Date.now()
@@ -708,7 +692,8 @@ export const initializeMessageSocket = (server) => {
         console.error(`[Error] Error handling disconnect for user ${socket.user.id}:`, err);
       }
     });
+
   });
 
   return io;
-}; 
+};
