@@ -2,14 +2,12 @@ import { db } from "../../../config/connectDB.js";
 import { redisClient } from "../../../config/redisConfig.js";
 import { generateS3Url, s3KeyFromUrl } from "../../../middlewares/S3bucketConfig.js";
 
-// A new, reusable helper function to handle the "smart URL" logic
+// HELPER: PROCESS PROFILE PICTURE TO ENSURE IT'S A VALID S3 URL
 const processProfilePicture = async (userObject) => {
     if (userObject && userObject.profilePic) {
-        // If it's already a full URL (from a bot), do nothing.
         if (userObject.profilePic.startsWith('http')) {
             return userObject;
         }
-        // Otherwise, it's an S3 key, so generate a presigned URL.
         try {
             const profilePicKey = s3KeyFromUrl(userObject.profilePic);
             userObject.profilePic = await generateS3Url(profilePicKey);

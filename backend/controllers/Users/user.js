@@ -32,7 +32,7 @@ export const editProfile = async (req, res) => {
 
         try {
             cpUpload(req, res, async (uploadErr) => {
-                if (uploadErr) {
+                if (uploadErr instanceof multer.MulterError) {
                      console.error(`Multer error during profile update for user ${userId}:`, uploadErr);
                      return res.status(400).json({ message: "File upload error", error: uploadErr.message });
                  } else if (uploadErr) {
@@ -40,57 +40,62 @@ export const editProfile = async (req, res) => {
                      return res.status(500).json({ message: "File processing failed", error: 'Internal server error during file handling' });
                  }
 
-
-                let newProfilePicUrl = null;
-                let newCoverPhotoUrl = null;
+                // These will store the S3 KEY for the database
+                let newProfilePicKey = null;
+                let newCoverPhotoKey = null;
+                
                 const s3UploadPromises = [];
                 const oldImageUrlsToDelete = [];
 
                 try {
-                    if (req.files) {
-                        if (req.files.profilePic && req.files.profilePic[0]) {
-                            const profilePicFile = req.files.profilePic[0];
-                             if (profilePicFile.size > 5 * 1024 * 1024) { 
-                                return res.status(400).json({ message: "Profile picture file size exceeds limit (5MB)." });
-                             }
-                            const resizedBuffer = await resizeImage(profilePicFile.buffer, 300, 300);
-                            const profileKey = `uploads/profiles/${userId}_profile_${Date.now()}_${profilePicFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
-                            const profileParams = {
-                                Bucket: process.env.BUCKET_NAME, // Use env var directly
-                                Key: profileKey,
-                                Body: resizedBuffer,
-                                ContentType: profilePicFile.mimetype
-                            };
-                            newProfilePicUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${profileKey}`;
-                            s3UploadPromises.push(s3.send(new PutObjectCommand(profileParams)).catch(err => { throw new Error(`S3 Profile Pic Upload Error: ${err.message}`) }));
-                            if (authenticatedUser.profilePic) {
-                                oldImageUrlsToDelete.push(authenticatedUser.profilePic);
-                            }
-                        }
-                        if (req.files.coverPhoto && req.files.coverPhoto[0]) {
-                            const coverPhotoFile = req.files.coverPhoto[0];
-                             if (coverPhotoFile.size > 10 * 1024 * 1024) { /* ... size validation ... */
-                                return res.status(400).json({ message: "Cover photo file size exceeds limit (10MB)." });
-                             }
-                            const resizedBuffer = await resizeImage(coverPhotoFile.buffer, 800, 450);
-                            const coverKey = `uploads/profiles/${userId}_cover_${Date.now()}_${coverPhotoFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
-                            const coverParams = {
-                                Bucket: process.env.BUCKET_NAME, // Use env var directly
-                                Key: coverKey,
-                                Body: resizedBuffer,
-                                ContentType: coverPhotoFile.mimetype
-                            };
-                            // Construct the public URL using env vars directly
-                            newCoverPhotoUrl = `https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${coverKey}`;
-                             // Use the imported s3 client
-                            s3UploadPromises.push(s3.send(new PutObjectCommand(coverParams)).catch(err => { throw new Error(`S3 Cover Photo Upload Error: ${err.message}`) }));
-                            if (authenticatedUser.coverPhoto) {
-                                oldImageUrlsToDelete.push(authenticatedUser.coverPhoto);
-                            }
+                    // --- PROFILE PICTURE LOGIC ---
+                    if (req.files && req.files.profilePic && req.files.profilePic[0]) {
+                        const profilePicFile = req.files.profilePic[0];
+                         if (profilePicFile.size > 5 * 1024 * 1024) { 
+                            return res.status(400).json({ message: "Profile picture file size exceeds limit (5MB)." });
+                         }
+                        const resizedBuffer = await resizeImage(profilePicFile.buffer, 300, 300);
+                        const profileKey = `uploads/profiles/${userId}_profile_${Date.now()}_${profilePicFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
+                        
+                        const profileParams = {
+                            Bucket: process.env.BUCKET_NAME,
+                            Key: profileKey,
+                            Body: resizedBuffer,
+                            ContentType: profilePicFile.mimetype
+                        };
+                        
+                        s3UploadPromises.push(s3.send(new PutObjectCommand(profileParams)));
+                        newProfilePicKey = profileKey; // Store the KEY for the database
+
+                        if (authenticatedUser.profilePic && !authenticatedUser.profilePic.startsWith('http')) {
+                            oldImageUrlsToDelete.push(authenticatedUser.profilePic);
                         }
                     }
 
-                    // Wait for all S3 uploads
+                    // --- COVER PHOTO LOGIC ---
+                    if (req.files && req.files.coverPhoto && req.files.coverPhoto[0]) {
+                        const coverPhotoFile = req.files.coverPhoto[0];
+                         if (coverPhotoFile.size > 10 * 1024 * 1024) {
+                            return res.status(400).json({ message: "Cover photo file size exceeds limit (10MB)." });
+                         }
+                        const resizedBuffer = await resizeImage(coverPhotoFile.buffer, 800, 450);
+                        const coverKey = `uploads/profiles/${userId}_cover_${Date.now()}_${coverPhotoFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
+                        
+                        const coverParams = {
+                            Bucket: process.env.BUCKET_NAME,
+                            Key: coverKey,
+                            Body: resizedBuffer,
+                            ContentType: coverPhotoFile.mimetype
+                        };
+                        
+                        s3UploadPromises.push(s3.send(new PutObjectCommand(coverParams)));
+                        newCoverPhotoKey = coverKey; // Store the KEY for the database
+
+                        if (authenticatedUser.coverPhoto && !authenticatedUser.coverPhoto.startsWith('http')) {
+                            oldImageUrlsToDelete.push(authenticatedUser.coverPhoto);
+                        }
+                    }
+
                     if (s3UploadPromises.length > 0) {
                          console.log(`Uploading ${s3UploadPromises.length} file(s) to S3 for user ${userId}...`);
                          await Promise.all(s3UploadPromises);
@@ -102,7 +107,7 @@ export const editProfile = async (req, res) => {
                      return res.status(500).json({ message: "Failed to process or upload image(s)", error: imageProcessingError.message || "Internal server error" });
                 }
 
-                // --- Dynamically Build Update Query ---
+                // --- DYNAMICALLY BUILD UPDATE QUERY ---
                 const updateFieldsPayload = {};
                 const values = [];
                 const setClauses = [];
@@ -120,38 +125,46 @@ export const editProfile = async (req, res) => {
                         const dbColumn = allowedTextFields[key];
                         setClauses.push(`${dbColumn} = ?`);
                         values.push(req.body[key]);
-                        updateFieldsPayload[dbColumn] = req.body[key];
+                        updateFieldsPayload[dbColumn] = req.body[key]; // Keep text fields in payload
                     }
                 }
 
-                if (newProfilePicUrl) {
+                if (newProfilePicKey) {
                     setClauses.push(`profilePic = ?`);
-                    values.push(newProfilePicUrl);
-                    updateFieldsPayload.profilePic = newProfilePicUrl;
+                    values.push(newProfilePicKey); // Push the KEY to the DB values
                 }
-                if (newCoverPhotoUrl) {
+                if (newCoverPhotoKey) {
                     setClauses.push(`coverPhoto = ?`);
-                    values.push(newCoverPhotoUrl);
-                    updateFieldsPayload.coverPhoto = newCoverPhotoUrl;
+                    values.push(newCoverPhotoKey); // Push the KEY to the DB values
                 }
+
                 if (setClauses.length > 0) {
                     values.push(userId);
                     const editQuery = `UPDATE users SET ${setClauses.join(', ')} WHERE id = ?`;
 
                     try {
-                        console.log(`Executing DB profile update for user ${userId}.`);
-                        const result = await executeQuery(editQuery, values);
+                        const result = await db.promise().query(editQuery, values); // Use db.promise() for async/await
 
-                        if (result.affectedRows > 0) {
+                        if (result[0].affectedRows > 0) {
                             console.log(`User profile updated successfully in DB for user ID: ${userId}`);
 
+                            // Generate full URLs for the response payload AFTER successful DB update
+                            if (newProfilePicKey) {
+                                updateFieldsPayload.profilePic = await generateS3Url(newProfilePicKey);
+                            }
+                            if (newCoverPhotoKey) {
+                                updateFieldsPayload.coverPhoto = await generateS3Url(newCoverPhotoKey);
+                            }
+
+                            // Delete OLD images from S3
                             if(oldImageUrlsToDelete.length > 0){
                                 console.log(`Attempting to delete ${oldImageUrlsToDelete.length} old S3 objects for user ${userId}.`);
-                                await Promise.all(oldImageUrlsToDelete.map(url => deleteS3Object(url)));
+                                // Assuming deleteS3Object is designed to take a full URL or just a key
+                                await Promise.all(oldImageUrlsToDelete.map(keyOrUrl => deleteS3Object(keyOrUrl)));
                                 console.log(`Finished attempting old S3 object deletion for user ${userId}.`);
                             }
 
-                            userProfileCache.del(userId);
+                            userProfileCache.del(String(userId));
                             console.log(`Cache cleared for user ID: ${userId}`);
 
                              res.status(200).json({
@@ -163,16 +176,18 @@ export const editProfile = async (req, res) => {
                              console.warn(`No rows updated for user ID: ${userId}. User might not exist or data was identical.`);
                              res.status(200).json({
                                 message: "Account details processed. No changes needed or applied.",
-                                updatedFields: updateFieldsPayload
+                                updatedFields: {}
                              });
                         }
 
                     } catch (dbError) {
                         console.error(`Database error updating profile for user ${userId}:`, dbError);
-                        // S3 CALLBACK
+                        
+                        // S3 ROLLBACK: Delete newly uploaded images if DB update fails
                         console.error(`Attempting S3 rollback due to DB error for user ${userId}.`);
-                        if (newProfilePicUrl) await deleteS3Object(newProfilePicUrl);
-                        if (newCoverPhotoUrl) await deleteS3Object(newCoverPhotoUrl);
+                        if (newProfilePicKey) await deleteS3Object(newProfilePicKey);
+                        if (newCoverPhotoKey) await deleteS3Object(newCoverPhotoKey);
+                        
                         return res.status(500).json({ message: "Failed to update profile in database", error: "Database error" });
                     }
                 } else {

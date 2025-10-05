@@ -175,11 +175,11 @@ export const getFollowing = async (req, res) => {
     });
 };
 
-// API TO GET SOCIAL DIRECTORY (FOLLOWERS, FOLLOWING, SUGGESTED)
+// API TO GET SOCIAL DIRECTORY (REFACTORED AND FIXED)
 export const getSocialDirectory = async (req, res) => {
     authenticateUser(req, res, async () => {
         const userId = req.user.id;
-        const cacheKey = `socialDirectory_v3:${userId}`; // Changed version to avoid old cache
+        const cacheKey = `socialDirectory_v8_all_users:${userId}`;
 
         try {
             const cachedData = followerCache.get(cacheKey);
@@ -188,98 +188,102 @@ export const getSocialDirectory = async (req, res) => {
                 return res.status(200).json(cachedData);
             }
 
-            // --- THIS IS THE CORRECTED QUERY ---
-            const unifiedQuery = `
-                WITH
-                UserFollowers AS (SELECT follower AS id FROM reach WHERE followed = ?),
-                UserFollowing AS (SELECT followed AS id FROM reach WHERE follower = ?),
-                BlockedUsers AS (
-                    SELECT userId AS id FROM blocked_users WHERE blockedUserId = ?
-                    UNION
-                    SELECT blockedUserId AS id FROM blocked_users WHERE userId = ?
-                ),
-                FollowersOnly AS (
-                    SELECT id FROM UserFollowers
-                    WHERE id NOT IN (SELECT id FROM UserFollowing)
-                ),
-                Mutuals AS (
-                    SELECT id FROM UserFollowing
-                    WHERE id IN (SELECT id FROM UserFollowers)
-                ),
-                CurrentConnections AS (
-                    SELECT id FROM UserFollowers
-                    UNION
-                    SELECT id FROM UserFollowing
-                ),
-                Suggested AS (
-                    SELECT fof.followed AS id
+            // Get IDs of Followers, Following, and Blocked Users 
+            const connectionsQuery = `
+                (SELECT follower AS id, 'is_follower' AS relationship FROM reach WHERE followed = ?)
+                UNION
+                (SELECT followed AS id, 'is_following' AS relationship FROM reach WHERE follower = ?)
+                UNION
+                (SELECT userId AS id, 'blocked' AS relationship FROM blocked_users WHERE blockedUserId = ?)
+                UNION
+                (SELECT blockedUserId AS id, 'blocked' AS relationship FROM blocked_users WHERE userId = ?);
+            `;
+            const [connections] = await db.promise().query(connectionsQuery, [userId, userId, userId, userId]);
+
+            const followerIds = new Set(connections.filter(c => c.relationship === 'is_follower').map(c => c.id));
+            const followingIds = new Set(connections.filter(c => c.relationship === 'is_following').map(c => c.id));
+            const blockedIds = new Set(connections.filter(c => c.relationship === 'blocked').map(c => c.id));
+
+            const mutualsIds = new Set([...followerIds].filter(id => followingIds.has(id)));
+            const followersOnlyIds = new Set([...followerIds].filter(id => !mutualsIds.has(id)));
+            const currentConnectionIds = new Set([...followerIds, ...followingIds]);
+
+            // Fetch Followers and Following (Mutuals) user objects  
+            const getFollowersQuery = followersOnlyIds.size > 0 ? `SELECT id, full_name, username, profilePic FROM users WHERE id IN (?)` : null;
+            const getFollowingQuery = mutualsIds.size > 0 ? `SELECT id, full_name, username, profilePic FROM users WHERE id IN (?)` : null;
+
+            const [followersResult, followingResult] = await Promise.all([
+                getFollowersQuery ? db.promise().query(getFollowersQuery, [[...followersOnlyIds]]) : Promise.resolve([[]]),
+                getFollowingQuery ? db.promise().query(getFollowingQuery, [[...mutualsIds]]) : Promise.resolve([[]])
+            ]);
+            let followers = followersResult[0];
+            let following = followingResult[0];
+
+            // Fetch Suggested Users (with fallback) 
+            const excludedIdsForSuggestions = [userId, ...currentConnectionIds, ...blockedIds];
+            let suggested = [];
+
+            const suggestedQuery = `
+                SELECT u.id, u.full_name, u.username, u.profilePic
+                FROM (
+                    SELECT fof.followed AS id, COUNT(DISTINCT friends.friend_id) AS mutualConnections
                     FROM (SELECT followed AS friend_id FROM reach WHERE follower = ?) AS friends
                     JOIN reach AS fof ON friends.friend_id = fof.follower
-                    LEFT JOIN users AS u_check ON fof.followed = u_check.id
-                    LEFT JOIN user_settings AS us ON u_check.id = us.userId
-                    WHERE fof.followed != ?
-                      AND fof.followed NOT IN (SELECT id FROM CurrentConnections)
-                      AND fof.followed NOT IN (SELECT id FROM BlockedUsers)
-                      AND COALESCE(us.profile_visibility, 'public') = 'public'
+                    WHERE fof.followed NOT IN (?)
                     GROUP BY fof.followed
-                    ORDER BY COUNT(DISTINCT friends.friend_id) DESC, RAND()
+                    ORDER BY mutualConnections DESC, RAND()
                     LIMIT 30
-                )
-                -- Select users for each category
-                SELECT u.id, u.full_name, u.username, u.profilePic, 'followers' AS category
-                FROM users u JOIN FollowersOnly fo ON u.id = fo.id
-                WHERE u.id NOT IN (SELECT id FROM BlockedUsers)
-
-                UNION ALL
-
-                SELECT u.id, u.full_name, u.username, u.profilePic, 'following' AS category
-                FROM users u JOIN Mutuals m ON u.id = m.id
-                WHERE u.id NOT IN (SELECT id FROM BlockedUsers)
-
-                UNION ALL
-
-                SELECT u.id, u.full_name, u.username, u.profilePic, 'suggested' AS category
-                FROM users u JOIN Suggested s ON u.id = s.id
-                
-                UNION ALL
-
-                -- FIX APPLIED HERE: The final SELECT is now wrapped so its ORDER BY is contained.
-                (SELECT u.id, u.full_name, u.username, u.profilePic, 'discover' AS category
-                FROM users u
-                LEFT JOIN (
-                    SELECT followed, COUNT(*) AS follower_count
-                    FROM reach
-                    GROUP BY followed
-                ) AS popular ON u.id = popular.followed
-                LEFT JOIN user_settings AS us ON u.id = us.userId
-                WHERE u.id != ?
-                  AND u.id NOT IN (SELECT id FROM CurrentConnections)
-                  AND u.id NOT IN (SELECT id FROM Suggested)
-                  AND u.id NOT IN (SELECT id FROM BlockedUsers)
-                  AND COALESCE(us.profile_visibility, 'public') = 'public'
-                ORDER BY
-                    CASE WHEN popular.follower_count IS NOT NULL THEN 0 ELSE 1 END,
-                    popular.follower_count DESC,
-                    u.created_at ASC);
+                ) AS s
+                JOIN users u ON s.id = u.id;
             `;
+            const [initialSuggested] = await db.promise().query(suggestedQuery, [userId, excludedIdsForSuggestions]);
+            suggested = initialSuggested;
 
-            const [allUsers] = await db.promise().query(unifiedQuery, [
-                userId, userId, userId, userId, userId, userId, userId
-            ]);
+            if (suggested.length === 0) {
+                console.log(`[Social Directory] No specific suggestions for user ${userId}. Falling back to general user list.`);
+                const fallbackQuery = `
+                    SELECT id, full_name, username, profilePic FROM users
+                    WHERE id NOT IN (?) -- FIX: REMOVED is_bot = FALSE
+                    ORDER BY created_at ASC LIMIT 30;
+                `;
+                const [fallbackUsers] = await db.promise().query(fallbackQuery, [excludedIdsForSuggestions]);
+                suggested = fallbackUsers;
+            }
+
+            // STEP 4: Fetch Discover Users (Most popular users not already followed) 
+            const excludedIdsForDiscover = [userId, ...followingIds, ...blockedIds];
             
-            const processedUsers = await processUsersWithS3Urls(allUsers);
+            const discoverQuery = `
+                SELECT
+                    u.id, u.full_name, u.username, u.profilePic,
+                    COUNT(r.follower) AS follower_count
+                FROM users u
+                LEFT JOIN reach r ON u.id = r.followed
+                WHERE u.id NOT IN (?) -- FIX: REMOVED u.is_bot = FALSE
+                GROUP BY u.id
+                ORDER BY follower_count DESC, u.created_at ASC;
+            `;
+            const [discover] = await db.promise().query(discoverQuery, [excludedIdsForDiscover]);
+
+            // Process all images and send the final response 
+            const [
+                processedFollowers,
+                processedFollowing,
+                processedSuggested,
+                processedDiscover
+            ] = await Promise.all([
+                processUsersWithS3Urls(followers),
+                processUsersWithS3Urls(following),
+                processUsersWithS3Urls(suggested),
+                processUsersWithS3Urls(discover)
+            ]);
 
             const result = {
-                followers: processedUsers.filter(u => u.category === 'followers'),
-                following: processedUsers.filter(u => u.category === 'following'),
-                suggested: processedUsers.filter(u => u.category === 'suggested'),
-                discover: processedUsers.filter(u => u.category === 'discover').map(({ category, ...user }) => user) // Remove category field
+                followers: processedFollowers,
+                following: processedFollowing,
+                suggested: processedSuggested,
+                discover: processedDiscover
             };
-            
-            // Clean up temporary category field from other sections
-            result.followers.forEach(u => delete u.category);
-            result.following.forEach(u => delete u.category);
-            result.suggested.forEach(u => delete u.category);
 
             followerCache.set(cacheKey, result);
             return res.status(200).json(result);
