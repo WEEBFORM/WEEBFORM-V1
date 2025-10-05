@@ -32,6 +32,8 @@ import News from './routes/newsAndRecommendations.js';
 import Communities from './routes/Community/community.js';
 import Groups from './routes/Community/communityGroups.js';
 
+import { startBotSchedulers } from './services/botSchedulerService.js';
+
 // Load environment variables early 
 config();
  
@@ -205,6 +207,7 @@ if (cluster.isPrimary) {
 
         const server = http.createServer(app);
 
+        startBotSchedulers();
         // Initialize WebSocket functionality
         initializeMessageSocket(server);
         server.listen(PORT, () => {

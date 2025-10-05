@@ -60,7 +60,7 @@ export const fetchCommunityInfo = async (communityIds = [], userId = null, optio
 
         // Add userId parameter if user membership is being checked
         if (includeUserMembership && userId) {
-            queryParams.unshift(userId); // Add at beginning since it's used in SELECT clause
+            queryParams.unshift(userId); 
         }
 
         baseQuery += ` ORDER BY c.createdAt ASC`;

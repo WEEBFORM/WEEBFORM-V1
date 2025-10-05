@@ -5,16 +5,15 @@ import { cpUpload } from "../../middlewares/storage.js";
 import multer from "multer";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3, generateS3Url, s3KeyFromUrl } from "../../middlewares/S3bucketConfig.js";
-// import WeebAI from "../../AI AGENT/WeebAIClass.js";
+
 import NodeCache from 'node-cache';
 
 const postCache = new NodeCache({ stdTTL: 300 }); 
-// const weebAI = new WeebAI(process.env.GEMINI_API_KEY);
 
 const shufflePosts = (array) => {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
+        [array[i], array[j]] = [array[j], array[i]]; 
     }
     return array;
 };
@@ -22,10 +21,9 @@ const shufflePosts = (array) => {
 
 export const fetchAndProcessPostDetails = async (postIds, requestingUserId) => {
     if (!postIds || postIds.length === 0) {
-        return []; // Return empty array if no IDs are provided
+        return [];
     }
 
-    // This is the core query logic, now made reusable
     const q = `
         SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
         COUNT(DISTINCT l.id) AS likeCount,
@@ -79,45 +77,87 @@ export const newPost = async (req, res) => {
                 if (uploadErr instanceof multer.MulterError) {
                     return res.status(400).json({ message: "File upload error", error: uploadErr.message });
                 } else if (uploadErr) {
-                    console.error("Unexpected error during upload:", uploadErr);
-                    return res.status(500).json({ message: "File upload failed", error: "Unexpected error" });
+                    console.error("Unexpected error during file processing middleware:", uploadErr);
+                    return res.status(500).json({ message: "File processing failed", error: "Internal server error during file handling" });
                 }
 
                 const userId = req.user.id;
                 const { description, tags, category } = req.body;
-                const media = req.files && req.files["media"] ? req.files["media"] : []; // Ensure media is an array
+                const media = req.files && req.files["media"] ? req.files["media"] : [];
                 let uploadedMediaUrls = [];
 
-                // Loop through media files to upload and get URLs
+                // Loop through media files to upload to S3 and get URLs
                 for (const file of media) {
                     const params = {
                         Bucket: process.env.BUCKET_NAME,
-                        Key: `uploads/posts/${Date.now()}_${file.originalname}`,
+                        Key: `uploads/posts/${Date.now()}_${file.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}`,
                         Body: file.buffer,
                         ContentType: file.mimetype,
                     };
                     try {
                         await s3.send(new PutObjectCommand(params));
-                        uploadedMediaUrls.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`); 
+                        uploadedMediaUrls.push(`https://${process.env.BUCKET_NAME}.s3.${process.env.BUCKET_REGION}.amazonaws.com/${params.Key}`);
                     } catch (s3Error) {
                         console.error("Error uploading to S3:", s3Error);
-                        return res.status(500).json({ message: "Error uploading image to S3", error: s3Error.message });
+                        return res.status(500).json({ message: "Error uploading one or more files to S3", error: s3Error.message });
                     }
                 }
 
-                // If there are multiple images, store them as a comma-separated string
+                // Store multiple media URLs as a comma-separated string
                 const mediaString = uploadedMediaUrls.join(',');
 
                 const query = "INSERT INTO posts (userId, description, tags, category, media, createdAt) VALUES (?, ?, ?, ?, ?, ?)";
                 const values = [userId, description, tags, category, mediaString, moment().format("YYYY-MM-DD HH:mm:ss")];
 
                 try {
-                   await db.promise().execute(query, values);
+                   const [result] = await db.promise().execute(query, values);
+                   const postId = result.insertId;
+
+                   // --- UNIFIED, HUMAN-LIKE ENGAGEMENT SCHEDULING ---
+                    const COMMENT_PROBABILITY = 0.35; // 35% chance to schedule a comment
+                    const LIKE_PROBABILITY = 0.50;    // 50% chance to schedule a like
+
+                    // Schedule a potential 'comment' task
+                    if (Math.random() < COMMENT_PROBABILITY) {
+                        const minDelay = 15 * 60 * 1000; // 15 minutes
+                        const maxDelay = 24 * 60 * 60 * 1000; // 24 hours
+                        const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+                        const executeAt = moment(new Date(Date.now() + randomDelay)).format("YYYY-MM-DD HH:mm:ss");
+
+                        const scheduleQuery = "INSERT INTO pending_engagements (post_id, post_author_id, engagement_type, post_content, execute_at) VALUES (?, ?, ?, ?, ?)";
+                        const scheduleValues = [postId, userId, 'comment', description, executeAt];
+                        
+                        // Schedule the task (fire-and-forget, don't make the user wait)
+                        db.promise().execute(scheduleQuery, scheduleValues).catch(err => {
+                            console.error("Failed to schedule bot comment:", err);
+                        });
+                    }
+
+                    // Schedule a potential 'like' task (independently)
+                    if (Math.random() < LIKE_PROBABILITY) {
+                        const minDelay = 2 * 60 * 1000; // 2 minutes
+                        const maxDelay = 8 * 60 * 60 * 1000; // 8 hours
+                        const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
+                        const executeAt = moment(new Date(Date.now() + randomDelay)).format("YYYY-MM-DD HH:mm:ss");
+
+                        // Note: 'post_content' is NULL for 'like' tasks
+                        const scheduleQuery = "INSERT INTO pending_engagements (post_id, post_author_id, engagement_type, execute_at) VALUES (?, ?, ?, ?)";
+                        const scheduleValues = [postId, userId, 'like', executeAt];
+
+                        // Schedule the task (fire-and-forget)
+                        db.promise().execute(scheduleQuery, scheduleValues).catch(err => {
+                            console.error("Failed to schedule bot like:", err);
+                        });
+                    }
+                    // --- END OF SCHEDULING LOGIC ---
+
+                    postCache.flushAll(); // Clear cache to ensure new post appears in feeds
+                    return res.status(201).json({ message: "Post created successfully." });
+
                 } catch (dbError) {
-                     console.error("Error inserting into database:", dbError);
+                     console.error("Error inserting post into database:", dbError);
                      return res.status(500).json({ message: "Database insertion error", error: dbError.message });
                 }
-                return res.status(201).json({ message: "Post created successfully." });
             });
         } catch (error) {
             console.error("Error creating post:", error);
@@ -125,6 +165,7 @@ export const newPost = async (req, res) => {
         }
     });
 };
+
 
 
 // HELPER FUNCTION TO FETCH POSTS
@@ -220,8 +261,11 @@ const getPosts = async (req, res, queryType) => {
                             post.media = null;
                         }
                     }
-                     if (post.profilePic) {
-                        post.profilePic = await generateS3Url(s3KeyFromUrl(post.profilePic));
+                      if (post.profilePic) {
+                        if (post.profilePic.startsWith('http')) {}
+                        else {
+                            post.profilePic = await generateS3Url(s3KeyFromUrl(post.profilePic));
+                        }
                     }
                     return post;
                 })
@@ -281,9 +325,12 @@ export const postCategory = async (req, res) => {
                         }
                     }
                      if (post.profilePic) {
-                        post.profilePic = await generateS3Url(s3KeyFromUrl(post.profilePic));
+                        if (post.profilePic.startsWith('http')) {}
+                        else {
+                            post.profilePic = await generateS3Url(s3KeyFromUrl(post.profilePic));
+                        }
                     }
-                    return post;
+                    return post; 
                 })
             );
 
@@ -410,8 +457,11 @@ export const getBookmarkedPosts = async (req, res) => {
                             post.media = null;
                         }
                     }
-                    if (post.profilePic) {
-                        post.profilePic = await generateS3Url(s3KeyFromUrl(post.profilePic));
+                     if (post.profilePic) {
+                        if (post.profilePic.startsWith('http')) {}
+                        else {
+                            post.profilePic = await generateS3Url(s3KeyFromUrl(post.profilePic));
+                        }
                     }
                     return post;
                 })

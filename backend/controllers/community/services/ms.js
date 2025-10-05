@@ -2,26 +2,6 @@ import { db } from "../../../config/connectDB.js";
 import { redisClient } from "../../../config/redisConfig.js";
 import { generateS3Url, s3KeyFromUrl } from "../../../middlewares/S3bucketConfig.js";
 
-// A new, reusable helper function to handle the "smart URL" logic
-const processProfilePicture = async (userObject) => {
-    if (userObject && userObject.profilePic) {
-        // If it's already a full URL (from a bot), do nothing.
-        if (userObject.profilePic.startsWith('http')) {
-            return userObject;
-        }
-        // Otherwise, it's an S3 key, so generate a presigned URL.
-        try {
-            const profilePicKey = s3KeyFromUrl(userObject.profilePic);
-            userObject.profilePic = await generateS3Url(profilePicKey);
-        } catch (s3Err) {
-            console.warn(`[S3] Error generating S3 URL for profilePic (key: ${userObject.profilePic}):`, s3Err.message);
-            userObject.profilePic = null; // Default to null on error
-        }
-    }
-    return userObject;
-};
-
-
 //SAVE MESSAGE TO DB
 export const saveMessage = async (messageData) => {
   console.log(`[DB Service] Attempting to save message for userId: ${messageData.userId}, chatGroupId: ${messageData.chatGroupId}`);
@@ -33,7 +13,7 @@ export const saveMessage = async (messageData) => {
 
   const values = [
     messageData.userId,
-    messageData.chatGroupId,
+    messageData.chatGroupId, 
     messageData.text,
     messageData.media,
     messageData.createdAt,
@@ -65,64 +45,92 @@ export const getUserInfo = async (userId) => {
   const cachedUser = await redisClient.get(`user:${userId}`);
   if (cachedUser) {
     console.log(`[Redis] User ${userId} found in cache.`);
-    let user = JSON.parse(cachedUser);
-    // Process the cached user's profile picture
-    user = await processProfilePicture(user);
+    const user = JSON.parse(cachedUser);
+    if (user.profilePic && !user.profilePic.startsWith('http')) {
+      try {
+        const profilePicKey = s3KeyFromUrl(user.profilePic);
+        user.profilePic = await generateS3Url(profilePicKey);
+      } catch (s3Err) {
+        console.warn(`[S3] Error generating S3 URL for cached user ${userId} profilePic (key: ${user.profilePic}):`, s3Err.message);
+        user.profilePic = null; 
+      }
+    }
+    else if (user.profilePic && user.profilePic.startsWith('http')) {}
     return user;
   }
 
   // If not in cache, fetch from database
   console.log(`[DB Service] User ${userId} not in cache, fetching from database.`);
   const query = `
-    SELECT id, full_name, username, profilePic,
+    SELECT id, full_name, username, profilePic,  -- Added username just in case, frontend uses full_name or username
     SUBSTRING_INDEX(full_name, ' ', 1) as firstName,
     SUBSTRING(full_name, LENGTH(SUBSTRING_INDEX(full_name, ' ', 1)) + 2) as lastName
-    FROM users WHERE id = ?`;
+    FROM users WHERE id = ?`; // Assuming 'username' column exists, if not remove it
 
   return new Promise((resolve, reject) => {
-    db.query(query, [userId], async (err, results) => {
+    db.query(query, [userId], (err, results) => {
       if (err) {
         console.error("[DB Service] Error fetching user from database:", err);
-        return reject(err);
+        return reject(err); // Rejecting is fine, Promise.all will handle it or the try/catch in chats.js
       }
 
       if (!results || results.length === 0) {
         console.warn(`[DB Service] User ${userId} not found in database.`);
-        return resolve(null);
+        // It's important to resolve with null if not found, so Promise.all doesn't reject
+        return resolve(null); 
       }
 
-      let user = results[0];
-      // Process the database user's profile picture
-      user = await processProfilePicture(user);
+      const user = results[0];
 
-      // Cache the processed user object
-      redisClient.set(`user:${userId}`, JSON.stringify(user), 'EX', 300)
-        .catch(cacheErr => console.error(`[Redis] Error caching user ${userId}:`, cacheErr));
-      
-      resolve(user);
+      if (user.profilePic) {
+        const profilePicKey = s3KeyFromUrl(user.profilePic); // Assumes profilePic field stores the key or a full URL that s3KeyFromUrl can parse
+        generateS3Url(profilePicKey).then(url => {
+          user.profilePic = url;
+          console.log(`[S3] Generated S3 URL for user ${userId} profilePic: ${url}`);
+          redisClient.set(`user:${userId}`, JSON.stringify(user), 'EX', 300)
+            .catch(cacheErr => console.error(`[Redis] Error caching user ${userId}:`, cacheErr));
+          resolve(user);
+        }).catch(s3Err => {
+          console.error(`[S3] Error generating S3 URL for user ${userId} profilePic:`, s3Err);
+          user.profilePic = null; 
+          redisClient.set(`user:${userId}`, JSON.stringify(user), 'EX', 300)
+             .catch(cacheErr => console.error(`[Redis] Error caching user ${userId} (with null pic):`, cacheErr));
+          resolve(user); // Resolve with user data even if S3 URL fails
+        });
+      } else {
+        redisClient.set(`user:${userId}`, JSON.stringify(user), 'EX', 300)
+            .catch(cacheErr => console.error(`[Redis] Error caching user ${userId} (no pic):`, cacheErr));
+        resolve(user);
+      }
     });
   });
 };
 
-
 //GET MESSAGE BY id
 export const getMessageById = async (messageId) => {
   console.log(`[DB Service] Fetching message by ID: ${messageId}`);
+  // CHECK REDIS CACHE
   const cachedMessage = await redisClient.get(`message:${messageId}`);
   if (cachedMessage) {
     console.log(`[Redis] Message ${messageId} found in cache.`);
-    let message = JSON.parse(cachedMessage);
-    // Even if cached, the S3 URL might be expired, so we can re-process it.
-    // Or, for performance, we can trust the cache. Let's re-process for freshness.
-    message = await processProfilePicture(message);
-    return message;
+    return JSON.parse(cachedMessage);
   }
 
   const query = `
     SELECT
-        m.id, m.userId, m.chatGroupId AS groupId, m.text, m.media,
-        m.createdAt, m.replyToMessageId, m.audio, m.threadId,
-        m.spoiler, m.mentions, u.full_name, u.profilePic,
+        m.id,
+        m.userId,
+        m.chatGroupId AS groupId, -- Alias chatGroupId to groupId for frontend consistency
+        m.text,
+        m.media,
+        m.createdAt,
+        m.replyToMessageId,
+        m.audio,
+        m.threadId,
+        m.spoiler,
+        m.mentions,
+        u.full_name,
+        u.profilePic,
         SUBSTRING_INDEX(u.full_name, ' ', 1) as firstName,
         SUBSTRING(u.full_name, LENGTH(SUBSTRING_INDEX(u.full_name, ' ', 1)) + 2) as lastName
     FROM groupmessages m
@@ -142,81 +150,48 @@ export const getMessageById = async (messageId) => {
         return resolve(null);
       }
 
-      let message = results[0];
+      const message = results[0];
       console.log(`[DB Service] Message ${messageId} fetched successfully.`);
 
-      // Process the profile picture
-      message = await processProfilePicture(message);
+      // UPDATE PFP
+      if (message.profilePic) {
+        try {
+          const profilePicKey = s3KeyFromUrl(message.profilePic);
+          message.profilePic = await generateS3Url(profilePicKey);
+        } catch (s3Err) {
+          console.warn(`[S3] Error generating S3 URL for message ${message.id} profilePic:`, s3Err.message);
+          message.profilePic = null;
+        }
+      }
 
       // PARSE MEDIA URLs
-      message.mediaUrls = message.media ? message.media.split(',') : [];
+      if (message.media) {
+        message.mediaUrls = message.media.split(',');
+      } else {
+        message.mediaUrls = [];
+      }
 
       // PARSE MENTIONS
-      try {
-          message.mentionedUsers = message.mentions ? JSON.parse(message.mentions) : [];
-      } catch (e) {
-          console.error(`[Message] Failed to parse mentions for message ${message.id}:`, e);
+      if (message.mentions) {
+        try {
+          message.mentionedUsers = JSON.parse(message.mentions);
+        } catch (err) {
+          console.error(`[Message] Failed to parse mentions for message ${message.id}:`, err);
           message.mentionedUsers = [];
+        }
+      } else {
+        message.mentionedUsers = [];
       }
 
       // CACHE MESSAGE
       redisClient.set(`message:${messageId}`, JSON.stringify(message), 'EX', 300)
+        .then(() => console.log(`[Redis] Message ${messageId} cached successfully.`))
         .catch(cacheErr => console.error(`[Redis] Error caching message ${messageId}:`, cacheErr));
 
       resolve(message);
     });
   });
 };
-
-//GET MESSAGES IN THREAD
-export const getThreadMessages = async (threadId) => {
-  console.log(`[DB Service] Fetching messages for thread ID: ${threadId}`);
-  const query = `
-    SELECT
-        m.id, m.userId, m.chatGroupId AS groupId, m.text, m.media,
-        m.createdAt, m.replyToMessageId, m.audio, m.threadId,
-        m.spoiler, m.mentions, u.full_name, u.profilePic,
-        SUBSTRING_INDEX(u.full_name, ' ', 1) as firstName,
-        SUBSTRING(u.full_name, LENGTH(SUBSTRING_INDEX(u.full_name, ' ', 1)) + 2) as lastName
-    FROM groupmessages m
-    INNER JOIN users u ON m.userId = u.id
-    WHERE m.threadId = ?
-    ORDER BY m.createdAt ASC
-  `;
-
-  return new Promise((resolve, reject) => {
-    db.query(query, [threadId], async (err, results) => {
-      if (err) {
-        console.error("[DB Service] Error fetching thread messages from database:", err);
-        return reject(err);
-      }
-      console.log(`[DB Service] Fetched ${results.length} messages for thread ${threadId}.`);
-
-      const messages = await Promise.all(results.map(async (message) => {
-        // Process the profile picture for each message
-        let processedMessage = await processProfilePicture(message);
-
-        // Parse media URLs
-        processedMessage.mediaUrls = processedMessage.media ? processedMessage.media.split(',') : [];
-
-        // Parse mentions
-        try {
-            processedMessage.mentionedUsers = processedMessage.mentions ? JSON.parse(processedMessage.mentions) : [];
-        } catch (e) {
-            console.error(`[Message] Failed to parse mentions for thread message ${processedMessage.id}:`, e);
-            processedMessage.mentionedUsers = [];
-        }
-
-        return processedMessage;
-      }));
-
-      resolve(messages);
-    });
-  });
-};
-
-
-// --- UNCHANGED FUNCTIONS BELOW ---
 
 // SAVE A REACTION TO THE DB 
 export const saveReaction = async (reactionData) => {
@@ -302,6 +277,78 @@ export const addMessageToThread = async (threadId, messageId) => {
   });
 };
 
+//GET MESSAGES IN THREAD
+export const getThreadMessages = async (threadId) => {
+  console.log(`[DB Service] Fetching messages for thread ID: ${threadId}`);
+  const query = `
+    SELECT
+        m.id,
+        m.userId,
+        m.chatGroupId AS groupId, -- Alias chatGroupId to groupId for frontend consistency
+        m.text,
+        m.media,
+        m.createdAt,
+        m.replyToMessageId,
+        m.audio,
+        m.threadId,
+        m.spoiler,
+        m.mentions,
+        u.full_name,
+        u.profilePic,
+        SUBSTRING_INDEX(u.full_name, ' ', 1) as firstName,
+        SUBSTRING(u.full_name, LENGTH(SUBSTRING_INDEX(u.full_name, ' ', 1)) + 2) as lastName
+    FROM groupmessages m
+    INNER JOIN users u ON m.userId = u.id
+    WHERE m.threadId = ?
+    ORDER BY m.createdAt ASC
+  `;
+
+  return new Promise((resolve, reject) => {
+    db.query(query, [threadId], async (err, results) => {
+      if (err) {
+        console.error("[DB Service] Error fetching thread messages from database:", err);
+        return reject(err);
+      }
+      console.log(`[DB Service] Fetched ${results.length} messages for thread ${threadId}.`);
+
+      const messages = await Promise.all(results.map(async (message) => {
+        // Update profile pic URL
+        if (message.profilePic) {
+          try {
+            const profilePicKey = s3KeyFromUrl(message.profilePic);
+            message.profilePic = await generateS3Url(profilePicKey);
+          } catch (s3Err) {
+            console.warn(`[S3] Error generating S3 URL for thread message ${message.id} profilePic:`, s3Err.message);
+            message.profilePic = null;
+          }
+        }
+
+        // Parse media URLs
+        if (message.media) {
+          message.mediaUrls = message.media.split(',');
+        } else {
+          message.mediaUrls = [];
+        }
+
+        // Parse mentions
+        if (message.mentions) {
+          try {
+            message.mentionedUsers = JSON.parse(message.mentions);
+          } catch (err) {
+            console.error(`[Message] Failed to parse mentions for thread message ${message.id}:`, err);
+            message.mentionedUsers = [];
+          }
+        } else {
+          message.mentionedUsers = [];
+        }
+
+        return message;
+      }));
+
+      resolve(messages);
+    });
+  });
+};
 
 /**
  * Parse mentions from a message

@@ -4,6 +4,7 @@ import { viewUsers,
          viewUserProfile, 
          editProfile, 
          editPassword,
+         updateBot,
          deleteAccount
 } from "../../controllers/Users/user.js"
 import { getSettings, updateSettings } from "../../controllers/Users/settings.js";
@@ -19,6 +20,9 @@ router.put('/settings/update', updateSettings);
 
 router.put('/edit', editProfile);
 router.put('/change-password', editPassword);
+router.put('/bots/:id', updateBot);
+
+
 router.delete('/delete', deleteAccount); 
 
 

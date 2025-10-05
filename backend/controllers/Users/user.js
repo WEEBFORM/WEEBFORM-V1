@@ -262,12 +262,19 @@ const fetchAndProcessUserData = async (userId) => {
 
     // GENERATE S3 URLs
     if (userInfo.coverPhoto) {
-        const coverPhotoKey = s3KeyFromUrl(userInfo.coverPhoto);
-        userInfo.coverPhoto = await generateS3Url(coverPhotoKey);
+        if(userInfo.coverPhoto.startsWith('http')) {// Already a full URL, likely from a third-party OAuth provider}
+        }
+        else {
+            const coverPhotoKey = s3KeyFromUrl(userInfo.coverPhoto);
+            userInfo.coverPhoto = await generateS3Url(coverPhotoKey);
+        }
     }
     if (userInfo.profilePic) {
-        const profilePicKey = s3KeyFromUrl(userInfo.profilePic);
-        userInfo.profilePic = await generateS3Url(profilePicKey);
+        if (userInfo.profilePic.startsWith('http')) {} else {
+            const profilePicKey = s3KeyFromUrl(userInfo.profilePic);
+            userInfo.profilePic = await generateS3Url(profilePicKey);
+        }
+
     }
 
     return userInfo;
@@ -388,12 +395,18 @@ export const viewUsers = async (req, res) => {
 
         const processedUsers = await Promise.all(users.map(async (user) => {
             if (user.profilePic) {
-                const profilePicKey = s3KeyFromUrl(user.profilePic);
-                user.profilePic = await generateS3Url(profilePicKey);
+                if (user.profilePic.startsWith('http')) {
+                } else {
+                    const profilePicKey = s3KeyFromUrl(user.profilePic);
+                    user.profilePic = await generateS3Url(profilePicKey);
+                }
             }
              if (user.coverPhoto) {
-                const coverPhotoKey = s3KeyFromUrl(user.coverPhoto);
-                user.coverPhoto = await generateS3Url(coverPhotoKey);
+                if(user.coverPhoto.startsWith('http')) {
+                }   else { 
+                    const coverPhotoKey = s3KeyFromUrl(user.coverPhoto);
+                    user.coverPhoto = await generateS3Url(coverPhotoKey);
+                }
             }
             const { password, ...safeUser } = user;
             return safeUser;
@@ -405,6 +418,99 @@ export const viewUsers = async (req, res) => {
         return res.status(500).json({ message: "Failed to view users", error: "DB_ERROR" });
     }
 };
+
+//API TO GET USER ONLINE STATUS(NOT SETUP IN DB YET)
+export const getUserStatus = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
+        try {
+            const q = "SELECT online_status, last_active FROM users WHERE id = ?";
+            const [rows] = await db.promise().query(q, [userId]);
+            if (rows.length === 0) {
+                return res.status(404).json({ message: "User not found" });
+            }
+            return res.status(200).json(rows[0]);
+        } catch (error) {
+            console.error(`Error fetching online status for user ${userId}:`, error);
+            return res.status(500).json({ message: "Failed to fetch online status", error: "DB_ERROR" });
+        }
+    });
+}
+
+//API TO UPDATE USER ONLINE STATUS(NOT SETUP IN DB YET)
+export const updateUserStatus = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        const userId = req.user.id;
+        const { online_status } = req.body; // Expecting 'online' or 'offline'
+
+        if (!['online', 'offline'].includes(online_status)) {
+            return res.status(400).json({ message: "Invalid status value. Use 'online' or 'offline'." });
+        }
+
+        try {
+            const q = "UPDATE users SET online_status = ?, last_active = NOW() WHERE id = ?";
+            const [result] = await db.promise().query(q, [online_status, userId]);
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ message: "User not found or status unchanged" });
+            }
+            return res.status(200).json({ message: "Online status updated successfully" });
+        } catch (error) {
+            console.error(`Error updating online status for user ${userId}:`, error);
+            return res.status(500).json({ message: "Failed to update online status", error: "DB_ERROR" });
+        }
+    });
+}
+
+//API TO UPDATE USER AGENT DETAILS
+export const updateBot = async (req, res) => {
+const botId = req.params.id;
+const { bio, profilePic, coverPhoto } = req.body;
+code
+Code
+// Build the query dynamically
+const fields = [];
+const values = [];
+
+if (bio) {
+    fields.push("bio = ?");
+    values.push(bio);
+}
+if (profilePic) {
+    fields.push("profilePic = ?");
+    values.push(profilePic);
+}
+if (coverPhoto) {
+    fields.push("coverPhoto = ?");
+    values.push(coverPhoto);
+}
+
+if (fields.length === 0) {
+    return res.status(400).json({ message: "No fields to update." });
+}
+
+values.push(botId);
+
+const q = `UPDATE users SET ${fields.join(', ')} WHERE id = ? AND is_bot = TRUE`;
+
+try {
+    const [result] = await db.promise().query(q, values);
+
+    if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Bot not found or no changes made." });
+    }
+
+    res.status(200).json({ message: "Bot updated successfully." });
+} catch (error) {
+    console.error("Error updating bot:", error);
+    res.status(500).json({ message: "Failed to update bot." });
+}
+}
+
+
+
+
+
 
 // API TO DELETE ACCOUNT
 export const deleteAccount = async (req, res) => {
