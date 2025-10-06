@@ -16,6 +16,6 @@ router.get('/consolidated-section', fetchConsolidatedAnimeData);
 router.get('/:category', categorizedNews)
 
 //RECOMMENDATIONS
-router.get('/user/recommended', getAnimeRecommendations)
+router.get('/user/recommended', getAnimeRecommendations) 
 
 export default router 

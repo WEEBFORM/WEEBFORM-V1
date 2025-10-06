@@ -71,12 +71,14 @@ export const allnews = async (req, res) => {
                                 });
                             }
                             if (post.profilePic) {
-                                const profileKey = s3KeyFromUrl(post.profilePic);
-                                post.profilePic = await generateS3Url(profileKey).catch((error) => {
+                                if (post.profilePic.startsWith('http')) {}
+                                else {
+                                    const profileKey = s3KeyFromUrl(post.profilePic);
+                                    post.profilePic = await generateS3Url(profileKey).catch((error) => {
                                     console.error("Error generating profilePic URL:", error);
                                     return null;
                                 });
-                            }
+                                }}
 
                             return post;
                         })
