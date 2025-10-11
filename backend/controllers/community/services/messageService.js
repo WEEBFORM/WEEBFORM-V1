@@ -1,195 +1,328 @@
 import { db } from "../../../config/connectDB.js";
 import { redisClient } from "../../../config/redisConfig.js";
-import { processImageUrl } from "../../../middlewares/cloudfrontConfig.js";
+import { generateS3Url, s3KeyFromUrl } from "../../../middlewares/S3bucketConfig.js";
 
-// Centralized helper to process all media fields in a message object
-const processMessageMedia = (message) => {
-    if (!message) return null;
-
-    message.profilePic = processImageUrl(message.profilePic);
-    message.audio = processImageUrl(message.audio);
-
-    if (message.media) {
-        message.mediaUrls = message.media.split(',').map(key => processImageUrl(key.trim()));
-    } else {
-        message.mediaUrls = [];
+// HELPER: PROCESS PROFILE PICTURE TO ENSURE IT'S A VALID S3 URL
+const processProfilePicture = async (userObject) => {
+    if (userObject && userObject.profilePic) {
+        if (userObject.profilePic.startsWith('http')) {
+            return userObject;
+        }
+        try {
+            const profilePicKey = s3KeyFromUrl(userObject.profilePic);
+            userObject.profilePic = await generateS3Url(profilePicKey);
+        } catch (s3Err) {
+            console.warn(`[S3] Error generating S3 URL for profilePic (key: ${userObject.profilePic}):`, s3Err.message);
+            userObject.profilePic = null; // Default to null on error
+        }
     }
-
-    try {
-        message.mentionedUsers = message.mentions ? JSON.parse(message.mentions) : [];
-    } catch (e) {
-        console.error(`[Message] Failed to parse mentions for message ${message.id}:`, e);
-        message.mentionedUsers = [];
-    }
-
-    return message;
+    return userObject;
 };
 
-// SAVE MESSAGE TO DB
+
+//SAVE MESSAGE TO DB
 export const saveMessage = async (messageData) => {
-    try {
-        const query = `
-            INSERT INTO groupmessages (userId, chatGroupId, text, media, createdAt, replyToMessageId, audio, threadId, spoiler, mentions)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-        `;
-        const values = [
-            messageData.userId, messageData.chatGroupId, messageData.text,
-            messageData.media, messageData.createdAt, messageData.replyToMessageId,
-            messageData.audio, messageData.threadId, messageData.spoiler ? 1 : 0,
-            messageData.mentions
-        ];
-        
-        const [result] = await db.promise().query(query, values);
-        console.log(`[DB Service] Message saved successfully. Insert ID: ${result.insertId}`);
-        return { id: result.insertId, ...messageData };
-    } catch (err) {
+  console.log(`[DB Service] Attempting to save message for userId: ${messageData.userId}, chatGroupId: ${messageData.chatGroupId}`);
+  const query = `
+    INSERT INTO groupmessages
+    (userId, chatGroupId, text, media, createdAt, replyToMessageId, audio, threadId, spoiler, mentions)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    messageData.userId,
+    messageData.chatGroupId,
+    messageData.text,
+    messageData.media,
+    messageData.createdAt,
+    messageData.replyToMessageId,
+    messageData.audio,
+    messageData.threadId,
+    messageData.spoiler ? 1 : 0,
+    messageData.mentions
+  ];
+
+  return new Promise((resolve, reject) => {
+    db.query(query, values, (err, result) => {
+      if (err) {
         console.error("[DB Service] Error saving message to database:", err);
-        throw err;
-    }
+        return reject(err);
+      }
+      console.log(`[DB Service] Message saved successfully. Insert ID: ${result.insertId}`);
+      resolve({
+        id: result.insertId,
+        ...messageData
+      });
+    });
+  });
 };
 
-// GET USER PROFILE BY ID
+//GET USER PROFILE BY id
 export const getUserInfo = async (userId) => {
-    try {
-        const cacheKey = `user:${userId}`;
-        const cachedUser = await redisClient.get(cacheKey);
-        if (cachedUser) {
-            let user = JSON.parse(cachedUser);
-            user.profilePic = processImageUrl(user.profilePic);
-            return user;
-        }
+  console.log(`[DB Service] Attempting to fetch user info for ID: ${userId}`);
+  const cachedUser = await redisClient.get(`user:${userId}`);
+  if (cachedUser) {
+    console.log(`[Redis] User ${userId} found in cache.`);
+    let user = JSON.parse(cachedUser);
+    // Process the cached user's profile picture
+    user = await processProfilePicture(user);
+    return user;
+  }
 
-        const query = `
-            SELECT id, full_name, username, profilePic,
-                   SUBSTRING_INDEX(full_name, ' ', 1) as firstName,
-                   SUBSTRING(full_name, LENGTH(SUBSTRING_INDEX(full_name, ' ', 1)) + 2) as lastName
-            FROM users WHERE id = ?;
-        `;
-        const [results] = await db.promise().query(query, [userId]);
-        if (results.length === 0) {
-            console.warn(`[DB Service] User ${userId} not found in database.`);
-            return null;
-        }
+  // If not in cache, fetch from database
+  console.log(`[DB Service] User ${userId} not in cache, fetching from database.`);
+  const query = `
+    SELECT id, full_name, username, profilePic,
+    SUBSTRING_INDEX(full_name, ' ', 1) as firstName,
+    SUBSTRING(full_name, LENGTH(SUBSTRING_INDEX(full_name, ' ', 1)) + 2) as lastName
+    FROM users WHERE id = ?`;
 
-        let user = results[0];
-        user.profilePic = processImageUrl(user.profilePic);
+  return new Promise((resolve, reject) => {
+    db.query(query, [userId], async (err, results) => {
+      if (err) {
+        console.error("[DB Service] Error fetching user from database:", err);
+        return reject(err);
+      }
 
-        redisClient.set(cacheKey, JSON.stringify(user), 'EX', 300)
-            .catch(cacheErr => console.error(`[Redis] Error caching user ${userId}:`, cacheErr));
+      if (!results || results.length === 0) {
+        console.warn(`[DB Service] User ${userId} not found in database.`);
+        return resolve(null);
+      }
 
-        return user;
-    } catch (err) {
-        console.error(`[DB Service] Error fetching user ${userId} from database:`, err);
-        throw err;
-    }
+      let user = results[0];
+      // Process the database user's profile picture
+      user = await processProfilePicture(user);
+
+      // Cache the processed user object
+      redisClient.set(`user:${userId}`, JSON.stringify(user), 'EX', 300)
+        .catch(cacheErr => console.error(`[Redis] Error caching user ${userId}:`, cacheErr));
+      
+      resolve(user);
+    });
+  });
 };
 
-// GET MESSAGE BY ID
+
+//GET MESSAGE BY id
 export const getMessageById = async (messageId) => {
-    try {
-        const cacheKey = `message:${messageId}`;
-        const cachedMessage = await redisClient.get(cacheKey);
-        if (cachedMessage) {
-            let message = JSON.parse(cachedMessage);
-            return processMessageMedia(message);
-        }
-        
-        const query = `
-            SELECT m.*, m.chatGroupId AS groupId, u.full_name, u.profilePic
-            FROM groupmessages m
-            INNER JOIN users u ON m.userId = u.id
-            WHERE m.id = ?;
-        `;
-        const [results] = await db.promise().query(query, [messageId]);
-        if (results.length === 0) {
-            console.warn(`[DB Service] Message ${messageId} not found in database.`);
-            return null;
-        }
-        
-        let message = processMessageMedia(results[0]);
+  console.log(`[DB Service] Fetching message by ID: ${messageId}`);
+  const cachedMessage = await redisClient.get(`message:${messageId}`);
+  if (cachedMessage) {
+    console.log(`[Redis] Message ${messageId} found in cache.`);
+    let message = JSON.parse(cachedMessage);
+    // Even if cached, the S3 URL might be expired, so we can re-process it.
+    // Or, for performance, we can trust the cache. Let's re-process for freshness.
+    message = await processProfilePicture(message);
+    return message;
+  }
 
-        redisClient.set(cacheKey, JSON.stringify(message), 'EX', 300)
-            .catch(cacheErr => console.error(`[Redis] Error caching message ${messageId}:`, cacheErr));
+  const query = `
+    SELECT
+        m.id, m.userId, m.chatGroupId AS groupId, m.text, m.media,
+        m.createdAt, m.replyToMessageId, m.audio, m.threadId,
+        m.spoiler, m.mentions, u.full_name, u.profilePic,
+        SUBSTRING_INDEX(u.full_name, ' ', 1) as firstName,
+        SUBSTRING(u.full_name, LENGTH(SUBSTRING_INDEX(u.full_name, ' ', 1)) + 2) as lastName
+    FROM groupmessages m
+    INNER JOIN users u ON m.userId = u.id
+    WHERE m.id = ?
+  `;
 
-        return message;
-    } catch (err) {
-        console.error(`[DB Service] Error fetching message ${messageId}:`, err);
-        throw err;
-    }
+  return new Promise((resolve, reject) => {
+    db.query(query, [messageId], async (err, results) => {
+      if (err) {
+        console.error("[DB Service] Error fetching message from database:", err);
+        return reject(err);
+      }
+
+      if (!results || results.length === 0) {
+        console.warn(`[DB Service] Message ${messageId} not found in database.`);
+        return resolve(null);
+      }
+
+      let message = results[0];
+      console.log(`[DB Service] Message ${messageId} fetched successfully.`);
+
+      // Process the profile picture
+      message = await processProfilePicture(message);
+
+      // PARSE MEDIA URLs
+      message.mediaUrls = message.media ? message.media.split(',') : [];
+
+      // PARSE MENTIONS
+      try {
+          message.mentionedUsers = message.mentions ? JSON.parse(message.mentions) : [];
+      } catch (e) {
+          console.error(`[Message] Failed to parse mentions for message ${message.id}:`, e);
+          message.mentionedUsers = [];
+      }
+
+      // CACHE MESSAGE
+      redisClient.set(`message:${messageId}`, JSON.stringify(message), 'EX', 300)
+        .catch(cacheErr => console.error(`[Redis] Error caching message ${messageId}:`, cacheErr));
+
+      resolve(message);
+    });
+  });
 };
+
+//GET MESSAGES IN THREAD
+export const getThreadMessages = async (threadId) => {
+  console.log(`[DB Service] Fetching messages for thread ID: ${threadId}`);
+  const query = `
+    SELECT
+        m.id, m.userId, m.chatGroupId AS groupId, m.text, m.media,
+        m.createdAt, m.replyToMessageId, m.audio, m.threadId,
+        m.spoiler, m.mentions, u.full_name, u.profilePic,
+        SUBSTRING_INDEX(u.full_name, ' ', 1) as firstName,
+        SUBSTRING(u.full_name, LENGTH(SUBSTRING_INDEX(u.full_name, ' ', 1)) + 2) as lastName
+    FROM groupmessages m
+    INNER JOIN users u ON m.userId = u.id
+    WHERE m.threadId = ?
+    ORDER BY m.createdAt ASC
+  `;
+
+  return new Promise((resolve, reject) => {
+    db.query(query, [threadId], async (err, results) => {
+      if (err) {
+        console.error("[DB Service] Error fetching thread messages from database:", err);
+        return reject(err);
+      }
+      console.log(`[DB Service] Fetched ${results.length} messages for thread ${threadId}.`);
+
+      const messages = await Promise.all(results.map(async (message) => {
+        // Process the profile picture for each message
+        let processedMessage = await processProfilePicture(message);
+
+        // Parse media URLs
+        processedMessage.mediaUrls = processedMessage.media ? processedMessage.media.split(',') : [];
+
+        // Parse mentions
+        try {
+            processedMessage.mentionedUsers = processedMessage.mentions ? JSON.parse(processedMessage.mentions) : [];
+        } catch (e) {
+            console.error(`[Message] Failed to parse mentions for thread message ${processedMessage.id}:`, e);
+            processedMessage.mentionedUsers = [];
+        }
+
+        return processedMessage;
+      }));
+
+      resolve(messages);
+    });
+  });
+};
+
+
+// --- UNCHANGED FUNCTIONS BELOW ---
 
 // SAVE A REACTION TO THE DB 
 export const saveReaction = async (reactionData) => {
-    try {
-        const query = `INSERT INTO message_reactions (userId, messageId, reactionType, customEmote, createdAt) VALUES (?, ?, ?, ?, ?);`;
-        const values = [reactionData.userId, reactionData.messageId, reactionData.reactionType, reactionData.customEmote, reactionData.createdAt];
-        const [result] = await db.promise().query(query, values);
-        console.log(`[DB Service] Reaction saved successfully. Insert ID: ${result.insertId}`);
-        return { id: result.insertId, ...reactionData };
-    } catch (err) {
+  console.log(`[DB Service] Attempting to save reaction for userId: ${reactionData.userId}, messageId: ${reactionData.messageId}`);
+  const query = `
+    INSERT INTO message_reactions
+    (userId, messageId, reactionType, customEmote, createdAt)
+    VALUES (?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    reactionData.userId,
+    reactionData.messageId,
+    reactionData.reactionType,
+    reactionData.customEmote,
+    reactionData.createdAt
+  ];
+
+  return new Promise((resolve, reject) => {
+    db.query(query, values, (err, result) => {
+      if (err) {
         console.error("[DB Service] Error saving reaction to database:", err);
-        throw err;
-    }
+        return reject(err);
+      }
+      console.log(`[DB Service] Reaction saved successfully. Insert ID: ${result.insertId}`);
+      resolve({
+        id: result.insertId,
+        ...reactionData
+      });
+    });
+  });
 };
 
-// CREATE NEW THREAD
+//CREATE NEW THREAD
 export const createThread = async (threadData) => {
-    try {
-        const query = `INSERT INTO message_threads (parentMessageId, creatorId, chatGroupId, createdAt) VALUES (?, ?, ?, ?);`;
-        const values = [threadData.parentMessageId, threadData.creatorId, threadData.chatGroupId, threadData.createdAt];
-        const [result] = await db.promise().query(query, values);
-        console.log(`[DB Service] Thread created successfully. Insert ID: ${result.insertId}`);
-        return { id: result.insertId, ...threadData };
-    } catch (err) {
+  console.log(`[DB Service] Attempting to create thread for parentMessageId: ${threadData.parentMessageId}`);
+  const query = `
+    INSERT INTO message_threads
+    (parentMessageId, creatorId, chatGroupId, createdAt)
+    VALUES (?, ?, ?, ?)
+  `;
+
+  const values = [
+    threadData.parentMessageId,
+    threadData.creatorId,
+    threadData.chatGroupId,
+    threadData.createdAt
+  ];
+
+  return new Promise((resolve, reject) => {
+    db.query(query, values, (err, result) => {
+      if (err) {
         console.error("[DB Service] Error creating thread in database:", err);
-        throw err;
-    }
+        return reject(err);
+      }
+      console.log(`[DB Service] Thread created successfully. Insert ID: ${result.insertId}`);
+      resolve({
+        id: result.insertId,
+        ...threadData
+      });
+    });
+  });
 };
 
-// ADD MESSAGE TO THREAD
+//ADD MESSAGE TO THREAD
 export const addMessageToThread = async (threadId, messageId) => {
-    try {
-        const query = `UPDATE groupmessages SET threadId = ? WHERE id = ?;`;
-        const [result] = await db.promise().query(query, [threadId, messageId]);
-        console.log(`[DB Service] Message ${messageId} linked to thread ${threadId}.`);
-        return result;
-    } catch (err) {
+  console.log(`[DB Service] Attempting to add message ${messageId} to thread ${threadId}.`);
+  const query = `
+    UPDATE groupmessages
+    SET threadId = ?
+    WHERE id = ?
+  `;
+
+  return new Promise((resolve, reject) => {
+    db.query(query, [threadId, messageId], (err, result) => {
+      if (err) {
         console.error("[DB Service] Error adding message to thread:", err);
-        throw err;
-    }
+        return reject(err);
+      }
+      console.log(`[DB Service] Message ${messageId} linked to thread ${threadId}. Rows affected: ${result.affectedRows}`);
+      resolve(result);
+    });
+  });
 };
 
-// GET MESSAGES IN THREAD
-export const getThreadMessages = async (threadId) => {
-    try {
-        const query = `
-            SELECT m.*, m.chatGroupId AS groupId, u.full_name, u.profilePic
-            FROM groupmessages m
-            INNER JOIN users u ON m.userId = u.id
-            WHERE m.threadId = ?
-            ORDER BY m.createdAt ASC;
-        `;
-        const [results] = await db.promise().query(query, [threadId]);
-        console.log(`[DB Service] Fetched ${results.length} messages for thread ${threadId}.`);
-        return results.map(message => processMessageMedia(message));
-    } catch (err) {
-        console.error("[DB Service] Error fetching thread messages:", err);
-        throw err;
-    }
-};
 
-// Parse mentions from a message
+/**
+ * Parse mentions from a message
+ * @param {string} messageText
+ * @returns {Array<{ userId: string, name: string, fullMatch: string }>}
+ */
 export const parseMentions = (messageText) => {
-    if (!messageText) return [];
-    const mentionPattern = /@\[([^\]]+)]\(([^)]+)\)/g;
-    const mentions = [];
-    let match;
-    while ((match = mentionPattern.exec(messageText)) !== null) {
-        mentions.push({
-            userId: match[2].trim(),
-            name: match[1].trim(),
-            fullMatch: match[0]
-        });
-    }
-    return mentions;
+  if (!messageText) return [];
+
+  // Pattern to match: @[User Name](userId)
+  const mentionPattern = /@\[([^\]]+)]\(([^)]+)\)/g;
+
+  const mentions = [];
+  let match;
+
+  while ((match = mentionPattern.exec(messageText)) !== null) {
+    mentions.push({
+      userId: match[2].trim(),
+      name: match[1].trim(),
+      fullMatch: match[0]
+    });
+  }
+
+  console.log(`[Message] Parsed ${mentions.length} mention(s):`, mentions);
+  return mentions;
 };
