@@ -1,10 +1,7 @@
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 
-/**
- * Fetches the settings for the authenticated user.
- * If no settings exist for the user, it creates a default entry and returns that.
- */
+//FETCH USER SETTINGS, CREATE DEFAULT IF NONE
 export const getSettings = async (req, res) => {
     authenticateUser(req, res, async () => {
         
@@ -40,10 +37,7 @@ export const getSettings = async (req, res) => {
     });
 };
 
-/**
- * Updates the settings for the authenticated user.
- * It dynamically builds the query based on the fields provided in the request body.
- */
+//UPDATE USER SETTINGS
 export const updateSettings = async (req, res) => {
     authenticateUser(req, res, async () => {
         const userId = req.user.id;
@@ -86,9 +80,6 @@ export const updateSettings = async (req, res) => {
             if (result.affectedRows > 0) {
                 return res.status(200).json({ message: "Settings updated successfully." });
             } else {
-                // This can happen if the user's settings row didn't exist yet, or if the data was identical.
-                // We can try to upsert (insert or update) for robustness, but for now, this is fine.
-                // Let's check if the row exists. If not, the 'getSettings' logic will create it on next fetch.
                 return res.status(200).json({ message: "Settings processed. No changes were applied." });
             }
         } catch (error) {

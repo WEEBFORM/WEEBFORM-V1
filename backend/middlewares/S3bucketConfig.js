@@ -15,10 +15,10 @@ export const s3 = new S3Client({
 export const generateS3Url = async (key) => {
     if (!key) return null;
     const command = new GetObjectCommand({
-        Bucket: process.env.BUCKET_NAME, 
+        Bucket: process.env.BUCKET_NAME,  
         Key: key,
     });
-    return await getSignedUrl(s3, command); 
+    return await getSignedUrl(s3, command);
 };
 
 // EXTRACT S3 KEYS

@@ -2379,3 +2379,28 @@
 [2025-10-06 01:11:21] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'140.99.101.100' (using password: YES)
 [2025-10-06 01:11:54] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'140.99.101.100' (using password: YES)
 [2025-10-06 01:11:56] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'140.99.101.100' (using password: YES)
+[2025-10-06 01:22:29] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-10-09 13:22:04] [31merror[39m: Uncaught Exception: connect ETIMEDOUT
+[2025-10-09 13:22:26] [31merror[39m: Uncaught Exception: connect ETIMEDOUT
+[2025-10-09 13:23:11] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'109.110.176.243' (using password: YES)
+[2025-10-09 14:09:41] [31merror[39m: Unhandled Rejection at:
+[2025-10-09 14:10:31] [31merror[39m: Unhandled Rejection at:
+[2025-10-09 14:11:47] [31merror[39m: Unhandled Rejection at:
+[2025-10-09 14:12:16] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'172-104-230-115.ip.linodeusercontent.com' (using password: YES)
+[2025-10-09 14:29:30] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-10-09 21:52:23] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'vps-ef80ef35.vps.ovh.net' (using password: YES)
+[2025-10-09 21:52:39] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'51.15.236.251' (using password: YES)
+[2025-10-09 23:54:16] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-10-10 12:07:02] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'51.158.67.109' (using password: YES)
+[2025-10-10 13:12:59] [31merror[39m: Unhandled Rejection at:
+[2025-10-10 15:51:38] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-10-10 15:53:29] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'51.158.98.95' (using password: YES)
+[2025-10-10 16:23:19] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-10-10 21:07:28] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'vps-25d7247e.vps.ovh.net' (using password: YES)
+[2025-10-10 21:10:57] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'vps-25d7247e.vps.ovh.net' (using password: YES)
+[2025-10-10 21:11:18] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'vps-25d7247e.vps.ovh.net' (using password: YES)
+[2025-10-10 21:11:34] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'vps-69287121.vps.ovh.net' (using password: YES)
+[2025-10-10 21:12:47] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'51.158.104.211' (using password: YES)
+[2025-10-10 22:09:01] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-10-10 22:33:59] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'108.181.122.11' (using password: YES)
+[2025-10-10 22:34:02] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'108.181.122.11' (using password: YES)

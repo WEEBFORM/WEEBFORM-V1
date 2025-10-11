@@ -4,8 +4,8 @@ import {
     categorizedNews,
     animeNewsNetwork,
     fetchConsolidatedAnimeData
-} from "../controllers/newsController.js"
-import { getAnimeRecommendations } from "../controllers/recommendationController.js";
+} from "../controllers/news/newsController.js"
+import { getAnimeRecommendations } from "../controllers/news/recommendationController.js";
 
 const router = express.Router() 
 

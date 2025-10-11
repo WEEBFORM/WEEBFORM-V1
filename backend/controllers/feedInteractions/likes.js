@@ -2,7 +2,7 @@ import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import NodeCache from 'node-cache';
 
-const likeCache = new NodeCache({ stdTTL: 300 }); // Cache likes for 5 minutes
+const likeCache = new NodeCache({ stdTTL: 300 }); 
 
 // API TO LIKE POST
 export const like = async (req, res) => {
@@ -12,9 +12,9 @@ export const like = async (req, res) => {
         if (!Number.isInteger(postId)) {
             return res.status(400).json({ message: "Invalid postId" });
         }
-        // Use individual placeholders for userId and postId
+
         const q = "INSERT INTO likes (userId, postId) VALUES(?, ?)";
-        // Pass userId and postId as separate parameters
+        
         const values = [userId, postId];
         try {
             await db.promise().query(q, values);
@@ -37,16 +37,16 @@ export const getLikes = async (req, res) => {
     let cacheKey = `likes:${postId}`;
 
     try {
-         // First, check the cache
          const cachedData = likeCache.get(cacheKey);
 
              if (cachedData) {
                   return res.status(200).json(cachedData);
                } else {
                 const q = "SELECT l.*, u.username, u.id AS userId FROM likes AS l JOIN users AS u ON (u.id = l.userId) WHERE l.postId = ?";
-                  const [rows] = await db.promise().query(q, [postId]);
-                     const userId = rows.map(row => row.userId);
-                    const likeData = { userId, data: rows }; // Package the data
+                    const [rows] = await db.promise().query(q, [postId]);
+                    const userId = rows.map(row => row.userId);
+                    const likeData = { userId, data: rows }; 
+                
                    likeCache.set(cacheKey, likeData);
                   return res.status(200).json(likeData);
               }

@@ -1,6 +1,6 @@
-import { db } from "../config/connectDB.js";
-import { authenticateUser } from "../middlewares/verify.mjs";
-import { fetchAndTransformExternalAnimeData } from "../utils/animeDataFetcher.js";
+import { db } from "../../config/connectDB.js";
+import { authenticateUser } from "../../middlewares/verify.mjs";
+import { fetchAndTransformExternalAnimeData } from "../../utils/animeDataFetcher.js";
 import NodeCache from 'node-cache';
 
 //CACHE USER RECOMMENDATIONS
