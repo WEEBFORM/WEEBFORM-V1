@@ -406,8 +406,42 @@ try {
 }
 
 
+// API TO GET USER ANALYTICS
+export const getUserAnalytics = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const userId = req.params.userId;
+            const cacheKey = `user_analytics:${userId}`;
+            
+            const cachedData = analyticsCache.get(cacheKey);
+            if (cachedData) {
+                return res.status(200).json(cachedData);
+            }
 
+            const q = `
+                SELECT
+                    (SELECT COUNT(*) FROM posts WHERE userId = ?) AS totalPosts,
+                    (SELECT COUNT(*) FROM reach WHERE followed = ?) AS totalFollowers,
+                    (SELECT COUNT(*) FROM reach WHERE follower = ?) AS totalFollowing,
+                    (SELECT COUNT(*) FROM profile_views WHERE profileId = ?) AS totalProfileViews,
+                    (SELECT COUNT(*) FROM likes l JOIN posts p ON l.postId = p.id WHERE p.userId = ?) AS totalPostLikesReceived,
+                    (SELECT COUNT(*) FROM comments WHERE userId = ?) AS totalCommentsMade,
+                    (SELECT COUNT(*) FROM post_shares ps JOIN posts p ON ps.postId = p.id WHERE p.userId = ?) AS totalSharesReceived
+            `;
+            
+            const params = [userId, userId, userId, userId, userId, userId, userId];
+            const [results] = await db.promise().query(q, params);
 
+            const analytics = results[0];
+            analyticsCache.set(cacheKey, analytics); // Cache the result
+
+            res.status(200).json(analytics);
+        } catch (error) {
+            console.error(`Error fetching user analytics:`, error);
+            res.status(500).json({ message: "Failed to fetch user analytics", error: error.message });
+        }
+    });
+};
 
 
 // API TO DELETE ACCOUNT

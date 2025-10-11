@@ -22,6 +22,9 @@ const processPosts = (posts) => {
         if (post.profilePic) {
             post.profilePic = processImageUrl(post.profilePic);
         }
+        if (post.reposterProfilePic) {
+            post.reposterProfilePic = processImageUrl(post.reposterProfilePic);
+        }
         return post;
     });
 };
@@ -103,50 +106,141 @@ const getPosts = async (req, res, queryType) => {
             let params;
 
             const blockedUsersSubquery = `(SELECT userId FROM blocked_users WHERE blockedUserId = ? UNION SELECT blockedUserId FROM blocked_users WHERE userId = ?)`;
-            const commonQueryParts = `
-                SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
-                COUNT(DISTINCT l.id) AS likeCount,
-                COUNT(DISTINCT c.id) AS commentCount,
-                CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END AS liked,
-                CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isBookmarked
-                FROM posts AS p
-                JOIN users AS u ON u.id = p.userId
-                LEFT JOIN user_settings AS us ON u.id = us.userId
-                LEFT JOIN likes AS l ON l.postId = p.id
-                LEFT JOIN comments AS c ON c.postId = p.id
-                LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
-                LEFT JOIN bookmarked_posts AS bp ON bp.postId = p.id AND bp.userId = ?
+            const postColumns = `p.id, p.description, p.tags, p.category, p.media, p.shares, p.createdAt`;
+
+            // Generic builder for the final query that adds likes, comments, etc.
+            const buildFinalQuery = (feedSubQuery) => `
+                SELECT
+                    f.*,
+                    COUNT(DISTINCT l.id) AS likeCount,
+                    COUNT(DISTINCT c.id) AS commentCount,
+                    (CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END) AS liked,
+                    (CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END) AS isBookmarked
+                FROM (${feedSubQuery}) AS f
+                LEFT JOIN likes AS l ON l.postId = f.id
+                LEFT JOIN comments AS c ON c.postId = f.id
+                LEFT JOIN likes AS l2 ON l2.postId = f.id AND l2.userId = ?
+                LEFT JOIN bookmarked_posts AS bp ON bp.postId = f.id AND bp.userId = ?
+                WHERE f.userId NOT IN (${blockedUsersSubquery})
+                  AND (f.reposterId IS NULL OR f.reposterId NOT IN (${blockedUsersSubquery}))
+                  AND (f.full_name LIKE ? OR f.username LIKE ? OR f.description LIKE ?)
+                GROUP BY f.uniqueFeedId, f.id, f.userId, f.username, f.full_name, f.profilePic, f.reposterId, f.reposterUsername, f.reposterFullName, f.reposterProfilePic, f.activityDate
+                ORDER BY f.activityDate DESC
             `;
 
             switch (queryType) {
                 case 'all':
-                    q = `${commonQueryParts} LEFT JOIN reach r_check ON (p.userId = r_check.followed AND r_check.follower = ?)
-                        WHERE p.userId NOT IN (${blockedUsersSubquery})
-                          AND (COALESCE(us.profile_visibility, 'public') = 'public' OR (us.profile_visibility = 'private' AND r_check.follower IS NOT NULL))
-                          AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
-                        GROUP BY p.id, u.id ORDER BY p.createdAt DESC`;
-                    params = [userId, userId, userId, userId, userId, searchValue, searchValue, searchValue];
+                    const allFeedQuery = `
+                        SELECT * FROM (
+                            -- Original Posts from public users or followed private users
+                            SELECT 
+                                ${postColumns}, u.id AS userId, u.username, u.full_name, u.profilePic,
+                                NULL as reposterId, NULL as reposterUsername, NULL as reposterFullName, NULL as reposterProfilePic, 
+                                p.createdAt as activityDate, CONCAT('post_', p.id) as uniqueFeedId
+                            FROM posts p
+                            JOIN users u ON p.userId = u.id
+                            LEFT JOIN user_settings us ON u.id = us.userId
+                            LEFT JOIN reach r_check ON (p.userId = r_check.followed AND r_check.follower = ?)
+                            WHERE (COALESCE(us.profile_visibility, 'public') = 'public' OR r_check.follower IS NOT NULL)
+
+                            UNION ALL
+
+                            -- Reposted Posts from public users or followed private users
+                            SELECT 
+                                ${postColumns}, u.id AS userId, u.username, u.full_name, u.profilePic,
+                                reposter.id as reposterId, reposter.username as reposterUsername, reposter.full_name as reposterFullName, reposter.profilePic as reposterProfilePic, 
+                                rp.createdAt as activityDate, CONCAT('repost_', rp.id) as uniqueFeedId
+                            FROM reposts rp
+                            JOIN posts p ON rp.postId = p.id
+                            JOIN users u ON p.userId = u.id
+                            JOIN users reposter ON rp.userId = reposter.id
+                            LEFT JOIN user_settings us ON reposter.id = us.userId
+                            LEFT JOIN reach r_check ON (rp.userId = r_check.followed AND r_check.follower = ?)
+                            WHERE (COALESCE(us.profile_visibility, 'public') = 'public' OR r_check.follower IS NOT NULL)
+                        ) AS feed
+                    `;
+                    q = buildFinalQuery(allFeedQuery);
+                    params = [
+                        userId, userId, // For allFeedQuery
+                        userId, userId, userId, userId, userId, userId, // For buildFinalQuery (likes, bookmarks, blocked users)
+                        searchValue, searchValue, searchValue
+                    ];
                     break;
+
                 case 'following':
-                    q = `${commonQueryParts} JOIN reach AS r ON (p.userId = r.followed)
-                        WHERE p.userId NOT IN (${blockedUsersSubquery})
-                          AND (r.follower = ? OR p.userId = ?)
-                          AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
-                        GROUP BY p.id, u.id ORDER BY p.createdAt DESC`;
-                    params = [userId, userId, userId, userId, userId, userId, searchValue, searchValue, searchValue];
+                    const followingFeedQuery = `
+                        SELECT * FROM (
+                            -- Original posts by followed users or self
+                            SELECT 
+                                ${postColumns}, u.id AS userId, u.username, u.full_name, u.profilePic,
+                                NULL as reposterId, NULL as reposterUsername, NULL as reposterFullName, NULL as reposterProfilePic, 
+                                p.createdAt as activityDate, CONCAT('post_', p.id) as uniqueFeedId
+                            FROM posts p
+                            JOIN users u ON p.userId = u.id
+                            JOIN reach r_reach ON p.userId = r_reach.followed
+                            WHERE (r_reach.follower = ? OR p.userId = ?)
+
+                            UNION ALL
+
+                            -- Reposts by followed users or self
+                            SELECT 
+                                ${postColumns}, u.id AS userId, u.username, u.full_name, u.profilePic,
+                                reposter.id as reposterId, reposter.username as reposterUsername, reposter.full_name as reposterFullName, reposter.profilePic as reposterProfilePic, 
+                                rp.createdAt as activityDate, CONCAT('repost_', rp.id) as uniqueFeedId
+                            FROM reposts rp
+                            JOIN posts p ON rp.postId = p.id
+                            JOIN users u ON p.userId = u.id
+                            JOIN users reposter ON rp.userId = reposter.id
+                            JOIN reach r_reach ON rp.userId = r_reach.followed
+                            WHERE (r_reach.follower = ? OR rp.userId = ?)
+                        ) AS feed
+                    `;
+                    q = buildFinalQuery(followingFeedQuery);
+                    params = [
+                        userId, userId, userId, userId, // For followingFeedQuery
+                        userId, userId, userId, userId, userId, userId, // For buildFinalQuery
+                        searchValue, searchValue, searchValue
+                    ];
                     break;
                 case 'user':
-                    q = `${commonQueryParts}
-                        WHERE u.id = ? AND p.userId NOT IN (${blockedUsersSubquery})
-                          AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
-                        GROUP BY p.id, u.id ORDER BY p.createdAt DESC`;
-                    params = [userId, userId, req.params.id, userId, userId, searchValue, searchValue, searchValue];
+                    const targetUserId = req.params.id;
+                    const userFeedQuery = `
+                        SELECT * FROM (
+                            -- Original posts by the target user
+                            SELECT 
+                                ${postColumns}, u.id AS userId, u.username, u.full_name, u.profilePic,
+                                NULL as reposterId, NULL as reposterUsername, NULL as reposterFullName, NULL as reposterProfilePic, 
+                                p.createdAt as activityDate, CONCAT('post_', p.id) as uniqueFeedId
+                            FROM posts p
+                            JOIN users u ON p.userId = u.id
+                            WHERE p.userId = ?
+
+                            UNION ALL
+
+                            -- Reposts by the target user
+                            SELECT 
+                                ${postColumns}, u.id AS userId, u.username, u.full_name, u.profilePic,
+                                reposter.id as reposterId, reposter.username as reposterUsername, reposter.full_name as reposterFullName, reposter.profilePic as reposterProfilePic, 
+                                rp.createdAt as activityDate, CONCAT('repost_', rp.id) as uniqueFeedId
+                            FROM reposts rp
+                            JOIN posts p ON rp.postId = p.id
+                            JOIN users u ON p.userId = u.id
+                            JOIN users reposter ON rp.userId = reposter.id
+                            WHERE rp.userId = ?
+                        ) AS feed
+                    `;
+                    q = buildFinalQuery(userFeedQuery);
+                    params = [
+                        targetUserId, targetUserId, // For userFeedQuery
+                        userId, userId, userId, userId, userId, userId, // For buildFinalQuery
+                        searchValue, searchValue, searchValue
+                    ];
                     break;
                 default:
                     return res.status(400).json({ message: "Invalid query type" });
             }
 
-            const cacheKey = `posts:${queryType}:${userId}:${searchTerm}`;
+            const cacheKey = `posts:${queryType}:${queryType === 'user' ? req.params.id : userId}:${searchTerm}`;
             let posts = postCache.get(cacheKey);
 
             if (!posts) {
@@ -277,6 +371,118 @@ export const getBookmarkedPosts = async (req, res) => {
         }
     });
 };
+
+
+// API TO SHARE A POST
+export const sharePost = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const userId = req.user.id;
+            const postId = req.params.id;
+
+            const checkQuery = "SELECT id FROM post_shares WHERE postId = ? AND userId = ?";
+            const [existingShare] = await db.promise().query(checkQuery, [postId, userId]);
+            
+            if (existingShare.length > 0) {
+                return res.status(200).json({ 
+                    message: "You have already shared this post.",
+                    alreadyShared: true 
+                });
+            }
+            // INSERT SHARE RECORD AND INCREMENT SHARE COUNT
+            const shareQuery = "INSERT INTO post_shares (postId, userId, sharedAt) VALUES (?, ?, ?)";
+            await db.promise().query(shareQuery, [postId, userId, moment().format("YYYY-MM-DD HH:mm:ss")]);
+            
+            // INCREMENT SHARE COUNT IN POSTS TABLE
+            const incrementQuery = "UPDATE posts SET shares = shares + 1 WHERE id = ?";
+            await db.promise().query(incrementQuery, [postId]);          
+            postCache.flushAll();
+            res.status(200).json({ 
+                message: "Post shared successfully.",
+                alreadyShared: false 
+            });
+        } catch (error) {
+            console.error("Error sharing post:", error);
+            if (error.code === 'ER_NO_REFERENCED_ROW_2') {
+                return res.status(404).json({ message: "Post not found." });
+            }
+            res.status(500).json({ message: "Failed to share post", error: error.message });
+        }
+    });
+};
+
+
+// API TO REPOST/UN-REPOST A POST (TOGGLE)
+export const toggleRepost = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const userId = req.user.id;
+            const postId = req.params.id;
+
+            // Check if the user is trying to repost their own post
+            const [postData] = await db.promise().query("SELECT userId FROM posts WHERE id = ?", [postId]);
+            if (postData.length === 0) {
+                return res.status(404).json({ message: "Post not found." });
+            }
+            if (postData[0].userId === userId) {
+                return res.status(400).json({ message: "You cannot repost your own post." });
+            }
+
+            // Check if a repost already exists
+            const [existingRepost] = await db.promise().query("SELECT id FROM reposts WHERE postId = ? AND userId = ?", [postId, userId]);
+
+            if (existingRepost.length > 0) {
+                // If repost exists, delete it (unrepost)
+                await db.promise().query("DELETE FROM reposts WHERE postId = ? AND userId = ?", [postId, userId]);
+                postCache.flushAll();
+                return res.status(200).json({ message: "Repost removed successfully.", reposted: false });
+            } else {
+                // If repost does not exist, create it (repost)
+                await db.promise().query("INSERT INTO reposts (postId, userId, createdAt) VALUES (?, ?, ?)", [postId, userId, moment().format("YYYY-MM-DD HH:mm:ss")]);
+                postCache.flushAll();
+                return res.status(200).json({ message: "Post reposted successfully.", reposted: true });
+            }
+        } catch (error) {
+            console.error("Error toggling repost:", error);
+            res.status(500).json({ message: "Failed to toggle repost status", error: error.message });
+        }
+    });
+};
+
+// API TO VIEW WHO REPOSTED A POST
+export const getReposts = async (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const postId = req.params.id;
+            const query = `
+                SELECT u.id, u.username, u.full_name, u.profilePic
+                FROM users u
+                JOIN reposts r ON u.id = r.userId
+                WHERE r.postId = ?
+                ORDER BY r.createdAt DESC;
+            `;
+
+            const [users] = await db.promise().query(query, [postId]);
+            const processedUsers = processUsers(users); // A small helper to process just user lists
+            
+            res.status(200).json(processedUsers);
+        } catch (error) {
+            console.error("Error fetching reposts:", error);
+            res.status(500).json({ message: "Failed to fetch reposts", error: error.message });
+        }
+    });
+};
+
+// HELPER FOR PROCESSING USER LISTS
+const processUsers = (users) => {
+    return users.map(user => {
+        if (user.profilePic) {
+            user.profilePic = processImageUrl(user.profilePic);
+        }
+        return user;
+    });
+};
+
  
 export const deletePost = async (req, res) => {
     authenticateUser(req, res, async () => {
