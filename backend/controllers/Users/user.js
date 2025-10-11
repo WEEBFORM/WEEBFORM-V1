@@ -13,6 +13,7 @@ import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { processImageUrl, resizeImage } from '../../middlewares/cloudfrontConfig.js';
 
 const userProfileCache = new NodeCache({ stdTTL: 600 });
+const analyticsCache = new NodeCache({ stdTTL: 600 });
 
 // API TO EDIT USER INFO
 export const editProfile = async (req, res) => {
@@ -41,13 +42,13 @@ export const editProfile = async (req, res) => {
                 const oldImageKeysToDelete = [];
 
                 try {
-                    // --- PROFILE PICTURE LOGIC ---
+                    // PROFILE PICTURE LOGIC
                     if (req.files && req.files.profilePic && req.files.profilePic[0]) {
                         const profilePicFile = req.files.profilePic[0];
                          if (profilePicFile.size > 5 * 1024 * 1024) { 
                             return res.status(400).json({ message: "Profile picture file size exceeds limit (5MB)." });
                          }
-                        // Use the imported, optimizing resizeImage function
+                        // USE IMPORTED, OPTIMIZING resizeImage FUNCTION
                         const resizedBuffer = await resizeImage(profilePicFile.buffer, 300, 300);
                         const profileKey = `uploads/profiles/${userId}_profile_${Date.now()}_${profilePicFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}.webp`;
                         
@@ -55,7 +56,7 @@ export const editProfile = async (req, res) => {
                             Bucket: process.env.BUCKET_NAME,
                             Key: profileKey,
                             Body: resizedBuffer,
-                            ContentType: 'image/webp' // Set content type to WebP
+                            ContentType: 'image/webp'
                         };
                         
                         s3UploadPromises.push(s3.send(new PutObjectCommand(profileParams)));
@@ -66,13 +67,12 @@ export const editProfile = async (req, res) => {
                         }
                     }
 
-                    // --- COVER PHOTO LOGIC ---
+                    // COVER PHOTO LOGIC
                     if (req.files && req.files.coverPhoto && req.files.coverPhoto[0]) {
                         const coverPhotoFile = req.files.coverPhoto[0];
                          if (coverPhotoFile.size > 10 * 1024 * 1024) {
                             return res.status(400).json({ message: "Cover photo file size exceeds limit (10MB)." });
                          }
-                        // Use the imported, optimizing resizeImage function
                         const resizedBuffer = await resizeImage(coverPhotoFile.buffer, 800, 450);
                         const coverKey = `uploads/profiles/${userId}_cover_${Date.now()}_${coverPhotoFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}.webp`;
                         
@@ -80,7 +80,7 @@ export const editProfile = async (req, res) => {
                             Bucket: process.env.BUCKET_NAME,
                             Key: coverKey,
                             Body: resizedBuffer,
-                            ContentType: 'image/webp' // Set content type to WebP
+                            ContentType: 'image/webp'
                         };
                         
                         s3UploadPromises.push(s3.send(new PutObjectCommand(coverParams)));
@@ -127,7 +127,6 @@ export const editProfile = async (req, res) => {
                         const [result] = await db.promise().query(editQuery, values);
 
                         if (result.affectedRows > 0) {
-                            // Use the fast, synchronous processImageUrl for the response
                             if (newProfilePicKey) updateFieldsPayload.profilePic = processImageUrl(newProfilePicKey);
                             if (newCoverPhotoKey) updateFieldsPayload.coverPhoto = processImageUrl(newCoverPhotoKey);
 
@@ -200,7 +199,6 @@ export const editPassword = async (req, res) => {
 
             if (updateResult.affectedRows > 0) {
                 console.log(`Password updated successfully for user ID: ${userId}`);
-                //Invalidate any sessions/tokens associated with this user here - "To Be Implemented"
                 res.status(200).json({ message: "Password updated successfully." });
             } else {
                  console.error(`Failed to update password in DB for user ID: ${userId}, although user was found initially.`);
@@ -227,8 +225,6 @@ const fetchAndProcessUserData = async (userId) => {
     if (data.length === 0) return null;
 
     const userInfo = data[0];
-
-    // Use the imported, fast helper function to process URLs
     userInfo.profilePic = processImageUrl(userInfo.profilePic);
     userInfo.coverPhoto = processImageUrl(userInfo.coverPhoto);
 
@@ -265,25 +261,57 @@ export const viewUserProfile = async (req, res) => {
 
         if (!Number.isInteger(Number(profileId))) {
             return res.status(400).json({ message: "Invalid user ID" });
-        }
-        
+        }        
         if (Number(profileId) === requestingUserId) {
             return viewProfile(req, res);
         }
 
         try {
-            // Your permission checks (private profiles, blocks, etc.) remain here...
+            //PERMISSION CHECKS
+            const permissionQuery = `
+                SELECT 
+                    u.id,
+                    us.profile_visibility,
+                    (SELECT COUNT(*) FROM reach WHERE follower = ? AND followed = ?) as isFollowing,
+                    (SELECT COUNT(*) FROM blocked_users WHERE (userId = ? AND blockedUserId = ?) OR (userId = ? AND blockedUserId = ?)) as isBlocked
+                FROM users u
+                LEFT JOIN user_settings us ON u.id = us.userId
+                WHERE u.id = ?
+            `;
+            const permissionParams = [requestingUserId, profileId, requestingUserId, profileId, profileId, requestingUserId, profileId];
+            const [permissionResults] = await db.promise().query(permissionQuery, permissionParams);
+
+            if (permissionResults.length === 0) {
+                return res.status(404).json({ message: "User not found." });
+            }
+
+            const permissions = permissionResults[0];
+
+            if (permissions.isBlocked > 0) {
+                return res.status(403).json({ message: "You do not have permission to view this profile." });
+            }
+
+            if (permissions.profile_visibility === 'private' && !permissions.isFollowing) {
+                return res.status(403).json({ message: "This account is private. Follow them to see their profile." });
+            }
+            
+            const recordViewQuery = "INSERT INTO profile_views (profileId, viewerId, viewedAt) VALUES (?, ?, NOW())";
+            db.promise().query(recordViewQuery, [profileId, requestingUserId])
+                .catch(err => {
+                    console.error("Failed to record profile view:", err);
+                });
 
             const cacheKey = `user_profile:${profileId}`;
             let userInfo = userProfileCache.get(cacheKey);
 
             if (!userInfo) {
                 userInfo = await fetchAndProcessUserData(profileId);
-                if (!userInfo) return res.status(404).json("User not found");
+                if (!userInfo) return res.status(404).json({ message: "User not found" });
                 
                 userProfileCache.set(cacheKey, userInfo);
             }
 
+            // SANITIZE OUTPUT
             const { password, ...safeUserInfo } = userInfo;
             return res.status(200).json(safeUserInfo);
 
@@ -413,18 +441,20 @@ export const getUserAnalytics = async (req, res) => {
             const userId = req.params.userId;
             const cacheKey = `user_analytics:${userId}`;
             
+            // Check cache first
             const cachedData = analyticsCache.get(cacheKey);
             if (cachedData) {
                 return res.status(200).json(cachedData);
             }
 
+            // A single query with subqueries for efficiency
             const q = `
                 SELECT
                     (SELECT COUNT(*) FROM posts WHERE userId = ?) AS totalPosts,
                     (SELECT COUNT(*) FROM reach WHERE followed = ?) AS totalFollowers,
                     (SELECT COUNT(*) FROM reach WHERE follower = ?) AS totalFollowing,
                     (SELECT COUNT(*) FROM profile_views WHERE profileId = ?) AS totalProfileViews,
-                    (SELECT COUNT(*) FROM likes l JOIN posts p ON l.postId = p.id WHERE p.userId = ?) AS totalPostLikesReceived,
+                    (SELECT COUNT(*) FROM likes l JOIN posts p ON l.postId = p.id WHERE p.userId = ?) AS totalLikesReceived,
                     (SELECT COUNT(*) FROM comments WHERE userId = ?) AS totalCommentsMade,
                     (SELECT COUNT(*) FROM post_shares ps JOIN posts p ON ps.postId = p.id WHERE p.userId = ?) AS totalSharesReceived
             `;
@@ -433,11 +463,11 @@ export const getUserAnalytics = async (req, res) => {
             const [results] = await db.promise().query(q, params);
 
             const analytics = results[0];
-            analyticsCache.set(cacheKey, analytics); // Cache the result
+            analyticsCache.set(cacheKey, analytics); // Cache the result for future requests
 
             res.status(200).json(analytics);
         } catch (error) {
-            console.error(`Error fetching user analytics:`, error);
+            console.error(`Error fetching user analytics for user ${req.params.userId}:`, error);
             res.status(500).json({ message: "Failed to fetch user analytics", error: error.message });
         }
     });
