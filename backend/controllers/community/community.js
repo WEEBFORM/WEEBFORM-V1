@@ -6,9 +6,8 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
 import { fetchCommunityInfo, getUserJoinedCommunityIds, getFriendCommunityIds } from "./communityHelpers.js";
 import { joinChatGroupInternal } from './communityGroups.js';
-
-// --- CORRECTED: Added the missing import for both helpers ---
-import { processImageUrl, resizeImage } from '../../middlewares/cloudfrontConfig.js';
+import { createNotification } from "../notificationsController.js";
+import { resizeImage } from '../../middlewares/cloudfrontConfig.js';
 
 // --- API TO CREATE NEW COMMUNITY ---
 export const createCommunity = (req, res) => {
@@ -229,6 +228,12 @@ export const joinCommunity = (req, res) => {
             const userId = req.user.id;
             const communityId = req.params.id;
     
+            // Check if community exists and get creatorId
+            const [communityData] = await db.promise().query("SELECT creatorId, title FROM communities WHERE id = ?", [communityId]);
+            if (communityData.length === 0) return res.status(404).json({ message: "Community not found." });
+            
+            const { creatorId, title } = communityData[0];
+
             const [membership] = await db.promise().query("SELECT id FROM community_members WHERE communityId = ? AND userId = ?", [communityId, userId]);
             if (membership.length > 0) return res.status(409).send({ message: "You are already a member of this community." });
     
@@ -238,6 +243,9 @@ export const joinCommunity = (req, res) => {
             for (const group of defaultGroups) {
                 await joinChatGroupInternal(userId, group.id);
             }
+
+            // Create notification for the community creator
+            await createNotification('COMMUNITY_JOIN', userId, creatorId, { communityId }, { communityTitle: title });
     
             res.status(200).json({ message: "Successfully joined community." });
         } catch (error) {
@@ -300,6 +308,116 @@ export const deleteCommunity = (req, res) => {
         } catch (error) {
             console.error("[Error] deleteCommunity:", error);
             return res.status(500).json({ message: "Database deletion error.", error: error.message });
+        }
+    });
+};
+
+//NEW, INVITE MEMBER TO COMMUNITY
+// --- API TO INVITE A USER TO A PRIVATE COMMUNITY ---
+export const inviteToCommunity = (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const inviterId = req.user.id;
+            const { communityId } = req.params;
+            const { inviteeId } = req.body;
+
+            if (!inviteeId) return res.status(400).json({ message: "Invitee user ID is required." });
+
+            const [adminCheck] = await db.promise().query("SELECT isAdmin FROM community_members WHERE communityId = ? AND userId = ?", [communityId, inviterId]);
+            if (adminCheck.length === 0 || !adminCheck[0].isAdmin) {
+                return res.status(403).json({ message: "You must be an admin to send invitations." });
+            }
+
+            // const [communityData] = await db.promise().query("SELECT visibility, title FROM communities WHERE id = ?", [communityId]);
+            // if (communityData.length === 0) return res.status(404).json({ message: "Community not found." });
+            // if (communityData[0].visibility !== 0) {
+            //     return res.status(400).json({ message: "This community is public; no invitation is needed." });
+            // }
+
+            // CHECK IF INVITEE EXISTS
+            const [memberCheck] = await db.promise().query("SELECT id FROM community_members WHERE communityId = ? AND userId = ?", [communityId, inviteeId]);
+            if (memberCheck.length > 0) return res.status(409).json({ message: "This user is already a member." });
+
+            // CHECK FOR EXISTING PENDING INVITATION
+            const [inviteCheck] = await db.promise().query("SELECT id FROM community_invitations WHERE communityId = ? AND inviteeId = ? AND status = 'pending'", [communityId, inviteeId]);
+            if (inviteCheck.length > 0) return res.status(409).json({ message: "This user already has a pending invitation." });
+
+            // PROCESS THE INVITATION
+            await db.promise().query("INSERT INTO community_invitations (communityId, inviterId, inviteeId) VALUES (?, ?, ?)", [communityId, inviterId, inviteeId]);
+            
+            // NOTIFY INVITEE
+            await createNotification(
+                'COMMUNITY_INVITE',
+                inviterId,
+                inviteeId,
+                { communityId },
+                { communityTitle: communityData[0].title }
+            );
+
+            res.status(200).json({ message: "Invitation sent successfully." });
+
+        } catch (error) {
+            console.error("[Error] inviteToCommunity:", error);
+            return res.status(500).json({ message: "Failed to send invitation.", error: error.message });
+        }
+    });
+};
+
+// --- API FOR AN INVITEE TO ACCEPT A COMMUNITY INVITATION ---
+export const acceptCommunityInvitation = (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const inviteeId = req.user.id;
+            const { invitationId } = req.params;
+
+            // FETCH AND VALIDATE INVITATION
+            const [inviteData] = await db.promise().query("SELECT * FROM community_invitations WHERE id = ?", [invitationId]);
+            if (inviteData.length === 0) return res.status(404).json({ message: "Invitation not found." });
+
+            const invite = inviteData[0];
+            if (invite.inviteeId !== inviteeId) return res.status(403).json({ message: "This invitation is not for you." });
+            if (invite.status !== 'pending') return res.status(400).json({ message: `This invitation has already been ${invite.status}.` });
+
+            // Start a transaction
+            const connection = await db.promise().getConnection();
+            await connection.beginTransaction();
+
+            try {
+                // Add user to the community
+                await connection.query("INSERT INTO community_members (communityId, userId, isAdmin) VALUES (?, ?, ?)", [invite.communityId, inviteeId, 0]);
+
+                // Add user to default chat groups
+                const [defaultGroups] = await connection.query("SELECT id FROM `chat_groups` WHERE communityId = ? AND isDefault = TRUE", [invite.communityId]);
+                for (const group of defaultGroups) {
+                    // Using joinChatGroupInternal logic directly within the transaction
+                    await connection.query("INSERT INTO chat_group_members (chatGroupId, userId) VALUES (?, ?)", [group.id, inviteeId]);
+                }
+
+                await connection.query("UPDATE community_invitations SET status = 'accepted' WHERE id = ?", [invitationId]);
+                
+                await connection.commit();
+
+                const [community] = await db.promise().query("SELECT title FROM communities WHERE id = ?", [invite.communityId]);
+                await createNotification(
+                    'COMMUNITY_INVITE_ACCEPTED',
+                    inviteeId,
+                    invite.inviterId,
+                    { communityId: invite.communityId },
+                    { communityTitle: community[0].title, inviteeUsername: req.user.username }
+                );
+
+                res.status(200).json({ message: "Invitation accepted. Welcome to the community!" });
+
+            } catch (transError) {
+                await connection.rollback();
+                throw transError;
+            } finally {
+                connection.release();
+            }
+
+        } catch (error) {
+            console.error("[Error] acceptCommunityInvitation:", error);
+            return res.status(500).json({ message: "Failed to accept invitation.", error: error.message });
         }
     });
 };

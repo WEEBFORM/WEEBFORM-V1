@@ -1,0 +1,168 @@
+import { db } from "../config/connectDB.js";
+import { authenticateUser } from "../middlewares/verify.mjs";
+import { sendNotificationEmail } from "../middlewares/sendMail.js";
+import { processImageUrl } from '../middlewares/cloudfrontConfig.js';
+
+/**
+ * Creates a notification and optionally triggers an email.
+ * @param {string} type - The notification type (e.g., 'LIKE_POST', 'FOLLOW').
+ * @param {number} senderId - The ID of the user who triggered the notification.
+ * @param {number} recipientId - The ID of the user who will receive the notification.
+ * @param {object} entityIds - An object containing foreign keys, e.g., { postId: 1, communityId: 2 }.
+ * @param {object} details - A JSON object for storing extra data, e.g., { communityTitle: 'Anime Fans' }.
+ */
+
+
+const constructNotificationMessage = (notification) => {
+    const { type, senderUsername, details, communityTitle, storeLabel } = notification;
+    const actor = details.senderUsername || details.postAuthorUsername || senderUsername;
+
+    switch(type) {
+        case 'LIKE_POST':
+            return `${actor} liked your post.`;
+        case 'SHARE_POST':
+            return `${actor} shared your post.`;
+        case 'FOLLOW':
+            return `${actor} started following you.`;
+        case 'COMMENT_ON_POST':
+            return `${actor} commented on your post.`;
+        case 'REPLY_TO_COMMENT':
+        case 'REPLY_TO_REPLY':
+            return `${actor} replied to your comment.`;
+        case 'NEW_POST_FROM_FOLLOWING':
+            return `${actor} created a new post.`;
+        case 'COMMUNITY_JOIN':
+            return `${actor} joined your community, ${communityTitle}.`;
+        case 'COMMUNITY_INVITE':
+            return `${actor} invited you to join ${communityTitle}.`;
+        case 'COMMUNITY_INVITE_ACCEPTED':
+            return `${details.inviteeUsername} accepted your invitation to join ${communityTitle}.`;
+        case 'STORE_RATING':
+            return `${actor} left a rating on your store, ${storeLabel}.`;
+        case 'NEW_LOGIN':
+            return `We detected a new login from ${details.device} at ${details.location}.`;
+        case 'POST_MENTION':
+            return `${actor} mentioned you in a post.`;
+        case 'COMMENT_MENTION':
+            return `${actor} mentioned you in a comment.`;
+        case 'MODERATION_ACTION':
+            return `An admin has ${details.action} you in ${details.chatGroupTitle}.`;
+        default:
+            return 'You have a new notification.';
+    }
+};
+
+
+export const createNotification = async (type, senderId, recipientId, entityIds = {}, details = {}) => {
+  // Prevent users from notifying themselves
+  if (senderId === recipientId) {
+    return;
+  }
+
+  try {
+    const q = `INSERT INTO notifications (type, senderId, recipientId, postId, communityId, storeId, details, createdAt) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    
+    const values = [
+      type,
+      senderId,
+      recipientId,
+      entityIds.postId || null,
+      entityIds.communityId || null,
+      entityIds.storeId || null,
+      JSON.stringify(details),
+      new Date()
+    ];
+
+    await db.promise().query(q, values);
+
+    // Trigger email notification
+    await sendNotificationEmail(recipientId, senderId, type, details);
+
+  } catch (err) {
+    console.error(`[Notification Error] Failed to create notification:`, err);
+  }
+};
+
+// GET ALL NOTIFICATIONS FOR A USER
+export const getNotifications = (req, res) => {
+  authenticateUser(req, res, async () => {
+    try {
+      const userId = req.user.id;
+      const q = `
+        SELECT n.*, u.username AS senderUsername, u.profilePic AS senderProfilePic,
+               c.title AS communityTitle, s.label AS storeLabel
+        FROM notifications AS n
+        JOIN users AS u ON n.senderId = u.id
+        LEFT JOIN communities c ON n.communityId = c.id
+        LEFT JOIN stores s ON n.storeId = s.id
+        WHERE n.recipientId = ?
+        ORDER BY n.createdAt DESC
+        LIMIT 50; 
+      `;
+
+      const [notifications] = await db.promise().query(q, [userId]);
+
+      // Process notifications to add the final, display-ready message
+      const processedNotifications = notifications.map(n => {
+          n.senderProfilePic = processImageUrl(n.senderProfilePic);
+          try {
+              // Still parse details as it's needed by the message constructor
+              n.details = n.details ? JSON.parse(n.details) : {};
+          } catch (e) {
+              n.details = {};
+          }
+          // --- NEW: Add a 'message' field for the frontend ---
+          n.message = constructNotificationMessage(n);
+          return n;
+      });
+
+      res.status(200).json(processedNotifications);
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+      res.status(500).json({ message: "Failed to fetch notifications.", error: err.message });
+    }
+  });
+};
+
+// MARK NOTIFICATIONS AS READ
+export const markAsRead = (req, res) => {
+  authenticateUser(req, res, async () => {
+    try {
+      const userId = req.user.id;
+      const q = "UPDATE notifications SET \`read\` = 1 WHERE recipientId = ? AND \`read\` = 0";
+      await db.promise().query(q, [userId]);
+      res.status(200).json({ message: "Notifications marked as read." });
+    } catch (err) {
+      console.error("Error marking notifications as read:", err);
+      res.status(500).json({
+        message: "Failed to mark notifications as read.",
+        error: err.message,
+      });
+    }
+  });
+};
+
+export const deleteNotification = async (type, senderId, recipientId, entityIds = {}) => {
+  try {
+    // Build the query dynamically based on provided IDs
+    let conditions = "type = ? AND senderId = ? AND recipientId = ?";
+    const values = [type, senderId, recipientId];
+
+    if (entityIds.postId) {
+      conditions += " AND postId = ?";
+      values.push(entityIds.postId);
+    }
+    if (entityIds.commentId) {
+      conditions += " AND commentId = ?";
+      values.push(entityIds.commentId);
+    }
+    // Add other entities as needed...
+
+    const q = `DELETE FROM notifications WHERE ${conditions}`;
+    await db.promise().query(q, values);
+
+  } catch (err) {
+    console.error(`[Notification Error] Failed to delete notification:`, err);
+  }
+};

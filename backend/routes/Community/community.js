@@ -8,7 +8,9 @@ import {
     getCreatedCommunities,
     exitCommunity,
     deleteCommunity,
-    editCommunity
+    editCommunity,
+    inviteToCommunity,
+    acceptCommunityInvitation,
 } from "../../controllers/community/community.js";
 //COMMUNITY POST INTERACTIONS/FEATURES
 import {
@@ -29,6 +31,9 @@ router.post('/join/:id', joinCommunity);
 router.delete('/leave/:id', exitCommunity);
 router.put('/:id/edit', editCommunity);
 router.delete('/:id', deleteCommunity);
+
+router.post('/invite', inviteToCommunity);
+router.post('/invite/accept', acceptCommunityInvitation);
 
 //COMMUNITY FEED/POSTS 
 router.post('/:id/new-post', newCommunityPost);

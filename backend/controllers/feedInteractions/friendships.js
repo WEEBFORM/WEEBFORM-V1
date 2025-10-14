@@ -2,6 +2,7 @@ import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import NodeCache from 'node-cache';
 import { processImageUrl } from '../../middlewares/cloudfrontConfig.js';
+import { createNotification } from "../notificationsController.js";
 
 const followerCache = new NodeCache({ stdTTL: 300 });
 
@@ -20,33 +21,50 @@ const processUsers = (users) => {
 
 //API TO FOLLOW USER
 export const followUser = async (req, res) => {
-    authenticateUser(req, res, async () => {
-        try {
-            const userId = req.user.id;
-            const followed = parseInt(req.params.followed);
-    
-            if (!Number.isInteger(followed) || followed <= 0) {
-                return res.status(400).json({ message: "Invalid followed user ID" });
-            }
-    
-            if (followed === userId) {
-                return res.status(409).json({ message: "Cannot follow yourself" });
-            }
-    
-            const [existingFollow] = await db.promise().query("SELECT * FROM reach WHERE followed = ? AND follower = ?", [followed, userId]);
-            if (existingFollow.length > 0) {
-                return res.status(409).json({ message: "You are already following this user" });
-            }
-    
-            await db.promise().query("INSERT INTO reach (followed, follower) VALUES(?, ?)", [followed, userId]);
-            followerCache.flushAll();
-            return res.status(200).json({ message: "Following user" });
+  authenticateUser(req, res, async () => {
+    try {
+      const userId = req.user.id;
+      const followed = parseInt(req.params.followed);
 
-        } catch (err) {
-            console.error("Follow User error:", err);
-            return res.status(500).json({ message: "Failed to follow user", error: err.message });
-        }
-    });
+      if (!Number.isInteger(followed) || followed <= 0) {
+        return res.status(400).json({ message: "Invalid followed user ID" });
+      }
+
+      if (followed === userId) {
+        return res.status(409).json({ message: "Cannot follow yourself" });
+      }
+
+      const [existingFollow] = await db
+        .promise()
+        .query("SELECT * FROM reach WHERE followed = ? AND follower = ?", [
+          followed,
+          userId,
+        ]);
+      if (existingFollow.length > 0) {
+        return res
+          .status(409)
+          .json({ message: "You are already following this user" });
+      }
+
+      await db
+        .promise()
+        .query("INSERT INTO reach (followed, follower) VALUES(?, ?)", [
+          followed,
+          userId,
+        ]);
+      followerCache.flushAll();
+
+      // Create notification
+      await createNotification("FOLLOW", userId, followed);
+
+      return res.status(200).json({ message: "Following user" });
+    } catch (err) {
+      console.error("Follow User error:", err);
+      return res
+        .status(500)
+        .json({ message: "Failed to follow user", error: err.message });
+    }
+  });
 };
 
 // API TO GET FOLLOWERS (Refactored)

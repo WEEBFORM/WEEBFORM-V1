@@ -6,7 +6,7 @@ export const fetchCommunityInfo = async (communityIds = [], userId = null, optio
     const { includeMemberCount = true, includeUserMembership = false, includeChatGroups = false, includeCreatorInfo = false } = options;
 
     try {
-        let baseQuery = `SELECT c.id, c.creatorId, c.title, c.description, c.groupIcon, c.createdAt`;
+        let baseQuery = `SELECT c.id, c.creatorId, c.title, c.description, c.groupIcon, c.visibility, c.createdAt`;
         if (includeMemberCount) baseQuery += `,(SELECT COUNT(*) FROM community_members WHERE communityId = c.id) AS memberCount`;
         if (includeUserMembership && userId) baseQuery += `, (SELECT COUNT(*) FROM community_members WHERE communityId = c.id AND userId = ?) > 0 AS isCommunityMember`;
         if (includeCreatorInfo) baseQuery += `, u.username AS creatorUsername, u.full_name AS creatorFullName`;

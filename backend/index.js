@@ -30,6 +30,7 @@ import StoreRatingAndVsits from './routes/Marketplace/ratingsRoute.js';
 import News from './routes/newsAndRecommendations.js';
 import Communities from './routes/Community/community.js';
 import Groups from './routes/Community/communityGroups.js';
+import Notifications from './routes/notificationRoute.js';
 
 import { startBotSchedulers } from './services/botSchedulerService.js';
 
@@ -126,6 +127,7 @@ app.use('/api/v1/stores', Stores, StoreCatalogs, StoreRatingAndVsits);
 app.use('/api/v1/news-content', News);
 app.use('/api/v1/communities', Communities);
 app.use('/api/v1/communities/groups', Groups);
+app.use('/api/v1/notifications', Notifications);
 // app.use('/api/v1/communities/groups', CommunityGroupActions); 
  
 // Health Check Endpoint

@@ -1,10 +1,11 @@
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import moment from "moment";
+import { createNotification } from "../notificationsController.js";
 
 // API TO RATE A STORE
 export const rateStore = (req, res) => {
-    authenticateUser(req, res, () => {
+    authenticateUser(req, res, async () => { // Changed to async
         const userId = req.user.id;
         const storeId = req.params.storeId;
         const { rating } = req.body;
@@ -12,42 +13,38 @@ export const rateStore = (req, res) => {
         if (!Number.isInteger(Number(storeId))) {
             return res.status(400).json({ message: "Invalid store ID" });
         }
-
         if (!Number.isInteger(Number(rating)) || rating < 1 || rating > 5) {
             return res.status(400).json({ message: "Rating must be an integer between 1 and 5." });
         }
 
-        //CHECK RATING STATUS
-        const checkQuery = "SELECT * FROM store_ratings WHERE storeId = ? AND userId = ?";
-        db.query(checkQuery, [storeId, userId], (err, data) => {
-            if (err) {
-                console.error("Error checking existing rating:", err);
-                return res.status(500).json({ message: "Database error", error: err });
+        try {
+            // Get store ownerId and label for the notification
+            const [storeData] = await db.promise().query("SELECT ownerId, label FROM stores WHERE id = ?", [storeId]);
+            if (storeData.length === 0) {
+                return res.status(404).json({ message: "Store not found." });
+            }
+            const { ownerId, label } = storeData[0];
+
+            const [existingRating] = await db.promise().query("SELECT * FROM store_ratings WHERE storeId = ? AND userId = ?", [storeId, userId]);
+            
+            let message = "Rating submitted successfully.";
+            if (existingRating.length > 0) {
+                await db.promise().query("UPDATE store_ratings SET rating = ? WHERE storeId = ? AND userId = ?", [rating, storeId, userId]);
+                message = "Rating updated successfully.";
+            } else {
+                const values = [storeId, userId, rating, moment().format("YYYY-MM-DD HH:mm:ss")];
+                await db.promise().query("INSERT INTO store_ratings (storeId, userId, rating, createdAt) VALUES (?, ?, ?, ?)", values);
             }
 
-            if (data.length > 0) {
-                // Update existing rating
-                const updateQuery = "UPDATE store_ratings SET rating = ? WHERE storeId = ? AND userId = ?";
-                db.query(updateQuery, [rating, storeId, userId], (updateErr) => {
-                    if (updateErr) {
-                        console.error("Error updating rating:", updateErr);
-                        return res.status(500).json({ message: "Database error", error: updateErr });
-                    }
-                    return res.status(200).json({ message: "Rating updated successfully." });
-                });
-            } else {
-                // INSERT NEW RATING
-                const insertQuery = "INSERT INTO store_ratings (storeId, userId, rating, createdAt) VALUES (?, ?, ?, ?)";
-                const values = [storeId, userId, rating, moment(Date.now()).format("YYYY-MM-DD HH:mm:ss")];
-                db.query(insertQuery, values, (insertErr) => {
-                    if (insertErr) {
-                        console.error("Error inserting rating:", insertErr);
-                        return res.status(500).json({ message: "Database error", error: insertErr });
-                    }
-                    return res.status(201).json({ message: "Rating submitted successfully." });
-                });
-            }
-        });
+            // Create notification for the store owner
+            await createNotification('STORE_RATING', userId, ownerId, { storeId }, { storeLabel: label });
+
+            return res.status(200).json({ message });
+
+        } catch (err) {
+            console.error("Error processing store rating:", err);
+            return res.status(500).json({ message: "Database error", error: err.message });
+        }
     });
 };
 

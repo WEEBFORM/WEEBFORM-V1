@@ -440,30 +440,28 @@ export const getUserAnalytics = async (req, res) => {
         try {
             const userId = req.params.userId;
             const cacheKey = `user_analytics:${userId}`;
-            
-            // Check cache first
+
             const cachedData = analyticsCache.get(cacheKey);
             if (cachedData) {
                 return res.status(200).json(cachedData);
             }
-
-            // A single query with subqueries for efficiency
             const q = `
                 SELECT
-                    (SELECT COUNT(*) FROM posts WHERE userId = ?) AS totalPosts,
-                    (SELECT COUNT(*) FROM reach WHERE followed = ?) AS totalFollowers,
-                    (SELECT COUNT(*) FROM reach WHERE follower = ?) AS totalFollowing,
-                    (SELECT COUNT(*) FROM profile_views WHERE profileId = ?) AS totalProfileViews,
-                    (SELECT COUNT(*) FROM likes l JOIN posts p ON l.postId = p.id WHERE p.userId = ?) AS totalLikesReceived,
-                    (SELECT COUNT(*) FROM comments WHERE userId = ?) AS totalCommentsMade,
-                    (SELECT COUNT(*) FROM post_shares ps JOIN posts p ON ps.postId = p.id WHERE p.userId = ?) AS totalSharesReceived
+                    (SELECT COUNT(*) FROM posts WHERE userId = ?) AS Total_Posts,
+                    (SELECT COUNT(*) FROM reach WHERE followed = ?) AS Followers,
+                    (SELECT COUNT(*) FROM reach WHERE follower = ?) AS Following,
+                    (SELECT COUNT(*) FROM profile_views WHERE profileId = ?) AS Profile_Views,
+                    (SELECT COUNT(*) FROM likes l JOIN posts p ON l.postId = p.id WHERE p.userId = ?) AS Post_Likes,
+                    (SELECT COUNT(*) FROM comments WHERE userId = ?) AS Comments,
+                    (SELECT COUNT(*) FROM post_shares ps JOIN posts p ON ps.postId = p.id WHERE p.userId = ?) AS Shares,
+                    (SELECT COUNT(*) FROM bookmarked_posts bp JOIN posts p ON bp.postId = p.id WHERE p.userId = ?) AS Saves
             `;
             
-            const params = [userId, userId, userId, userId, userId, userId, userId];
+            const params = [userId, userId, userId, userId, userId, userId, userId, userId];
             const [results] = await db.promise().query(q, params);
 
             const analytics = results[0];
-            analyticsCache.set(cacheKey, analytics); // Cache the result for future requests
+            analyticsCache.set(cacheKey, analytics);
 
             res.status(200).json(analytics);
         } catch (error) {

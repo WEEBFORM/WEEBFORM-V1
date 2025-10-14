@@ -3,6 +3,7 @@ import { authenticateUser } from "../../middlewares/verify.mjs";
 import moment from "moment";
 import NodeCache from 'node-cache';
 import { processImageUrl } from '../../middlewares/cloudfrontConfig.js';
+import { createNotification } from "../notificationsController.js";
 
 const commentCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 const replyCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
@@ -22,26 +23,70 @@ const processItems = (items) => {
 
 
 // COMMENTS
-
 export const addComment = async (req, res) => {
-    authenticateUser(req, res, async () => {
-        try {
-            const userId = req.user.id;
-            const postId = req.params.postId;
-            const { desc, gifs } = req.body;
-    
-            const q = "INSERT INTO comments (`desc`, `gifs`, `userId`, `postId`, `createdAt`) VALUES (?, ?, ?, ?, ?)";
-            const values = [desc, gifs, userId, postId, moment().format("YYYY-MM-DD HH:mm:ss")];
-    
-            await db.promise().query(q, values);
-            commentCache.del(`comments:${postId}`);
-            res.status(200).json({ message: "Comment added successfully." });
-        } catch (err) {
-            console.error("Error adding comment:", err);
-            res.status(500).json({ message: "Failed to add comment.", error: err.message });
+  authenticateUser(req, res, async () => {
+    try {
+      const userId = req.user.id;
+      const postId = req.params.postId;
+      const { desc, gifs } = req.body;
+
+      const q =
+        "INSERT INTO comments (`desc`, `gifs`, `userId`, `postId`, `createdAt`) VALUES (?, ?, ?, ?, ?)";
+      const values = [
+        desc,
+        gifs,
+        userId,
+        postId,
+        moment().format("YYYY-MM-DD HH:mm:ss"),
+      ];
+
+      const [result] = await db.promise().query(q, values);
+      commentCache.del(`comments:${postId}`);
+
+      // Create notification for post author
+      const [post] = await db
+        .promise()
+        .query("SELECT userId FROM posts WHERE id = ?", [postId]);
+      if (post.length > 0) {
+        await createNotification(
+          "COMMENT_ON_POST",
+          userId,
+          post[0].userId,
+          postId,
+          result.insertId
+        );
+      }
+
+      // Create notifications for mentioned users
+      const mentionedUsers = desc.match(/@(\w+)/g);
+      if (mentionedUsers) {
+        for (const mention of mentionedUsers) {
+          const username = mention.substring(1);
+          const [user] = await db
+            .promise()
+            .query("SELECT id FROM users WHERE username = ?", [username]);
+          if (user.length > 0) {
+            await createNotification(
+              "COMMENT_MENTION",
+              userId,
+              user[0].id,
+              postId,
+              result.insertId
+            );
+          }
         }
-    });
+      }
+
+      res.status(200).json({ message: "Comment added successfully." });
+    } catch (err) {
+      console.error("Error adding comment:", err);
+      res
+        .status(500)
+        .json({ message: "Failed to add comment.", error: err.message });
+    }
+  });
 };
+
 
 export const getComments = async (req, res) => {
     authenticateUser(req, res, async () => {
@@ -105,26 +150,91 @@ export const deleteComment = async (req, res) => {
 // ======== REPLIES (NESTED) ========
 
 export const addReply = async (req, res) => {
-    authenticateUser(req, res, async () => {
-        try {
-            const userId = req.user.id;
-            const { reply, gifs, commentId, parentReplyId } = req.body;
-    
-            if (!commentId) {
-                return res.status(400).json({ message: "A parent commentId is required for all replies." });
-            }
-    
-            const q = "INSERT INTO replies (`commentId`, `userId`, `reply`, `gifs`, `parentReplyId`, `createdAt`) VALUES (?, ?, ?, ?, ?, ?)";
-            const values = [commentId, userId, reply, gifs, parentReplyId || null, moment().format("YYYY-MM-DD HH:mm:ss")];
-    
-            await db.promise().query(q, values);
-            replyCache.del(`replies:${commentId}`);
-            res.status(200).json({ message: "Reply added successfully." });
-        } catch (err) {
-            console.error("Error adding reply:", err);
-            res.status(500).json({ message: "Failed to add reply.", error: err.message });
+  authenticateUser(req, res, async () => {
+    try {
+      const userId = req.user.id;
+      const { reply, gifs, commentId, parentReplyId } = req.body;
+
+      if (!commentId) {
+        return res
+          .status(400)
+          .json({ message: "A parent commentId is required for all replies." });
+      }
+
+      const q =
+        "INSERT INTO replies (`commentId`, `userId`, `reply`, `gifs`, `parentReplyId`, `createdAt`) VALUES (?, ?, ?, ?, ?, ?)";
+      const values = [
+        commentId,
+        userId,
+        reply,
+        gifs,
+        parentReplyId || null,
+        moment().format("YYYY-MM-DD HH:mm:ss"),
+      ];
+
+      const [result] = await db.promise().query(q, values);
+      replyCache.del(`replies:${commentId}`);
+
+      // Create notification for comment author or parent reply author
+      if (parentReplyId) {
+        const [parentReply] = await db
+          .promise()
+          .query("SELECT userId FROM replies WHERE id = ?", [parentReplyId]);
+        if (parentReply.length > 0) {
+          await createNotification(
+            "REPLY_TO_REPLY",
+            userId,
+            parentReply[0].userId,
+            null,
+            commentId,
+            result.insertId
+          );
         }
-    });
+      } else {
+        const [comment] = await db
+          .promise()
+          .query("SELECT userId FROM comments WHERE id = ?", [commentId]);
+        if (comment.length > 0) {
+          await createNotification(
+            "REPLY_TO_COMMENT",
+            userId,
+            comment[0].userId,
+            null,
+            commentId,
+            result.insertId
+          );
+        }
+      }
+
+      // Create notifications for mentioned users
+      const mentionedUsers = reply.match(/@(\w+)/g);
+      if (mentionedUsers) {
+        for (const mention of mentionedUsers) {
+          const username = mention.substring(1);
+          const [user] = await db
+            .promise()
+            .query("SELECT id FROM users WHERE username = ?", [username]);
+          if (user.length > 0) {
+            await createNotification(
+              "COMMENT_MENTION",
+              userId,
+              user[0].id,
+              null,
+              commentId,
+              result.insertId
+            );
+          }
+        }
+      }
+
+      res.status(200).json({ message: "Reply added successfully." });
+    } catch (err) {
+      console.error("Error adding reply:", err);
+      res
+        .status(500)
+        .json({ message: "Failed to add reply.", error: err.message });
+    }
+  });
 };
 
 export const getReplies = async (req, res) => {

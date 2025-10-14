@@ -6,6 +6,7 @@ import { generateS3Url } from "../../middlewares/S3bucketConfig.js";
 import { executeQuery } from "../../middlewares/dbExecute.js";
 import { config } from "dotenv";
 import NodeCache from 'node-cache';
+import { createNotification } from "../notificationsController.js";
 
 config();
 
@@ -133,11 +134,9 @@ export const login = async (req, res) => {
         const searchField = username ? "username" : "email";
         const searchValue = username || email;
 
-        //Check userCache
         let user = userCache.get(searchValue);
 
         if (!user){
-             // Fetch user from DB
              const users = await executeQuery(
                 `SELECT * FROM users WHERE ${searchField} = ?`,
                 [searchValue]
@@ -148,22 +147,60 @@ export const login = async (req, res) => {
             }
            user = users[0];
             userCache.set(searchValue, user)
-
         }
 
-        // Compare passwords asynchronously
         const passwordMatch = await bcrypt.compare(password, user.password);
         if (!passwordMatch) {
             return res.status(400).json({ message: "Wrong password" });
         }
 
-        // Fetch device and location information
-        const userAgent = req.headers['user-agent']; // Get device info from the request
-        const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress; // Get client IP
-        const geo = geoip.lookup(ip); // Get geolocation data
-        const location = geo ? `${geo.city}, ${geo.region}, ${geo.country}` : "Unknown location";
+        const userAgent = req.headers['user-agent'];
+        
+        // IP EXTRACTION WITH FALLBACKS(MULTIPLE PROXY SUPPORT)
+        let ip = req.headers['x-forwarded-for'] || 
+                 req.headers['x-real-ip'] || 
+                 req.connection.remoteAddress || 
+                 req.socket.remoteAddress;
+        
+        // IF MULTIPLE IPS, TAKE THE FIRST ONE (CLIENT'S IP)
+        if (ip && ip.includes(',')) {
+            ip = ip.split(',')[0].trim();
+        }
+        
+        // REMOVE IPV6 PREFIX IF PRESENT
+        if (ip && ip.startsWith('::ffff:')) {
+            ip = ip.substring(7);
+        }
 
-        // Generate JWT token
+        let location = "an unrecognized location";
+        
+        // TRY GEOIP-LOOKUP FIRST
+        const geo = geoip.lookup(ip);
+        if (geo && geo.city && geo.country) {
+            location = `${geo.city}, ${geo.country}`;
+        } else if (geo && geo.country) {
+            location = geo.country;
+        } else {
+            // FALLBACK TO IP API IF GEOIP LOOKUP FAILS
+            try {
+                const geoResponse = await fetch(`http://ip-api.com/json/${ip}`);
+                const geoData = await geoResponse.json();
+                
+                if (geoData.status === 'success') {
+                    location = geoData.city ? 
+                        `${geoData.city}, ${geoData.country}` : 
+                        geoData.country;
+                }
+            } catch (geoError) {
+                console.error('Geolocation lookup failed:', geoError);
+            }
+        }
+
+        const device = userAgent || "an unrecognized device";
+
+        // CREATE A NEW LOGIN NOTIFICATION
+        await createNotification('NEW_LOGIN', user.id, user.id, {}, { device, location });
+
         const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY, { expiresIn: '3d' });
 
         res.cookie("accessToken", token, {
@@ -171,46 +208,35 @@ export const login = async (req, res) => {
             sameSite: 'None',
             secure: true,
             path: "/",
-            maxAge: 3 * 24 * 60 * 60 * 1000
+            maxAge: 15 * 24 * 60 * 60 * 1000
         }).status(200).json({
             message: "User logged in successfully", user
         }); 
-        const loginTime = new Date().toLocaleString(); // Get current date and time
+
+        const loginTime = new Date().toLocaleString();
         const mailOptions = {
             from: process.env.EMAIL_USER,
             to: user.email,
             subject: "New Login Notification",
             html: `
-                <div style="text-align: center; margin-bottom: 20px; padding: 0px 40px 0px 40px">
-                    <img src="https://weebform.com/wp-content/uploads/2024/12/cropped-43b3193e-814b-4a9d-a367-daa917d5ddb5-300x300.jpg" alt="WEEBFORM Logo" style="max-width: 150px;">
-                </div>
                 <p>Hi ${user.username},</p>
                 <p>There was a recent login to your account with the following details:</p>
                 <ul>
                     <li><strong>Date and Time:</strong> ${loginTime}</li>
-                    <li><strong>Device:</strong> ${userAgent}</li>
+                    <li><strong>Device:</strong> ${device}</li>
                     <li><strong>Location:</strong> ${location}</li>
                 </ul>
-                <p>If this wasn't you, please contact us immediately at <a style="color: #CF833F;" href="mailto:contact@weebform.com">contact@weebform.com</a>.</p>
-                <p>Thank you,<br>The Weebform Team</p>
+                <p>If this wasn't you, please secure your account immediately.</p>
             `
         };
 
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.error("Error sending email:", error);
-            } else {
-                console.log("Email sent:", info.response);
-            }
-        });
+        transporter.sendMail(mailOptions);
 
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Internal server error" });
     }
 };
-
-
 
 // LOGOUT
 export const logout = (req, res) => {
