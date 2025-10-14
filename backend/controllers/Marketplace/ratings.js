@@ -3,9 +3,32 @@ import { authenticateUser } from "../../middlewares/verify.mjs";
 import moment from "moment";
 import { createNotification } from "../notificationsController.js";
 
+
+//HELPER TO TRACK STORE VISITS
+ export const createStoreVisit = async (userId, storeId) => {
+    try {
+        if (!userId || !storeId) {
+            console.warn("[Service] createStoreVisit: Missing userId or storeId.");
+            return; 
+        }
+        const query = `
+            INSERT INTO store_visits (storeId, userId, visitedAt) 
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE visitedAt = VALUES(visitedAt);
+        `;
+        const values = [storeId, userId, moment().format("YYYY-MM-DD HH:mm:ss")];
+
+        await db.promise().query(query, values);
+        console.log(`[Service] Visit recorded for user ${userId} at store ${storeId}.`);
+
+    } catch (error) {
+        console.error("Error in createStoreVisit service:", error);
+    }
+};
+
 // API TO RATE A STORE
 export const rateStore = (req, res) => {
-    authenticateUser(req, res, async () => { // Changed to async
+    authenticateUser(req, res, async () => {
         const userId = req.user.id;
         const storeId = req.params.storeId;
         const { rating } = req.body;
@@ -73,7 +96,7 @@ export const getAverageStoreRating = (req, res) => {
         if (data.length === 0 || data[0].averageRating === null) {
             return res.status(404).json({ message: "Store has not been rated yet.", averageRating: 0, totalRatings: 0 });
         }
-        const averageRating = parseFloat(data[0].averageRating).toFixed(1); //to show as a decimal instead of showing as a whole number.
+        const averageRating = parseFloat(data[0].averageRating).toFixed(1);
 
         res.status(200).json({
             averageRating: averageRating,
@@ -84,40 +107,20 @@ export const getAverageStoreRating = (req, res) => {
 
 // API TO RECORD STORE VISIT
 export const recordStoreVisit = (req, res) => {
-    authenticateUser(req, res, () => {
-        const userId = req.user.id;
-        const storeId = req.params.storeId;
+    authenticateUser(req, res, async () => {
+        try {
+            const userId = req.user.id;
+            const storeId = req.params.storeId;
 
-        if (!Number.isInteger(Number(storeId))) {
-            return res.status(400).json({ message: "Invalid store ID" });
+            if (!Number.isInteger(Number(storeId))) {
+                return res.status(400).json({ message: "Invalid store ID" });
+            }
+            await createStoreVisit(userId, storeId);
+            res.status(200).json({ message: "Store visit recorded." });
+        } catch (error) {
+            console.error("Error in recordStoreVisit controller:", error);
+            res.status(500).json({ message: "Failed to record visit." });
         }
-
-        // Check if the visit already exists for the user and store.
-        const checkQuery = "SELECT id FROM store_visits WHERE storeId = ? AND userId = ?";
-        db.query(checkQuery, [storeId, userId], (checkErr, checkData) => {
-            if (checkErr) {
-                console.error("Error checking existing visit:", checkErr);
-                return res.status(500).json({ message: "Database error", error: checkErr });
-            }
-
-            if (checkData.length === 0) {
-                // If visit doesn't exist, create a new record.
-                const insertQuery = "INSERT INTO store_visits (storeId, userId, visitedAt) VALUES (?, ?, ?)";
-                const values = [storeId, userId, moment(Date.now()).format("YYYY-MM-DD HH:mm:ss")];
-
-                db.query(insertQuery, values, (insertErr) => {
-                    if (insertErr) {
-                        console.error("Error recording store visit:", insertErr);
-                        return res.status(500).json({ message: "Failed to record store visit", error: insertErr });
-                    }
-
-                    return res.status(201).json({ message: "Store visit recorded successfully." });
-                });
-            } else {
-                // If visit already exists, do nothing and return OK. (Idempotent)
-                return res.status(200).json({ message: "Store visit already recorded." });
-            }
-        });
     });
 };
 

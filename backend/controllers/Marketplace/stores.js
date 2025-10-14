@@ -1,12 +1,11 @@
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import moment from "moment";
-import multer from "multer";
 import { cpUpload } from "../../middlewares/storage.js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
-import axios from "axios";
 import { processImageUrl, resizeImage } from '../../middlewares/cloudfrontConfig.js';
+import { createStoreVisit } from "./ratings.js";
 
 //HELPER TO PROCESS STORE IMAGES
 const processStoreImages = (stores) => {
@@ -140,8 +139,12 @@ export const viewSingleStore = async (req, res) => {
     authenticateUser(req, res, async () => {
         try {
             const storeId = req.params.id;
+            const userId = req.user.id;
+
             const q = `
-                SELECT s.*, u.username AS ownerUsername, u.profilePic AS ownerProfilePic,
+                SELECT s.*, 
+                       u.username AS ownerUsername, 
+                       u.profilePic AS ownerProfilePic,
                        (SELECT AVG(rating) FROM store_ratings WHERE storeId = s.id) AS averageRating,
                        (SELECT COUNT(*) FROM store_ratings WHERE storeId = s.id) AS totalRatings,
                        (SELECT COUNT(*) FROM store_visits WHERE storeId = s.id) AS visitCount
@@ -154,17 +157,36 @@ export const viewSingleStore = async (req, res) => {
             if (data.length === 0) return res.status(404).json({ message: 'Store not found' });
 
             const [store] = processStoreImages(data);
-            
-            axios.post(`http://localhost:8000/api/v1/stores/record-store-visit/${storeId}`, {}, {
-                headers: { Cookie: req.get('Cookie') }
-            }).catch(visitError => console.error("Error recording store visit:", visitError.message));
+            createStoreVisit(userId, storeId);
+
+            // Calculate time since creation
+            const creationDate = moment(store.created);
+            const now = moment();
+            const diffInDays = now.diff(creationDate, 'days');
+
+            let timeSinceCreation;
+            if (diffInDays < 1) {
+                timeSinceCreation = "Less than a day";
+            } else if (diffInDays === 1) {
+                timeSinceCreation = "1 day";
+            } else if (diffInDays < 7) {
+                timeSinceCreation = `${diffInDays} days`;
+            } else if (diffInDays < 30) {
+                timeSinceCreation = `${Math.floor(diffInDays / 7)} weeks`;
+            } else if (diffInDays < 365) {
+                timeSinceCreation = `${Math.floor(diffInDays / 30)} months`;
+            } else {
+                timeSinceCreation = `${Math.floor(diffInDays / 365)} years`;
+            }
 
             res.status(200).json({
                 ...store,
                 averageRating: store.averageRating ? parseFloat(store.averageRating).toFixed(1) : "0.0",
                 totalRatings: store.totalRatings || 0,
-                visitCount: store.visitCount || 0
+                visitCount: store.visitCount || 0,
+                timeSinceCreation: timeSinceCreation
             });
+
         } catch (error) {
             console.error("Error in viewSingleStore:", error);
             res.status(500).json({ message: "Failed to fetch store", error: error.message });
