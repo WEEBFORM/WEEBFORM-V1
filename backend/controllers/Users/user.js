@@ -217,7 +217,11 @@ const fetchAndProcessUserData = async (userId) => {
     const q = `
         SELECT u.*,
         (SELECT COUNT(*) FROM reach WHERE followed = u.id) AS followerCount,
-        (SELECT COUNT(*) FROM reach WHERE follower = u.id) AS followingCount,
+        (SELECT COUNT(*) FROM (
+            SELECT r1.followed FROM reach AS r1 WHERE r1.follower = u.id
+            INTERSECT
+            SELECT r2.follower FROM reach AS r2 WHERE r2.followed = u.id
+        ) AS mutuals) AS followingCount,
         (SELECT COUNT(*) FROM posts WHERE userId = u.id) AS postsCount
         FROM users AS u WHERE u.id = ?`;
     
