@@ -33,7 +33,7 @@ export const followUser = async (req, res) => {
       if (followed === userId) {
         return res.status(409).json({ message: "Cannot follow yourself" });
       }
-
+      
       const [existingFollow] = await db
         .promise()
         .query("SELECT * FROM reach WHERE followed = ? AND follower = ?", [

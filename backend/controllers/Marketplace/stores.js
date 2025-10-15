@@ -106,33 +106,77 @@ export const getCreatedStores = async (req, res) => {
     });
 };
 
-//API TO VIEW ALL STORES
 export const viewStores = async (req, res) => {
-    authenticateUser(req, res, async () => {
-        try {
-            const q = `
-              SELECT s.*, u.username AS ownerUsername, u.profilePic AS ownerProfilePic,
-                     COALESCE(AVG(sr.rating), 0) AS averageRating, COUNT(sr.rating) AS totalRatings
-              FROM stores AS s
-              JOIN users AS u ON u.id = s.ownerId
-              LEFT JOIN store_ratings AS sr ON s.id = sr.storeId
-              GROUP BY s.id;
-            `;
-    
-            const [stores] = await db.promise().query(q);
-            const processedStores = processStoreImages(stores);
-    
-            const sortedStores = [...processedStores].sort((a, b) => b.averageRating - a.averageRating);
-            const specialStores = sortedStores.slice(0, 10);
-            const availableStores = shuffleStores(processedStores);
-    
-            res.status(200).json({ availableStores, specialStores });
-        } catch (error) {
-            console.error("Error in viewStores:", error);
-            res.status(500).json({ message: "Failed to fetch stores", error: error.message });
+  authenticateUser(req, res, async () => {
+    try {
+      const q = `
+        SELECT 
+            s.*, 
+            u.username AS ownerUsername, 
+            u.profilePic AS ownerProfilePic,
+            COALESCE(AVG(sr.rating), 0) AS averageRating,
+            COUNT(sr.rating) AS totalRatings,
+            (SELECT COUNT(*) FROM store_visits WHERE storeId = s.id) AS visitCount
+        FROM stores AS s
+        JOIN users AS u ON u.id = s.ownerId
+        LEFT JOIN store_ratings AS sr ON s.id = sr.storeId
+        GROUP BY s.id;
+      `;
+
+      const [stores] = await db.promise().query(q);
+
+      // PROCESS STORE IMAGES
+      const processedStores = processStoreImages(stores);
+
+      const enrichedStores = processedStores.map((store) => {
+        // COMPUTE TIME SINCE CREATION
+        const creationDate = moment(store.created);
+        const now = moment();
+        const diffInDays = now.diff(creationDate, "days");
+
+        let timeSinceCreation;
+        if (diffInDays < 1) {
+          timeSinceCreation = "Less than a day";
+        } else if (diffInDays === 1) {
+          timeSinceCreation = "1 day";
+        } else if (diffInDays < 7) {
+          timeSinceCreation = `${diffInDays} days`;
+        } else if (diffInDays < 30) {
+          timeSinceCreation = `${Math.floor(diffInDays / 7)} weeks`;
+        } else if (diffInDays < 365) {
+          timeSinceCreation = `${Math.floor(diffInDays / 30)} months`;
+        } else {
+          timeSinceCreation = `${Math.floor(diffInDays / 365)} years`;
         }
-    });
+
+        return {
+          ...store,
+          averageRating: store.averageRating
+            ? parseFloat(store.averageRating).toFixed(1)
+            : "0.0",
+          totalRatings: store.totalRatings || 0,
+          visitCount: store.visitCount || 0,
+          timeSinceCreation,
+        };
+      });
+
+      // SORT & SHUFFLE STORES
+      const sortedStores = [...enrichedStores].sort(
+        (a, b) => b.averageRating - a.averageRating
+      );
+      const specialStores = sortedStores.slice(0, 10);
+      const availableStores = shuffleStores(enrichedStores);
+
+      res.status(200).json({ availableStores, specialStores });
+    } catch (error) {
+      console.error("Error in viewStores:", error);
+      res
+        .status(500)
+        .json({ message: "Failed to fetch stores", error: error.message });
+    }
+  });
 };
+
 
 //API TO VIEW A SINGLE STORE
 export const viewSingleStore = async (req, res) => {
