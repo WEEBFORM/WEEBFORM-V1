@@ -29,6 +29,9 @@ const processPosts = (posts) => {
             post.reposterProfilePic = processImageUrl(post.reposterProfilePic);
         }
         
+        // Ensure shareCount is included from the post_shares table count
+        post.shareCount = post.shareCount || 0;
+        
         return post;
     });
 };
@@ -70,6 +73,7 @@ const notifyFollowersOfNewPost = async (authorId, postId, authorUsername) => {
         console.error(`[Notification Error] Failed to notify followers for post ${postId}:`, error);
     }
 };
+
 // API TO CREATE NEW POST
 export const newPost = async (req, res) => {
     authenticateUser(req, res, async () => {
@@ -173,7 +177,6 @@ export const newPost = async (req, res) => {
     });
 };
 
-
 //UNIFIED FUNCTION TO GET POSTS (ALL, FOLLOWING, USER)
 const getPosts = async (req, res, queryType) => {
     authenticateUser(req, res, async () => {
@@ -185,7 +188,7 @@ const getPosts = async (req, res, queryType) => {
             let params;
 
             // Post columns to select consistently across all queries
-            const postColumns = `p.id, p.description, p.tags, p.category, p.media, p.shares, p.createdAt`;
+            const postColumns = `p.id, p.description, p.tags, p.category, p.media, p.createdAt`;
 
             //HELPER TO BUILD FINAL QUERY WITH COMMON JOINS AND FILTERS
             const buildFinalQuery = (feedSubQuery) => `
@@ -193,11 +196,13 @@ const getPosts = async (req, res, queryType) => {
                     f.*,
                     COUNT(DISTINCT l.id) AS likeCount,
                     COUNT(DISTINCT c.id) AS commentCount,
+                    COUNT(DISTINCT ps.id) AS shareCount,
                     (CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END) AS liked,
                     (CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END) AS isBookmarked
                 FROM (${feedSubQuery}) AS f
                 LEFT JOIN likes AS l ON l.postId = f.id
                 LEFT JOIN comments AS c ON c.postId = f.id
+                LEFT JOIN post_shares AS ps ON ps.postId = f.id
                 LEFT JOIN likes AS l2 ON l2.postId = f.id AND l2.userId = ?
                 LEFT JOIN bookmarked_posts AS bp ON bp.postId = f.id AND bp.userId = ?
                 WHERE f.userId NOT IN (SELECT userId FROM blocked_users WHERE blockedUserId = ? UNION SELECT blockedUserId FROM blocked_users WHERE userId = ?)
@@ -205,7 +210,7 @@ const getPosts = async (req, res, queryType) => {
                   AND (f.full_name LIKE ? OR f.username LIKE ? OR f.description LIKE ?)
                 GROUP BY f.uniqueFeedId, f.id, f.userId, f.username, f.full_name, f.profilePic, 
                          f.reposterId, f.reposterUsername, f.reposterFullName, f.reposterProfilePic, 
-                         f.description, f.tags, f.category, f.media, f.shares, f.createdAt, f.activityDate
+                         f.description, f.tags, f.category, f.media, f.createdAt, f.activityDate
                 ORDER BY f.activityDate DESC
             `;
 
@@ -373,7 +378,7 @@ const getPosts = async (req, res, queryType) => {
     });
 };
 
-// EXPORT SPECIFIC FIELS ENDPOINTS
+// EXPORT SPECIFIC FEED ENDPOINTS
 export const allPosts = (req, res) => getPosts(req, res, 'all');
 export const followingPosts = (req, res) => getPosts(req, res, 'following');
 export const userPosts = (req, res) => getPosts(req, res, 'user');
@@ -391,12 +396,14 @@ export const postCategory = async (req, res) => {
                 SELECT p.*, u.id AS userId, u.username, full_name, u.profilePic,
                     COUNT(DISTINCT l.id) AS likeCount, 
                     COUNT(DISTINCT c.id) AS commentCount,
+                    COUNT(DISTINCT ps.id) AS shareCount,
                     CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END AS liked,
                     CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isBookmarked
                 FROM posts AS p 
                 JOIN users AS u ON u.id = p.userId 
                 LEFT JOIN likes AS l ON l.postId = p.id
                 LEFT JOIN comments AS c ON c.postId = p.id
+                LEFT JOIN post_shares AS ps ON ps.postId = p.id
                 LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
                 LEFT JOIN bookmarked_posts AS bp ON bp.postId = p.id AND bp.userId = ?
                 WHERE p.category = ? 
@@ -437,12 +444,14 @@ export const getPostById = async (req, res) => {
                 SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
                     COUNT(DISTINCT l.id) AS likeCount, 
                     COUNT(DISTINCT c.id) AS commentCount,
+                    COUNT(DISTINCT ps.id) AS shareCount,
                     CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END AS liked,
                     CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isBookmarked
                 FROM posts AS p 
                 JOIN users AS u ON u.id = p.userId
                 LEFT JOIN likes AS l ON l.postId = p.id
                 LEFT JOIN comments AS c ON c.postId = p.id
+                LEFT JOIN post_shares AS ps ON ps.postId = p.id
                 LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
                 LEFT JOIN bookmarked_posts AS bp ON bp.postId = p.id AND bp.userId = ?
                 WHERE p.id = ? 
@@ -516,6 +525,7 @@ export const getBookmarkedPosts = async (req, res) => {
                 SELECT p.*, u.id AS userId, u.username, u.full_name, u.profilePic,
                     COUNT(DISTINCT l.id) AS likeCount, 
                     COUNT(DISTINCT c.id) AS commentCount,
+                    COUNT(DISTINCT ps.id) AS shareCount,
                     CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END AS liked,
                     TRUE AS isBookmarked
                 FROM bookmarked_posts AS bp 
@@ -523,6 +533,7 @@ export const getBookmarkedPosts = async (req, res) => {
                 JOIN users AS u ON p.userId = u.id
                 LEFT JOIN likes AS l ON l.postId = p.id
                 LEFT JOIN comments AS c ON c.postId = p.id
+                LEFT JOIN post_shares AS ps ON ps.postId = p.id
                 LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
                 WHERE bp.userId = ? 
                 GROUP BY p.id, u.id 
@@ -566,9 +577,6 @@ export const sharePost = async (req, res) => {
                 postId, userId, 
                 moment().format("YYYY-MM-DD HH:mm:ss")
             ]);
-            
-            const incrementQuery = "UPDATE posts SET shares = shares + 1 WHERE id = ?";
-            await db.promise().query(incrementQuery, [postId]);
             
             postCache.flushAll();
             await createNotification('POST_SHARE', userId, postId, req.user.username);
@@ -706,7 +714,7 @@ export const deletePost = async (req, res) => {
                 });
             }
         } catch (err) {
-            console.error("Failed to delete post:", err);
+            console.error("Failed to delete post:", err); 
             return res.status(500).json({ 
                 message: "Failed to delete post", 
                 error: err.message 

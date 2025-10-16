@@ -19,4 +19,3 @@ router.put('/edit-store-details/:id', editStoreDetails);
 router.delete('/close-store/:id', closeStore); 
 
 export default router;
-  
