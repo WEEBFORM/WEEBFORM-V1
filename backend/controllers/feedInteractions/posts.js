@@ -16,7 +16,27 @@ const processPosts = (posts) => {
     
     return posts.map(post => {
         if (post.media) {
-            const mediaArray = post.media.split(',').map(keyOrUrl => processImageUrl(keyOrUrl.trim()));
+            let mediaArray = [];
+            
+            // Handle if media is already an array (from JSON parsing)
+            if (Array.isArray(post.media)) {
+                mediaArray = post.media.map(keyOrUrl => processImageUrl(keyOrUrl.trim()));
+            } else if (typeof post.media === 'string') {
+                // Parse JSON string if it's in JSON format
+                try {
+                    const parsed = JSON.parse(post.media);
+                    if (Array.isArray(parsed)) {
+                        mediaArray = parsed.map(keyOrUrl => processImageUrl(keyOrUrl.trim()));
+                    } else {
+                        // Fallback to comma-separated format
+                        mediaArray = post.media.split(',').map(keyOrUrl => processImageUrl(keyOrUrl.trim()));
+                    }
+                } catch (e) {
+                    // If JSON parsing fails, treat as comma-separated
+                    mediaArray = post.media.split(',').map(keyOrUrl => processImageUrl(keyOrUrl.trim()));
+                }
+            }
+            
             post.media = mediaArray.length > 0 ? mediaArray : null;
         } else {
             post.media = null; 
@@ -116,7 +136,8 @@ export const newPost = async (req, res) => {
                     }
                 }
 
-                const mediaString = uploadedMediaKeys.length > 0 ? uploadedMediaKeys.join(',') : null;
+                // Store media as JSON array instead of comma-separated string
+                const mediaString = uploadedMediaKeys.length > 0 ? JSON.stringify(uploadedMediaKeys) : null;
                 const query = "INSERT INTO posts (userId, description, tags, category, media, createdAt) VALUES (?, ?, ?, ?, ?, ?)";
                 const values = [
                     userId, 
@@ -177,6 +198,7 @@ export const newPost = async (req, res) => {
     });
 };
 
+
 //UNIFIED FUNCTION TO GET POSTS (ALL, FOLLOWING, USER)
 const getPosts = async (req, res, queryType) => {
     authenticateUser(req, res, async () => {
@@ -187,7 +209,7 @@ const getPosts = async (req, res, queryType) => {
             let q;
             let params;
 
-            // Post columns to select consistently across all queries
+            // Post columns to select consistently across all queries 
             const postColumns = `p.id, p.description, p.tags, p.category, p.media, p.createdAt`;
 
             //HELPER TO BUILD FINAL QUERY WITH COMMON JOINS AND FILTERS
@@ -198,13 +220,15 @@ const getPosts = async (req, res, queryType) => {
                     COUNT(DISTINCT c.id) AS commentCount,
                     COUNT(DISTINCT ps.id) AS shareCount,
                     (CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END) AS liked,
-                    (CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END) AS isBookmarked
+                    (CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END) AS isBookmarked,
+                    (CASE WHEN r_follow.follower IS NOT NULL THEN TRUE ELSE FALSE END) AS isFollowing
                 FROM (${feedSubQuery}) AS f
                 LEFT JOIN likes AS l ON l.postId = f.id
                 LEFT JOIN comments AS c ON c.postId = f.id
                 LEFT JOIN post_shares AS ps ON ps.postId = f.id
                 LEFT JOIN likes AS l2 ON l2.postId = f.id AND l2.userId = ?
                 LEFT JOIN bookmarked_posts AS bp ON bp.postId = f.id AND bp.userId = ?
+                LEFT JOIN reach AS r_follow ON r_follow.followed = f.userId AND r_follow.follower = ?
                 WHERE f.userId NOT IN (SELECT userId FROM blocked_users WHERE blockedUserId = ? UNION SELECT blockedUserId FROM blocked_users WHERE userId = ?)
                   AND (f.reposterId IS NULL OR f.reposterId NOT IN (SELECT userId FROM blocked_users WHERE blockedUserId = ? UNION SELECT blockedUserId FROM blocked_users WHERE userId = ?))
                   AND (f.full_name LIKE ? OR f.username LIKE ? OR f.description LIKE ?)
@@ -255,7 +279,7 @@ const getPosts = async (req, res, queryType) => {
                     q = buildFinalQuery(allFeedQuery);
                     params = [
                         userId, userId, // For allFeedQuery (visibility checks)
-                        userId, userId, // For buildFinalQuery (likes, bookmarks)
+                        userId, userId, userId, // For buildFinalQuery (likes, bookmarks, following)
                         userId, userId, userId, userId, // For blocked users subqueries (2 subqueries x 2 params each)
                         searchValue, searchValue, searchValue // Search terms
                     ];
@@ -275,8 +299,8 @@ const getPosts = async (req, res, queryType) => {
                                 CONCAT('post_', p.id) as uniqueFeedId
                             FROM posts p
                             JOIN users u ON p.userId = u.id
-                            LEFT JOIN reach r_reach ON p.userId = r_reach.followed
-                            WHERE (r_reach.follower = ? OR p.userId = ?)
+                            LEFT JOIN reach r_reach ON p.userId = r_reach.followed AND r_reach.follower = ?
+                            WHERE (r_reach.follower IS NOT NULL OR p.userId = ?)
 
                             UNION ALL
 
@@ -292,15 +316,15 @@ const getPosts = async (req, res, queryType) => {
                             JOIN posts p ON rp.postId = p.id
                             JOIN users u ON p.userId = u.id
                             JOIN users reposter ON rp.userId = reposter.id
-                            LEFT JOIN reach r_reach ON rp.userId = r_reach.followed
-                            WHERE (r_reach.follower = ? OR rp.userId = ?)
+                            LEFT JOIN reach r_reach ON rp.userId = r_reach.followed AND r_reach.follower = ?
+                            WHERE (r_reach.follower IS NOT NULL OR rp.userId = ?)
                         ) AS feed
                     `;
                     q = buildFinalQuery(followingFeedQuery);
                     params = [
                         userId, userId, // For followingFeedQuery (following checks)
                         userId, userId, // For followingFeedQuery (repost checks)
-                        userId, userId, // For buildFinalQuery (likes, bookmarks)
+                        userId, userId, userId, // For buildFinalQuery (likes, bookmarks, following)
                         userId, userId, userId, userId, // For blocked users subqueries (2 subqueries x 2 params each)
                         searchValue, searchValue, searchValue // Search terms
                     ];
@@ -343,7 +367,7 @@ const getPosts = async (req, res, queryType) => {
                     q = buildFinalQuery(userFeedQuery);
                     params = [
                         targetUserId, targetUserId, // For userFeedQuery (target user)
-                        userId, userId, // For buildFinalQuery (likes, bookmarks)
+                        userId, userId, userId, // For buildFinalQuery (likes, bookmarks, following)
                         userId, userId, userId, userId, // For blocked users subqueries (2 subqueries x 2 params each)
                         searchValue, searchValue, searchValue // Search terms
                     ];
@@ -398,7 +422,8 @@ export const postCategory = async (req, res) => {
                     COUNT(DISTINCT c.id) AS commentCount,
                     COUNT(DISTINCT ps.id) AS shareCount,
                     CASE WHEN l2.userId IS NOT NULL THEN TRUE ELSE FALSE END AS liked,
-                    CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isBookmarked
+                    CASE WHEN bp.userId IS NOT NULL THEN TRUE ELSE FALSE END AS isBookmarked,
+                    CASE WHEN r_follow.follower IS NOT NULL THEN TRUE ELSE FALSE END AS isFollowing
                 FROM posts AS p 
                 JOIN users AS u ON u.id = p.userId 
                 LEFT JOIN likes AS l ON l.postId = p.id
@@ -406,6 +431,7 @@ export const postCategory = async (req, res) => {
                 LEFT JOIN post_shares AS ps ON ps.postId = p.id
                 LEFT JOIN likes AS l2 ON l2.postId = p.id AND l2.userId = ?
                 LEFT JOIN bookmarked_posts AS bp ON bp.postId = p.id AND bp.userId = ?
+                LEFT JOIN reach AS r_follow ON r_follow.followed = u.id AND r_follow.follower = ?
                 WHERE p.category = ? 
                   AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
                 GROUP BY p.id, u.id 
@@ -413,7 +439,7 @@ export const postCategory = async (req, res) => {
             `;
             
             const [data] = await db.promise().query(q, [
-                userId, userId, category, 
+                userId, userId, userId, category, 
                 searchValue, searchValue, searchValue
             ]);
             
@@ -431,7 +457,7 @@ export const postCategory = async (req, res) => {
             });
         }
     });
-};
+}; 
 
 // FETCH SINGLE POST BY ID
 export const getPostById = async (req, res) => {
@@ -690,7 +716,23 @@ export const deletePost = async (req, res) => {
             }
 
             // DELETE MEDIA FROM S3
-            const mediaKeys = data[0].media ? data[0].media.split(',') : [];
+            let mediaKeys = [];
+            if (data[0].media) {
+                try {
+                    // Try to parse as JSON array first
+                    const parsed = JSON.parse(data[0].media);
+                    if (Array.isArray(parsed)) {
+                        mediaKeys = parsed;
+                    } else {
+                        // Fallback to comma-separated format
+                        mediaKeys = data[0].media.split(',');
+                    }
+                } catch (e) {
+                    // If JSON parsing fails, treat as comma-separated
+                    mediaKeys = data[0].media.split(',');
+                }
+            }
+            
             if (mediaKeys.length > 0) {
                 await Promise.all(
                     mediaKeys.map(key => deleteS3Object(key.trim()))
