@@ -19,7 +19,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
 
       # Install dependencies
       - name: Install dependencies
@@ -30,7 +29,7 @@ jobs:
         run: npm test
         continue-on-error: true
 
-      # Build the application
+      # Build application
       - name: Build application
         run: npm run build
 
@@ -58,5 +57,6 @@ jobs:
             npm run build
             
             # Restart application
-            pm2 restart weebform-server
+            # Option 1: If using PM2
+            pm2 restart app
           EOF
