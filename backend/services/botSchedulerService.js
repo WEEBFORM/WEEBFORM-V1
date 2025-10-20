@@ -19,6 +19,19 @@ const getRandomBot = async (excludeUserIds = []) => {
     return bots.length > 0 ? bots[0] : null;
 };
 
+// HELPER: GET MULTIPLE RANDOM BOTS
+const getMultipleBots = async (count, excludeUserIds = []) => {
+    let query = "SELECT id, core_prompt FROM users WHERE is_bot = TRUE";
+    let params = [];
+    if (excludeUserIds.length > 0) {
+        query += ` AND id NOT IN (?)`;
+        params.push(excludeUserIds);
+    }
+    query += ` ORDER BY RAND() LIMIT ${count}`;
+
+    const [bots] = await db.promise().query(query, params);
+    return bots;
+};
 
 // REACTIVE ENGAGEMENT PROCESSING
 const runDailyProactivePostingCycle = async () => {
@@ -44,14 +57,23 @@ const runDailyProactivePostingCycle = async () => {
         }
 
         try {
+            // STAGGER POST TIMES SLIGHTLY
+            const delayMinutes = i * (5 + Math.floor(Math.random() * 10));
+            const postTime = moment().add(delayMinutes, 'minutes').format("YYYY-MM-DD HH:mm:ss");
+
             const postContent = await generateBotPost(bot.core_prompt);
 
             if (postContent) {
                 const query = "INSERT INTO posts (userId, description, category, createdAt) VALUES (?, ?, ?, ?)";
-                const values = [bot.id, postContent, 'Discussion', moment().format("YYYY-MM-DD HH:mm:ss")];
-                await db.promise().execute(query, values);
-                console.log(`Bot ID ${bot.id} successfully created a new opinion post.`);
+                const values = [bot.id, postContent, 'Discussion', postTime];
+                const [result] = await db.promise().execute(query, values);
+                const postId = result.insertId;
+                
+                console.log(`Bot ID ${bot.id} scheduled to post at ${postTime}`);
                 usedBotIds.add(bot.id);
+
+                // TRIGGER ORGANIC ENGAGEMENT: Schedule likes and comments
+                await scheduleOrgnicEngagementForPost(postId, bot.id, postContent, postTime);
             }
         } catch (error) {
             console.error(`Scheduler (Proactive Opinions): Failed to create post for bot ${bot.id}:`, error);
@@ -60,9 +82,44 @@ const runDailyProactivePostingCycle = async () => {
     console.log('Scheduler (Proactive Opinions): Daily posting cycle finished.');
 };
 
-// UNIFIES FLOW 2: REACTIVE ENGAGEMENT PROCESSING
+// SCHEDULE ORGANIC ENGAGEMENT FOR A POST
+const scheduleOrgnicEngagementForPost = async (postId, postAuthorId, postContent) => {
+    try {
+        // GET RANDOM NUMBER OF BOTS TO LIKE THE POST
+        const likeBotCount = Math.floor(Math.random() * 3) + 2; // 2-4 bots
+        const likeBots = await getMultipleBots(likeBotCount, [postAuthorId]);
+        
+        // SCHEDULE LIKES
+        for (let i = 0; i < likeBots.length; i++) {
+            const delayMinutes = Math.floor(Math.random() * 15) + 1; // 1-15 min delay
+            const executeAt = moment().add(delayMinutes, 'minutes').format("YYYY-MM-DD HH:mm:ss");
+            
+            await db.promise().query(
+                "INSERT INTO pending_engagements (post_id, post_author_id, engagement_type, post_content, execute_at, status) VALUES (?, ?, ?, ?, ?, ?)",
+                [postId, postAuthorId, 'like', postContent, executeAt, 'pending']
+            );
+        }
+
+        // GET RANDOM BOT TO COMMENT
+        const commentBot = await getRandomBot([postAuthorId, ...likeBots.map(b => b.id)]);
+        if (commentBot) {
+            const commentDelay = Math.floor(Math.random() * 20) + 10;
+            const executeAt = moment().add(commentDelay, 'minutes').format("YYYY-MM-DD HH:mm:ss");
+            
+            await db.promise().query(
+                "INSERT INTO pending_engagements (post_id, post_author_id, engagement_type, post_content, execute_at, status) VALUES (?, ?, ?, ?, ?, ?)",
+                [postId, postAuthorId, 'comment', postContent, executeAt, 'pending']
+            );
+        }
+
+        console.log(`Scheduler: Scheduled ${likeBots.length} likes and 1 comment for post ${postId}`);
+    } catch (error) {
+        console.error(`Scheduler: Failed to schedule engagement for post ${postId}:`, error);
+    }
+};
+
+// PROCESS A SINGLE ENGAGEMENT TASK
 const processEngagementTask = async (task) => {
-    // FUNCTION TO PROCESS A SINGLE ENGAGEMENT TASK
     const { id, post_id, post_author_id, engagement_type, post_content } = task;
     try {
         await db.promise().query("UPDATE pending_engagements SET status = 'processing' WHERE id = ?", [id]);
@@ -114,10 +171,10 @@ const checkAndProcessTasks = async () => {
     }
 };
 
-// --- INITIALIZATION ---
+// INITIALIZATION 
 export const startBotSchedulers = () => {
-    // PROACTIVE TASK PROCESSOR (runs once a day at a random morning hour)
-    const randomHour = Math.floor(Math.random() * 5) + 3; // Between 3:00 and 7:00 UTC
+    //PROACTIVE OPINION POSTING
+    const randomHour = Math.floor(Math.random() * 5) + 3;
     cron.schedule(`0 ${randomHour} * * *`, runDailyProactivePostingCycle, { timezone: "UTC" });
     console.log(`Proactive Daily Opinion scheduler started. Will run daily at ${randomHour}:00 UTC.`);
     
@@ -125,6 +182,6 @@ export const startBotSchedulers = () => {
     //runDailyProactivePostingCycle();
 
     // UNIFIES TASK PROCESSSOR (runs every minute)
-    cron.schedule('* * * * *', checkAndProcessTasks);
+    cron.schedule('* * * * *', checkAndProcessTasks); 
     console.log('Unified Reactive Engagement processor has been started.');
 };

@@ -2433,3 +2433,5 @@
 [2025-10-16 22:03:58] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.88.53.21' (using password: YES)
 [2025-10-17 11:03:58] [31merror[39m: Unhandled Rejection at:
 [2025-10-17 14:30:55] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.88.53.218' (using password: YES)
+[2025-10-17 19:26:15] [31merror[39m: Uncaught Exception: read ECONNRESET
+[2025-10-20 22:24:47] [31merror[39m: Uncaught Exception: Access denied for user 'root'@'102.88.53.48' (using password: YES)
