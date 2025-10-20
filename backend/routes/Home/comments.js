@@ -37,7 +37,7 @@ router.route('/replies/:replyId')
     .delete(deleteReply);
 
 // --- USER ACTIVITY ---
-// GET    /api/comments/user/:userId -> Get all comments made by a specific user
+// GET    /api/comments/user/:userId -> Get all comments made by a user
 router.route('/user/:userId')
     .get(getUserComments);
 
