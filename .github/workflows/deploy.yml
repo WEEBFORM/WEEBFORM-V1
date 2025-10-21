@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - deploy
 
 jobs:
   deploy:
@@ -14,7 +15,26 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Deploy to EC2
+      # Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # Run tests (optional but recommended)
+      - name: Run tests
+        run: npm test
+        continue-on-error: true
+
+      # Build the application
+      - name: Build application
+        run: npm run build
+
+      # Create SSH key and deploy to EC2
       - name: Deploy to EC2
         env:
           EC2_HOST: ${{ secrets.EC2_HOST }}
@@ -30,26 +50,14 @@ jobs:
           # Add EC2 host to known_hosts to avoid SSH prompts
           ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null
           
-          # SSH into EC2 and deploy
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key $EC2_USER@$EC2_HOST << 'ENDSSH'
-            set -e
-            
-            echo "=== Navigating to app directory ==="
-            cd ${APP_PATH}
-            
-            echo "=== Current directory: $(pwd) ==="
-            
-            echo "=== Pulling latest changes ==="
+          # SSH into EC2 and pull latest code, install, build, and restart
+          ssh -i ~/.ssh/deploy_key $EC2_USER@$EC2_HOST << 'EOF'
+            cd $APP_PATH
             git pull origin main
+            npm ci
+            npm run build
             
-            echo "=== Installing dependencies ==="
-            npm install
-            
-            echo "=== Restarting application with PM2 ==="
-            pm2 restart all
-            
-            echo "=== PM2 Status ==="
-            pm2 status
-            
-            echo "=== Deployment completed successfully ==="
-          ENDSSH
+            # Restart your application (choose one based on your setup)
+            # Option 1: If using PM2
+            pm2 restart weebform-server
+          EOF
