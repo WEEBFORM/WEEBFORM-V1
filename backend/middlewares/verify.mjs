@@ -7,7 +7,6 @@ export async function authenticateUser(req, res, next) {
     if (!token) {
         return next(new AppError('You are not logged in. Please log in to get access.', 401));
     }
-
     try {
         req.user = await verifyToken(token);
         next();

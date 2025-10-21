@@ -174,7 +174,7 @@ export const addReply = async (req, res) => {
       const [result] = await db.promise().query(q, values);
       replyCache.del(`replies:${commentId}`);
 
-      // Create notification for comment author or parent reply author
+      // CREATE NOTIFICATIONS
       if (parentReplyId) {
         const [parentReply] = await db
           .promise()
