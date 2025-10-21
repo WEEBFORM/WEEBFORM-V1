@@ -3,53 +3,68 @@ name: Deploy to EC2
 on:
   push:
     branches:
-      - main  # Trigger on push to the main branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Step 2: Set up SSH key
       - name: Install SSH key
         uses: shimataro/ssh-key-action@v2
         with:
           key: ${{ secrets.EC2_SSH_KEY }}
           known_hosts: unnecessary
 
-      # Step 3: Add EC2 to known_hosts
       - name: Add known hosts
         run: |
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      # Step 4: Deploy to EC2
       - name: Deploy to EC2
         run: |
           ssh -v -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
             echo "Connected to EC2"
-            cd ${{ secrets.APP_PATH }} || { echo "Directory ${{ secrets.APP_PATH }} not found"; exit 1; }
             echo "Current user: $(whoami)"
-            echo "Verifying permissions"
-            ls -ld . .git .git/objects
+
+            # === 1. Go to repo root ===
+            cd ${{ secrets.APP_PATH }} || { echo "App path not found: ${{ secrets.APP_PATH }}"; exit 1; }
+
+            # === 2. Verify .git exists ===
+            if [ ! -d ".git" ]; then
+              echo "ERROR: .git not found! Repo not cloned?"
+              exit 1
+            fi
+
+            # === 3. Fix permissions ===
             echo "Fixing permissions"
-            sudo chown -R $(whoami):$(whoami) . || { echo "chown failed"; exit 1; }
-            sudo chmod -R u+rwX . || { echo "chmod failed"; exit 1; }
-            echo "Permissions after fix:"
-            ls -ld . .git .git/objects
-            echo "Checking Git remote"
-            git remote -v
-            echo "Checking Git repository"
-            git status || { echo "Git status failed"; exit 1; }
-            echo "Pulling latest changes"
-            git pull https://${{ secrets.HTTP_TOKEN }}@github.com/WEEBFORM/WEEBFORM-V1.git main || { echo "Git pull failed"; exit 1; }
-            echo "Installing dependencies"
-            npm install || { echo "npm install failed"; exit 1; }
-            echo "Restarting PM2 process"
-            pm2 restart weebform-server || { echo "PM2 restart failed"; exit 1; }
-            echo "Deployment complete"
+            sudo chown -R $(whoami)::$(whoami) .
+            sudo chmod -R u+rwX .
+
+            # === 4. Git pull ===
+            echo "Pulling latest code"
+            git pull https://${{ secrets.HTTP_TOKEN }}@github.com/WEEBFORM/WEEBFORM-V1.git main
+
+            # === 5. Go to backend/ ===
+            cd backend || { echo "backend/ folder not found!"; exit 1; }
+
+            # === 6. Install deps ===
+            echo "Installing npm packages"
+            npm install
+
+            # === 7. PM2: Start or Restart ===
+            echo "Managing PM2 process"
+            if pm2 list | grep -q "weebform-server"; then
+              echo "Restarting weebform-server"
+              pm2 restart weebform-server
+            else
+              echo "Starting weebform-server"
+              pm2 start index.js --name weebform-server
+              pm2 save
+            fi
+
+            echo "Deployment complete!"
           EOF
