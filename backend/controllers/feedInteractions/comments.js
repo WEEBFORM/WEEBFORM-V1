@@ -246,13 +246,13 @@ export const getReplies = async (req, res) => {
             if (cachedData) return res.status(200).json(cachedData);
     
             const q = `
-                SELECT r.*, u.id AS userId, u.username, u.full_name, u.profilePic,
+                SELECT r.*, u.id AS userId, u.username, u.full_name, u.profilePic
                 FROM replies AS r
                 JOIN users AS u ON u.id = r.userId
                 WHERE r.commentId = ?
                 ORDER BY r.createdAt ASC;
             `;
-    
+     
             const [replies] = await db.promise().query(q, [commentId]);
             const processedReplies = processItems(replies);
     
