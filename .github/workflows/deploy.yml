@@ -1,63 +1,49 @@
-name: Deploy Node.js to AWS EC2
+name: Deploy to EC2
 
 on:
   push:
     branches:
       - main
-      - deploy
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Check out the code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Set up Node.js environment
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Install SSH key
+        uses: shimataro/ssh-key-action@v2
         with:
-          node-version: '18'
+          key: ${{ secrets.EC2_SSH_KEY }}
+          known_hosts: unnecessary
 
-      # Install dependencies
-      - name: Install dependencies
-        run: npm ci
-
-      # Run tests (optional but recommended)
-      - name: Run tests
-        run: npm test
-        continue-on-error: true
-
-      # Build the application
-      - name: Build application
-        run: npm run build
-
-      # Create SSH key and deploy to EC2
-      - name: Deploy to EC2
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USER: ${{ secrets.EC2_USER }}
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-          APP_PATH: ${{ secrets.APP_PATH }}
+      - name: Add known hosts
         run: |
-          # Create SSH key file
-          mkdir -p ~/.ssh
-          echo "$EC2_SSH_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          
-          # Add EC2 host to known_hosts to avoid SSH prompts
-          ssh-keyscan -H $EC2_HOST >> ~/.ssh/known_hosts 2>/dev/null
-          
-          # SSH into EC2 and pull latest code, install, build, and restart
-          ssh -i ~/.ssh/deploy_key $EC2_USER@$EC2_HOST << 'EOF'
-            cd $APP_PATH
-            git pull origin main
-            npm ci
-            npm run build
-            
-            # Restart your application (choose one based on your setup)
-            # Option 1: If using PM2
-            pm2 restart weebform-server
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+        continue-on-error: false
+
+      - name: Deploy to EC2
+        run: |
+          ssh -v -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            set -e
+            echo "Connected to EC2"
+            cd ${{ secrets.APP_PATH }} || { echo "Directory ${{ secrets.APP_PATH }} not found"; exit 1; }
+            echo "Fixing permissions"
+            sudo chown -R $(whoami):$(whoami) . || { echo "Permissions fix failed"; exit 1; }
+            echo "Pulling latest changes"
+            git pull https://${{ secrets.HTTP_TOKEN }}@github.com/WEEBFORM/WEEBFORM-V1.git main || { echo "Git pull failed"; exit 1; }
+            echo "Installing dependencies"
+            npm install || { echo "npm install failed"; exit 1; }
+            echo "Checking PM2 process"
+            if pm2 list | grep -q weebform-server; then
+              echo "Restarting PM2 process"
+              pm2 restart weebform-server || { echo "PM2 restart failed"; exit 1; }
+            else
+              echo "Starting PM2 process"
+              pm2 start index.js --name weebform-server || { echo "PM2 start failed"; exit 1; }
+              pm2 save
+            fi
+            echo "Deployment complete"
           EOF
