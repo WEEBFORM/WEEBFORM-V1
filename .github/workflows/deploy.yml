@@ -28,43 +28,25 @@ jobs:
           ssh -v -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
             echo "Connected to EC2"
-            echo "Current user: $(whoami)"
+            cd ${{ secrets.APP_PATH }} || { echo "App path not found"; exit 1; }
 
-            # === 1. Go to repo root ===
-            cd ${{ secrets.APP_PATH }} || { echo "App path not found: ${{ secrets.APP_PATH }}"; exit 1; }
-
-            # === 2. Verify .git exists ===
-            if [ ! -d ".git" ]; then
-              echo "ERROR: .git not found! Repo not cloned?"
-              exit 1
-            fi
-
-            # === 3. Fix permissions ===
             echo "Fixing permissions"
-            sudo chown -R $(whoami)::$(whoami) .
+            sudo chown -R $(whoami):$(whoami) . 
             sudo chmod -R u+rwX .
 
-            # === 4. Git pull ===
-            echo "Pulling latest code"
+            echo "Pulling latest changes"
             git pull https://${{ secrets.HTTP_TOKEN }}@github.com/WEEBFORM/WEEBFORM-V1.git main
 
-            # === 5. Go to backend/ ===
-            cd backend || { echo "backend/ folder not found!"; exit 1; }
-
-            # === 6. Install deps ===
-            echo "Installing npm packages"
+            echo "Installing dependencies"
             npm install
 
-            # === 7. PM2: Start or Restart ===
             echo "Managing PM2 process"
             if pm2 list | grep -q "weebform-server"; then
-              echo "Restarting weebform-server"
               pm2 restart weebform-server
             else
-              echo "Starting weebform-server"
               pm2 start index.js --name weebform-server
               pm2 save
             fi
 
-            echo "Deployment complete!"
+            echo "Deployment complete"
           EOF
