@@ -29,31 +29,24 @@ jobs:
             set -e
             echo "Connected to EC2"
 
-            # === Go directly to repo ===
-            cd /home/ubuntu/WEEBFORM-V1 || { echo "Repo not found at /home/ubuntu/WEEBFORM-V1"; exit 1; }
+            cd /home/ubuntu/WEEBFORM-V1
 
-            # === Verify .git exists ===
-            [ -d ".git" ] || { echo ".git missing!"; exit 1; }
+            # === Git: Pull latest ===
+            echo "Pulling latest code..."
+            git pull https://${{ secrets.HTTP_TOKEN }}@github.com/WEEBFORM/WEEBFORM-V1.git main
 
             # === Fix permissions ===
             sudo chown -R $(whoami):$(whoami) .
             sudo chmod -R u+rwX .
 
-            # === Pull latest ===
-            echo "Pulling latest code..."
-            git pull https://${{ secrets.HTTP_TOKEN }}@github.com/WEEBFORM/WEEBFORM-V1.git main
-
-            # === Install deps in backend/ ===
+            # === Deploy backend ===
             cd backend
             npm install
 
-            # === Restart PM2 ===
-            if pm2 list | grep -q "weebform-server"; then
-              pm2 restart weebform-server
-            else
-              pm2 start index.js --name weebform-server
-              pm2 save
-            fi
+            # === PM2: Delete if broken, then start ===
+            pm2 delete weebform-server 2>/dev/null || echo "No process to delete"
+            pm2 start index.js --name weebform-server
+            pm2 save
 
             echo "Deployment complete!"
           EOF
