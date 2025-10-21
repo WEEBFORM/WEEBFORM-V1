@@ -247,7 +247,6 @@ export const getReplies = async (req, res) => {
     
             const q = `
                 SELECT r.*, u.id AS userId, u.username, u.full_name, u.profilePic,
-                       (SELECT COUNT(*) FROM reply_likes WHERE replyId = r.id) AS likeCount
                 FROM replies AS r
                 JOIN users AS u ON u.id = r.userId
                 WHERE r.commentId = ?
