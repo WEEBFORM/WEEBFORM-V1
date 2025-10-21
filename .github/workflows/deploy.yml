@@ -28,19 +28,26 @@ jobs:
           ssh -v -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             set -e
             echo "Connected to EC2"
-            cd ${{ secrets.APP_PATH }} || { echo "App path not found"; exit 1; }
 
-            echo "Fixing permissions"
-            sudo chown -R $(whoami):$(whoami) . 
+            # === Go directly to repo ===
+            cd /home/ubuntu/WEEBFORM-V1 || { echo "Repo not found at /home/ubuntu/WEEBFORM-V1"; exit 1; }
+
+            # === Verify .git exists ===
+            [ -d ".git" ] || { echo ".git missing!"; exit 1; }
+
+            # === Fix permissions ===
+            sudo chown -R $(whoami):$(whoami) .
             sudo chmod -R u+rwX .
 
-            echo "Pulling latest changes"
+            # === Pull latest ===
+            echo "Pulling latest code..."
             git pull https://${{ secrets.HTTP_TOKEN }}@github.com/WEEBFORM/WEEBFORM-V1.git main
 
-            echo "Installing dependencies"
+            # === Install deps in backend/ ===
+            cd backend
             npm install
 
-            echo "Managing PM2 process"
+            # === Restart PM2 ===
             if pm2 list | grep -q "weebform-server"; then
               pm2 restart weebform-server
             else
@@ -48,5 +55,5 @@ jobs:
               pm2 save
             fi
 
-            echo "Deployment complete"
+            echo "Deployment complete!"
           EOF
