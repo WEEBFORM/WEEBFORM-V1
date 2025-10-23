@@ -24,7 +24,7 @@ const router = express.Router();
 
 //COMMUNITY MANAGEMENT (api/v1/communities)
 router.post('/create', createCommunity);
-router.post('/all', getAllCommunities);
+router.post('/all/communities', getAllCommunities);
 router.get('/', communities);
 router.get('/existing/joined', yourCommunities);
 router.get('/existing/created', getCreatedCommunities);
