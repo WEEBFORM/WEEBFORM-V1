@@ -36,7 +36,6 @@ const getMultipleBots = async (count, excludeUserIds = []) => {
 // REACTIVE ENGAGEMENT PROCESSING
 const runDailyProactivePostingCycle = async () => {
     const postsToCreate = Math.floor(Math.random() * 4) + 5; 
-
     const usedBotIds = new Set();
         
     console.log(`Scheduler (Proactive Opinions): Aiming to create ${postsToCreate} posts today.`);
@@ -44,6 +43,10 @@ const runDailyProactivePostingCycle = async () => {
     let topics;
     try {
         topics = await getFreshAnimeNews();
+        if (topics.length === 0) {
+            console.log('Scheduler (Proactive Opinions): No topics fetched. Ending cycle.');
+            return;
+        }
     } catch (error) {
         console.error('Scheduler (Proactive Opinions): Failed to fetch fresh anime news:', error);
         return;
@@ -61,11 +64,18 @@ const runDailyProactivePostingCycle = async () => {
             const delayMinutes = i * (5 + Math.floor(Math.random() * 10));
             const postTime = moment().add(delayMinutes, 'minutes').format("YYYY-MM-DD HH:mm:ss");
 
-            const postContent = await generateBotPost(bot.core_prompt);
+            const topic = topics[Math.floor(Math.random() * topics.length)];
+            const { postText, media } = await generateBotPost(bot.core_prompt, topic);
 
-            if (postContent) {
-                const query = "INSERT INTO posts (userId, description, category, createdAt) VALUES (?, ?, ?, ?)";
-                const values = [bot.id, postContent, 'Discussion', postTime];
+            if (postText) {
+                let finalmedia = null;
+                // 80% chance to include the image if it exists
+                if (media && Math.random() < 0.8) {
+                    finalmedia = media;
+                }
+
+                const query = "INSERT INTO posts (userId, description, category, media, createdAt) VALUES (?, ?, ?, ?, ?)";
+                const values = [bot.id, postText, 'Discussion', finalmedia, postTime];
                 const [result] = await db.promise().execute(query, values);
                 const postId = result.insertId;
                 
@@ -73,7 +83,7 @@ const runDailyProactivePostingCycle = async () => {
                 usedBotIds.add(bot.id);
 
                 // TRIGGER ORGANIC ENGAGEMENT: Schedule likes and comments
-                await scheduleOrgnicEngagementForPost(postId, bot.id, postContent, postTime);
+                await scheduleOrgnicEngagementForPost(postId, bot.id, postText, postTime);
             }
         } catch (error) {
             console.error(`Scheduler (Proactive Opinions): Failed to create post for bot ${bot.id}:`, error);
@@ -178,7 +188,7 @@ export const startBotSchedulers = () => {
     cron.schedule(`0 ${randomHour} * * *`, runDailyProactivePostingCycle, { timezone: "UTC" });
     console.log(`Proactive Daily Opinion scheduler started. Will run daily at ${randomHour}:00 UTC.`);
     
-    //runDailyProactivePostingCycle(); This is for immediate testing after modification
+    runDailyProactivePostingCycle();
 
     // UNIFIES TASK PROCESSSOR (runs every minute)
     cron.schedule('* * * * *', checkAndProcessTasks); 

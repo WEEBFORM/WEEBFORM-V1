@@ -126,6 +126,42 @@ export const editCommunity = (req, res) => {
     });
 };
 
+// UTILITY FUNCTION TO SHUFFLE ARRAY
+const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+};
+
+// API TO FETCH ALL COMMUNITIES
+export const getAllCommunities = (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const userId = req.user.id;
+            const allCommunities = await fetchCommunityInfo(
+                [], 
+                userId, 
+                { 
+                    includeMemberCount: true, 
+                    includeUserMembership: true 
+                }
+            );
+            const result = shuffleArray(allCommunities);
+            res.status(200).json(result);
+
+        } catch (error) {
+            console.error("[Error] getAllCommunities:", error);
+            return res.status(500).json({ 
+                message: "An unexpected error occurred while fetching all communities.",
+                error: error.message 
+            });
+        }
+    });
+};
+
 // --- API TO VIEW JOINED COMMUNITIES ---
 export const yourCommunities = (req, res) => {
     authenticateUser(req, res, async () => {

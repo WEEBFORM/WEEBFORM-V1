@@ -11,6 +11,7 @@ import {
     editCommunity,
     inviteToCommunity,
     acceptCommunityInvitation,
+    getAllCommunities,
 } from "../../controllers/community/community.js";
 //COMMUNITY POST INTERACTIONS/FEATURES
 import {
@@ -23,6 +24,7 @@ const router = express.Router();
 
 //COMMUNITY MANAGEMENT (api/v1/communities)
 router.post('/create', createCommunity);
+router.post('/all', getAllCommunities);
 router.get('/', communities);
 router.get('/existing/joined', yourCommunities);
 router.get('/existing/created', getCreatedCommunities);
