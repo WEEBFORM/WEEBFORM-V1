@@ -2,6 +2,7 @@ import express from "express";
 import {
     createCommunity,
     joinCommunity,
+    getAllCommunities,
     communities,
     getCommunityDetails,
     yourCommunities,
@@ -11,7 +12,6 @@ import {
     editCommunity,
     inviteToCommunity,
     acceptCommunityInvitation,
-    getAllCommunities,
 } from "../../controllers/community/community.js";
 //COMMUNITY POST INTERACTIONS/FEATURES
 import {

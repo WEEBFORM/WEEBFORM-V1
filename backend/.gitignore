@@ -1,3 +1,4 @@
 node_modules
 .env
-weebform-v1-key.pem
+weebform-v1-key-pair.pem
+weebform-v1-key-pair.pub
