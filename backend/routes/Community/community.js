@@ -17,10 +17,10 @@ import {
 import {
     newCommunityPost,
     fetchCommunityPosts,
-    deleteCommunityPostll
+    deleteCommunityPost,
 } from "../../controllers/community/interactions/main.js";
 
-const router = express.Router();
+const router = express.Router(); 
 
 //COMMUNITY MANAGEMENT (api/v1/communities)
 router.post('/create', createCommunity);

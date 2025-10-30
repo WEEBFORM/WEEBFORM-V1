@@ -86,8 +86,7 @@ export const getGroupMembers = async (req, res) => {
 export const getGroupLeaderboard = async (req, res) => {
     try {
         const { chatGroupId } = req.params;
-        const limit = req.query.limit || 20; // Allow client to specify limit, default to 20
-        const leaderboard = await getLeaderboardService(chatGroupId, parseInt(limit));
+        const leaderboard = await getLeaderboardService(chatGroupId);
         res.status(200).json(leaderboard);
     } catch (error) {
         console.error("Error in getGroupLeaderboard controller:", error);

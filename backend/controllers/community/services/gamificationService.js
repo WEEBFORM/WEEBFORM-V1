@@ -201,23 +201,23 @@ export const handleLevelUp = async (userId, chatGroupId, newLevel) => {
 };
 
 // GET GROUP LEADERBOARD
-export const getGroupLeaderboard = async (chatGroupId, limit = 10) => { // Use chatGroupId parameter
+export const getGroupLeaderboard = async (chatGroupId) => { 
   const query = `
     SELECT 
-      ua.userId, 
-      ua.level, 
-      ua.totalPoints,
+      cgm.userId,
       u.full_name,
-      u.profilePic
-    FROM user_activity ua
-    JOIN users u ON ua.userId = u.id
-    WHERE ua.chatGroupId = ?
-    ORDER BY ua.level DESC, ua.totalPoints DESC
-    LIMIT ?
+      u.profilePic,
+      COALESCE(ua.level, 1) AS level,
+      COALESCE(ua.totalPoints, 0) AS totalPoints
+    FROM chat_group_members cgm
+    JOIN users u ON cgm.userId = u.id
+    LEFT JOIN user_activity ua ON cgm.userId = ua.userId AND cgm.chatGroupId = ua.chatGroupId
+    WHERE cgm.chatGroupId = ?
+    ORDER BY level DESC, totalPoints DESC
   `;
   
   return new Promise((resolve, reject) => {
-    db.query(query, [chatGroupId, limit], (err, results) => { 
+    db.query(query, [chatGroupId], (err, results) => { 
       if (err) {
         console.error("Error fetching leaderboard:", err);
         return reject(err);
