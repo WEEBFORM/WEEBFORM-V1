@@ -176,15 +176,17 @@ export const getAllCommunities = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
             const userId = req.user.id;
-            const allCommunities = await fetchCommunityInfo(
+            // Fetch only public communities for general discovery
+            const publicCommunities = await fetchCommunityInfo(
                 [], 
                 userId, 
                 { 
                     includeMemberCount: true, 
-                    includeUserMembership: true 
+                    includeUserMembership: true,
+                    discoveryMode: true // <-- Ensures only public communities are fetched
                 }
             );
-            const result = shuffleArray(allCommunities);
+            const result = shuffleArray(publicCommunities);
             res.status(200).json(result);
 
         } catch (error) {
@@ -202,11 +204,24 @@ export const communities = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
             const userId = req.user.id;
-            const allCommunitiesData = await fetchCommunityInfo([], userId, { includeMemberCount: true, includeUserMembership: true });
-            const friendCommunityIds = new Set(await getFriendCommunityIds(userId));
 
-            const joinedResult = allCommunitiesData.filter(c => c.isCommunityMember);
-            const discoveryPool = allCommunitiesData.filter(c => !c.isCommunityMember);
+            // 1. Fetch all communities (public and private) that the user has joined
+            const joinedCommunityIds = await getUserJoinedCommunityIds(userId);
+            const joinedResult = joinedCommunityIds.length > 0 
+                ? await fetchCommunityInfo(joinedCommunityIds, userId, { includeMemberCount: true, includeUserMembership: true })
+                : [];
+
+            // 2. Fetch all public communities for the discovery pool
+            const publicCommunities = await fetchCommunityInfo([], userId, { 
+                includeMemberCount: true, 
+                includeUserMembership: true, 
+                discoveryMode: true 
+            });
+
+            // 3. Filter the discovery pool to exclude communities the user has already joined
+            const discoveryPool = publicCommunities.filter(c => !c.isCommunityMember);
+            
+            const friendCommunityIds = new Set(await getFriendCommunityIds(userId));
 
             const recommendedResult = discoveryPool.filter(c => friendCommunityIds.has(c.id));
             const recommendedIds = new Set(recommendedResult.map(c => c.id));
@@ -223,7 +238,7 @@ export const communities = (req, res) => {
                 recommended: recommendedResult,
                 popular: popularResult,
                 others: othersResult,
-                joined: joinedResult
+                joined: joinedResult // This list correctly includes the user's private communities
             });
         } catch (error) {
             console.error("[Error] communities:", error);

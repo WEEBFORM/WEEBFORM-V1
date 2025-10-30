@@ -3,7 +3,7 @@ import { processImageUrl } from '../../middlewares/cloudfrontConfig.js';
 
 // --- HELPER FUNCTION TO FETCH COMMUNITY INFO (Refactored) ---
 export const fetchCommunityInfo = async (communityIds = [], userId = null, options = {}) => {
-    const { includeMemberCount = true, includeUserMembership = false, includeChatGroups = false, includeCreatorInfo = false } = options;
+    const { includeMemberCount = true, includeUserMembership = false, includeChatGroups = false, includeCreatorInfo = false, discoveryMode = false } = options;
 
     try {
         let baseQuery = `SELECT c.id, c.creatorId, c.title, c.description, c.groupIcon, c.visibility, c.createdAt`;
@@ -15,10 +15,20 @@ export const fetchCommunityInfo = async (communityIds = [], userId = null, optio
         
         const queryParams = [];
         if (includeUserMembership && userId) queryParams.push(userId);
+
+        const whereClauses = [];
         if (communityIds.length > 0) {
-            baseQuery += ` WHERE c.id IN (?)`;
+            whereClauses.push(`c.id IN (?)`);
             queryParams.push(communityIds);
         }
+        if (discoveryMode) {
+            whereClauses.push(`c.visibility = 1`);
+        }
+
+        if (whereClauses.length > 0) {
+            baseQuery += ` WHERE ${whereClauses.join(' AND ')}`;
+        }
+        
         baseQuery += ` ORDER BY c.createdAt ASC`;
 
         const [communities] = await db.promise().query(baseQuery, queryParams);

@@ -17,7 +17,7 @@ import {
 import {
     newCommunityPost,
     fetchCommunityPosts,
-    deleteCommunityPost
+    deleteCommunityPostll
 } from "../../controllers/community/interactions/main.js";
 
 const router = express.Router();
