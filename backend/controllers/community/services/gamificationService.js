@@ -44,7 +44,7 @@ export const incrementUserActivity = async (userId, chatGroupId, activityType) =
   
   const points = ACTIVITY_POINTS[activityType];
   
-  const userStatsKey = `user:${userId}:stats:${chatGroupId}`; // Use chatGroupId in Redis key
+  const userStatsKey = `user:${userId}:stats:${chatGroupId}`;
   let currentStats = await redisClient.get(userStatsKey);
   let stats;
   
@@ -64,9 +64,7 @@ export const incrementUserActivity = async (userId, chatGroupId, activityType) =
   
   // UPDATE REDIS CACHE(30mins)
   await redisClient.set(userStatsKey, JSON.stringify(stats), 'EX', 1800);
-  
-  // UPDATE DATABASE
-  updateUserStatsInDB(userId, chatGroupId, stats);
+  await updateUserStatsInDB(userId, chatGroupId, stats);
   
   // CHECK FOR LEVEL UP
   if (stats.level > oldLevel) {
