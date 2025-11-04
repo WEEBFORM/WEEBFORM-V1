@@ -10,8 +10,8 @@ import {
     exitCommunity,
     deleteCommunity,
     editCommunity,
-    inviteToCommunity,
-    acceptCommunityInvitation,
+    addCommunityMember,
+    removeCommunityMember,
 } from "../../controllers/community/community.js";
 //COMMUNITY POST INTERACTIONS/FEATURES
 import {
@@ -34,8 +34,8 @@ router.delete('/leave/:id', exitCommunity);
 router.put('/:id/edit', editCommunity);
 router.delete('/:id', deleteCommunity);
 
-router.post('/invite', inviteToCommunity);
-router.post('/invite/accept', acceptCommunityInvitation);
+router.post('/:communityId/invite', addCommunityMember);
+router.post('/:communityId/members/:userIdToRemove', removeCommunityMember);
 
 //COMMUNITY FEED/POSTS 
 router.post('/:id/new-post', newCommunityPost);

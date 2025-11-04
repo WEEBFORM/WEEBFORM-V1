@@ -201,7 +201,7 @@ export const login = async (req, res) => {
         // CREATE A NEW LOGIN NOTIFICATION
         await createNotification('NEW_LOGIN', user.id, user.id, {}, { device, location });
 
-        const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY, { expiresIn: '3d' });
+        const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY, { expiresIn: '1Y' });
 
         res.cookie("accessToken", token, {
             httpOnly: false,
