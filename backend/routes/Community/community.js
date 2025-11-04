@@ -28,7 +28,7 @@ const router = express.Router();
 router.get('/members/:id/invitable-users', getInvitableUsers);
 router.get('/members/:id/all', getCommunityMembers);
 router.post('/members/:id/invite', addCommunityMember);
-router.delete('/members/:id/members/:userIdToRemove', removeCommunityMember);
+router.delete('/members/:communityId/member/:userIdToRemove', removeCommunityMember);
 
 //COMMUNITY MANAGEMENT (api/v1/communities)
 router.post('/create', createCommunity);

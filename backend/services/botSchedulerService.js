@@ -188,7 +188,7 @@ export const startBotSchedulers = () => {
     cron.schedule(`0 ${randomHour} * * *`, runDailyProactivePostingCycle, { timezone: "UTC" });
     console.log(`Proactive Daily Opinion scheduler started. Will run daily at ${randomHour}:00 UTC.`);
     
-    runDailyProactivePostingCycle();
+    //runDailyProactivePostingCycle();
 
     // UNIFIES TASK PROCESSSOR (runs every minute)
     cron.schedule('* * * * *', checkAndProcessTasks); 

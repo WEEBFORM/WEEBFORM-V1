@@ -419,20 +419,24 @@ export const getCommunityMembers = (req, res) => {
     });
 };
 
-// --- NEW: API TO FETCH USERS AN ADMIN CAN INVITE TO A COMMUNITY ---
+// NEW: API TO FETCH USERS AN ADMIN CAN INVITE TO A COMMUNITY
 export const getInvitableUsers = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
             const adminId = req.user.id;
-            const { communityId } = req.params;
+            const communityId = parseInt(req.params.id, 10);
+
+            if (isNaN(communityId)) {
+                return res.status(400).json({ message: "Invalid Community or User ID provided." });
+            }
 
             // VERIFY ADMIN STATUS
             const [adminCheck] = await db.promise().query("SELECT isAdmin FROM community_members WHERE communityId = ? AND userId = ?", [communityId, adminId]);
             if (adminCheck.length === 0 || !adminCheck[0].isAdmin) {
-                return res.status(403).json({ message: "You must be an admin to view invitable users." });
+                return res.status(403).json({ message: "You must be an admin to perform this action." });
             }
 
-            // GET ALL FOLLOWERS AND FOLLOWING FOR THE ADMIN (UNION removes duplicates)
+            // GET ALL FOLLOWERS AND FOLLOWING FOR THE ADMIN
             const friendsQuery = `
                 (SELECT followed AS id FROM reach WHERE follower = ?)
                 UNION
@@ -474,36 +478,40 @@ export const getInvitableUsers = (req, res) => {
     });
 };
 
-// INVITE MEMBER TO COMMUNITY
+// API FOR ADMIN TO ADD USERS TO A COMMUNITY
 export const addCommunityMember = (req, res) => {
     authenticateUser(req, res, async () => {
-        const connection = await db.promise().getConnection();
+        const connection = db; 
         try {
             const adminId = req.user.id;
-            const { communityId } = req.params;
-            const { userIdToAdd } = req.body;
+            const communityId = parseInt(req.params.id, 10); 
+            const { userIdToAdd } = req.body; 
 
-            if (!userIdToAdd || !Array.isArray(userIdToAdd) || userIdToAdd.length === 0) {
-                return res.status(400).json({ message: "An array of user IDs to add is required." });
+            if (isNaN(communityId)) {
+                return res.status(400).json({ message: "Invalid Community ID." });
             }
 
-            await connection.beginTransaction();
+            if (!userIdToAdd || !Array.isArray(userIdToAdd) || userIdToAdd.length === 0) {
+                return res.status(400).json({ message: "An array of user IDs to add is required in the 'userIdToAdd' field." });
+            }
 
-            // CHECK ADMIN PERMISSIONS
-            const [adminCheck] = await connection.query("SELECT isAdmin FROM community_members WHERE communityId = ? AND userId = ?", [communityId, adminId]);
+            await connection.promise().beginTransaction();
+
+            // VERIFY ADMIN STATUS
+            const [adminCheck] = await connection.promise().query("SELECT isAdmin FROM community_members WHERE communityId = ? AND userId = ?", [communityId, adminId]);
             if (adminCheck.length === 0 || !adminCheck[0].isAdmin) {
-                await connection.rollback();
-                return res.status(403).json({ message: "You must be an admin to add new members." });
+                await connection.promise().rollback();
+                return res.status(403).json({ message: "You must be an admin to perform this action." });
             }
 
             // GET COMMUNITY AND DEFAULT GROUP INFO (once)
-            const [communityData] = await connection.query("SELECT title FROM communities WHERE id = ?", [communityId]);
+            const [communityData] = await connection.promise().query("SELECT title FROM communities WHERE id = ?", [communityId]);
             if (communityData.length === 0) {
-                 await connection.rollback();
+                 await connection.promise().rollback();
                 return res.status(404).json({ message: "Community not found." });
             }
             const communityTitle = communityData[0].title;
-            const [defaultGroups] = await connection.query("SELECT id FROM `chat_groups` WHERE communityId = ? AND isDefault = TRUE", [communityId]);
+            const [defaultGroups] = await connection.promise().query("SELECT id FROM `chat_groups` WHERE communityId = ? AND isDefault = TRUE", [communityId]);
 
             // PROCESS EACH USER
             let addedCount = 0;
@@ -511,40 +519,34 @@ export const addCommunityMember = (req, res) => {
             const addedUsers = [];
 
             for (const userId of userIdToAdd) {
-                // Skip if the user is the admin themself
-                if (userId === adminId) continue;
+                if (Number(userId) === Number(adminId)) continue;
 
-                // CHECK IF USER IS ALREADY A MEMBER
-                const [memberCheck] = await connection.query("SELECT id FROM community_members WHERE communityId = ? AND userId = ?", [communityId, userId]);
+                const [memberCheck] = await connection.promise().query("SELECT id FROM community_members WHERE communityId = ? AND userId = ?", [communityId, userId]);
                 if (memberCheck.length > 0) {
                     skippedUsers.push({ userId, reason: "Already a member." });
                     continue;
                 }
 
-                // CHECK IF ADMIN AND USER ARE MUTUALS (one follows the other)
-                const [friendshipCheck] = await connection.query(
+                const [friendshipCheck] = await connection.promise().query(
                     "SELECT 1 FROM reach WHERE (follower = ? AND followed = ?) OR (follower = ? AND followed = ?)",
                     [adminId, userId, userId, adminId]
                 );
                 if (friendshipCheck.length === 0) {
-                    // Fail the entire transaction if any user is not a follower/following
-                    await connection.rollback();
+                    await connection.promise().rollback();
                     return res.status(403).json({ message: `Failed to add users. You can only add users that you follow or who follow you. User ID: ${userId} is not a valid connection.` });
                 }
                 
-                // ADD USER TO COMMUNITY AND DEFAULT GROUPS
-                await connection.query("INSERT INTO community_members (communityId, userId, isAdmin) VALUES (?, ?, ?)", [communityId, userId, 0]);
+                await connection.promise().query("INSERT INTO community_members (communityId, userId, isAdmin) VALUES (?, ?, ?)", [communityId, userId, 0]);
                 for (const group of defaultGroups) {
-                    await connection.query("INSERT INTO chat_group_members (chatGroupId, userId) VALUES (?, ?)", [group.id, userId]);
+                    await connection.promise().query("INSERT INTO chat_group_members (chatGroupId, userId) VALUES (?, ?)", [group.id, userId]);
                 }
                 
                 addedUsers.push(userId);
                 addedCount++;
             }
 
-            await connection.commit();
+            await connection.promise().commit();
 
-            // SEND NOTIFICATIONS (after successful commit)
             for (const userId of addedUsers) {
                 await createNotification('COMMUNITY_ADDED', adminId, userId, { communityId }, { communityTitle });
             }
@@ -556,11 +558,9 @@ export const addCommunityMember = (req, res) => {
             });
 
         } catch (error) {
-            await connection.rollback();
             console.error("[Error] addCommunityMember:", error);
+            await connection.promise().rollback(); 
             return res.status(500).json({ message: "Failed to add users to the community.", error: error.message });
-        } finally {
-            connection.release();
         }
     });
 };
@@ -570,16 +570,22 @@ export const removeCommunityMember = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
             const adminId = req.user.id;
-            const { communityId, userIdToRemove } = req.params;
+            
+            //PARSED VALUES
+            const communityId = parseInt(req.params.communityId, 10);
+            const userIdToRemove = parseInt(req.params.userIdToRemove, 10);
 
-            // CHECK PERMISSIONS
+            if (isNaN(communityId) || isNaN(userIdToRemove)) {
+                return res.status(400).json({ message: "Invalid Community or User ID provided." });
+            }
+            // VERIFY ADMIN STATUS
             const [adminCheck] = await db.promise().query("SELECT isAdmin FROM community_members WHERE communityId = ? AND userId = ?", [communityId, adminId]);
             if (adminCheck.length === 0 || !adminCheck[0].isAdmin) {
                 return res.status(403).json({ message: "You must be an admin to remove members." });
             }
 
             // PREVENT REMOVING YOURSELF VIA THIS ENDPOINT
-            if (Number(adminId) === Number(userIdToRemove)) {
+            if (adminId === userIdToRemove) {
                 return res.status(400).json({ message: "Admins cannot remove themselves. Please use the 'Leave Community' option instead." });
             }
 
@@ -590,7 +596,7 @@ export const removeCommunityMember = (req, res) => {
             }
 
             // PREVENT REMOVING THE ORIGINAL CREATOR
-            if (Number(communityData[0].creatorId) === Number(userIdToRemove)) {
+            if (communityData[0].creatorId === userIdToRemove) { 
                 return res.status(403).json({ message: "The original creator of the community cannot be removed." });
             }
 
@@ -626,7 +632,7 @@ export const removeCommunityMember = (req, res) => {
 
         } catch (error) {
             console.error("[Error] removeCommunityMember:", error);
-            return res.status(500).json({ message: "Failed to remove user from the community.", error: error.message });
+            return res.status(500).json({ message: "Failed to remove user from the community.", error: aerror.message });
         }
     });  
 };
