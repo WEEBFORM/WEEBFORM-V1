@@ -16,7 +16,7 @@ if (process.env.REDIS_URL) {
       const delay = Math.min(times * 50, 2000);
       console.log(`Redis: Retrying connection (attempt ${times}), delay ${delay}ms`);
       return delay;
-    },
+    }, 
   });
 } else { 
   const redisOptions = { 

@@ -23,6 +23,11 @@ import {
 
 const router = express.Router(); 
 
+//COMMUNITY MEMBERSHIP MANAGEMENT
+router.get('/members/:communityId/all', getCommunityMembers);
+router.post('/members/:communityId/invite', addCommunityMember);
+router.delete('/members/:communityId/members/:userIdToRemove', removeCommunityMember);
+
 //COMMUNITY MANAGEMENT (api/v1/communities)
 router.post('/create', createCommunity);
 router.get('/all/communities', getAllCommunities);
@@ -34,11 +39,6 @@ router.post('/join/:id', joinCommunity);
 router.delete('/leave/:id', exitCommunity);
 router.put('/:id/edit', editCommunity);
 router.delete('/:id', deleteCommunity);
-
-//COMMUNITY MEMBERSHIP MANAGEMENT
-router.get('members/:communityId/all', getCommunityMembers);
-router.post('members/:communityId/invite', addCommunityMember);
-router.delete('members/:communityId/members/:userIdToRemove', removeCommunityMember);
 
 //COMMUNITY FEED/POSTS 
 router.post('/:id/new-post', newCommunityPost);
