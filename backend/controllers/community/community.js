@@ -7,14 +7,13 @@ import { s3, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
 import { fetchCommunityInfo, getUserJoinedCommunityIds, getFriendCommunityIds } from "./communityHelpers.js";
 import { joinChatGroupInternal } from './communityGroups.js';
 import { createNotification } from "../notificationsController.js";
-import { resizeImage } from '../../middlewares/cloudfrontConfig.js';
+import { processImageUrl, resizeImage } from '../../middlewares/cloudfrontConfig.js';
 
 // --- API TO CREATE NEW COMMUNITY ---
 export const createCommunity = (req, res) => {
     authenticateUser(req, res, () => {
         cpUpload(req, res, async (err) => {
-            if (err) return res.status(400).json({ message: "File upload error", error: err.message });
-            
+            if (err) return res.status(400).json({ message: "File upload error", error: err.message }); 
             try {
                 const user = req.user;
                 const { title, description, visibility } = req.body;

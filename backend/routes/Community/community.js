@@ -24,9 +24,9 @@ import {
 const router = express.Router(); 
 
 //COMMUNITY MEMBERSHIP MANAGEMENT
-router.get('/members/:communityId/all', getCommunityMembers);
-router.post('/members/:communityId/invite', addCommunityMember);
-router.delete('/members/:communityId/members/:userIdToRemove', removeCommunityMember);
+router.get('/members/:id/all', getCommunityMembers);
+router.post('/members/:id/invite', addCommunityMember);
+router.delete('/members/:id/members/:userIdToRemove', removeCommunityMember);
 
 //COMMUNITY MANAGEMENT (api/v1/communities)
 router.post('/create', createCommunity);
