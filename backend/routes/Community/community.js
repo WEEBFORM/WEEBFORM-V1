@@ -11,6 +11,7 @@ import {
     deleteCommunity,
     editCommunity,
     getCommunityMembers,
+    getInvitableUsers,
     addCommunityMember,
     removeCommunityMember,
 } from "../../controllers/community/community.js";
@@ -24,6 +25,7 @@ import {
 const router = express.Router(); 
 
 //COMMUNITY MEMBERSHIP MANAGEMENT
+router.get('/members/:id/invitable-users', getInvitableUsers);
 router.get('/members/:id/all', getCommunityMembers);
 router.post('/members/:id/invite', addCommunityMember);
 router.delete('/members/:id/members/:userIdToRemove', removeCommunityMember);
