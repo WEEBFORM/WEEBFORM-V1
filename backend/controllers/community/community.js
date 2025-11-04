@@ -363,6 +363,63 @@ export const deleteCommunity = (req, res) => {
     });
 };
 
+// API TO FETCH COMMUNITY MEMBERS
+export const getCommunityMembers = (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const userId = req.user.id;
+            const communityId = req.params.id;
+
+            if (!communityId) {
+                return res.status(400).json({ message: "Community ID is required." });
+            }
+
+            // CHECK COMMUNITY VISIBILITY AND USER MEMBERSHIP
+            const [communityData] = await db.promise().query(
+                `SELECT c.visibility, 
+                        (SELECT COUNT(*) FROM community_members WHERE communityId = c.id AND userId = ?) AS isMember 
+                 FROM communities c WHERE c.id = ?`,
+                [userId, communityId]
+            );
+
+            if (communityData.length === 0) {
+                return res.status(404).json({ message: "Community not found." });
+            }
+
+            const { visibility, isMember } = communityData[0];
+
+            if (visibility === 0 && !isMember) {
+                return res.status(403).json({ message: "You do not have permission to view the members of this private community." });
+            }
+            const q = `
+                SELECT 
+                    u.id, 
+                    u.username, 
+                    u.full_name, 
+                    u.profilePic,
+                    cm.isAdmin
+                FROM community_members AS cm
+                JOIN users AS u ON cm.userId = u.id
+                WHERE cm.communityId = ?
+                ORDER BY cm.isAdmin DESC, u.username ASC
+            `;
+            
+            const [members] = await db.promise().query(q, [communityId]);
+
+            const processedMembers = members.map(member => {
+                member.profilePic = processImageUrl(member.profilePic);
+                return member;
+            });
+
+            res.status(200).json(processedMembers);
+
+        } catch (error) {
+            console.error("[Error] getCommunityMembers:", error);
+            return res.status(500).json({ message: "Failed to fetch community members.", error: error.message });
+        }
+    });
+};
+
 // INVITE MEMBER TO COMMUNITY
 export const addCommunityMember = (req, res) => {
     authenticateUser(req, res, async () => {
