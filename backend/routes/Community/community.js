@@ -35,7 +35,7 @@ router.put('/:id/edit', editCommunity);
 router.delete('/:id', deleteCommunity);
 
 router.post('/:communityId/invite', addCommunityMember);
-router.post('/:communityId/members/:userIdToRemove', removeCommunityMember);
+router.delete('/:communityId/members/:userIdToRemove', removeCommunityMember);
 
 //COMMUNITY FEED/POSTS 
 router.post('/:id/new-post', newCommunityPost);
