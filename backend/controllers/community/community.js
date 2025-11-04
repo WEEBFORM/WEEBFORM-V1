@@ -363,112 +363,135 @@ export const deleteCommunity = (req, res) => {
     });
 };
 
-//NEW, INVITE MEMBER TO COMMUNITY
-// --- API TO INVITE A USER TO A PRIVATE COMMUNITY ---
-export const inviteToCommunity = (req, res) => {
+// INVITE MEMBER TO COMMUNITY
+export const addCommunityMember = (req, res) => {
     authenticateUser(req, res, async () => {
+        const connection = await db.promise().getConnection();
         try {
-            const inviterId = req.user.id;
+            const adminId = req.user.id;
             const { communityId } = req.params;
-            const { inviteeId } = req.body;
+            const { userIdToAdd } = req.body;
 
-            if (!inviteeId) return res.status(400).json({ message: "Invitee user ID is required." });
+            if (!userIdToAdd) return res.status(400).json({ message: "User ID to add is required." });
 
-            const [adminCheck] = await db.promise().query("SELECT isAdmin FROM community_members WHERE communityId = ? AND userId = ?", [communityId, inviterId]);
+            await connection.beginTransaction();
+
+            const [adminCheck] = await connection.query("SELECT isAdmin FROM community_members WHERE communityId = ? AND userId = ?", [communityId, adminId]);
             if (adminCheck.length === 0 || !adminCheck[0].isAdmin) {
-                return res.status(403).json({ message: "You must be an admin to send invitations." });
+                await connection.rollback();
+                return res.status(403).json({ message: "You must be an admin to add new members." });
             }
 
-            // const [communityData] = await db.promise().query("SELECT visibility, title FROM communities WHERE id = ?", [communityId]);
-            // if (communityData.length === 0) return res.status(404).json({ message: "Community not found." });
-            // if (communityData[0].visibility !== 0) {
-            //     return res.status(400).json({ message: "This community is public; no invitation is needed." });
-            // }
+            const [friendshipCheck] = await connection.query(
+                "SELECT 1 FROM reach WHERE (follower = ? AND followed = ?) OR (follower = ? AND followed = ?)",
+                [adminId, userIdToAdd, userIdToAdd, adminId]
+            );
+            if (friendshipCheck.length === 0) {
+                await connection.rollback();
+                return res.status(403).json({ message: "You can only add users that you follow or who follow you." });
+            }
 
-            // CHECK IF INVITEE EXISTS
-            const [memberCheck] = await db.promise().query("SELECT id FROM community_members WHERE communityId = ? AND userId = ?", [communityId, inviteeId]);
-            if (memberCheck.length > 0) return res.status(409).json({ message: "This user is already a member." });
-
-            // CHECK FOR EXISTING PENDING INVITATION
-            const [inviteCheck] = await db.promise().query("SELECT id FROM community_invitations WHERE communityId = ? AND inviteeId = ? AND status = 'pending'", [communityId, inviteeId]);
-            if (inviteCheck.length > 0) return res.status(409).json({ message: "This user already has a pending invitation." });
-
-            // PROCESS THE INVITATION
-            await db.promise().query("INSERT INTO community_invitations (communityId, inviterId, inviteeId) VALUES (?, ?, ?)", [communityId, inviterId, inviteeId]);
+            const [memberCheck] = await connection.query("SELECT id FROM community_members WHERE communityId = ? AND userId = ?", [communityId, userIdToAdd]);
+            if (memberCheck.length > 0) {
+                await connection.rollback();
+                return res.status(409).json({ message: "This user is already a member." });
+            }
             
-            // NOTIFY INVITEE
+            // ADD USER TO COMMUNITY
+            await connection.query("INSERT INTO community_members (communityId, userId, isAdmin) VALUES (?, ?, ?)", [communityId, userIdToAdd, 0]);
+
+            // ADD USER TO DEFAULT CHAT GROUPS
+            const [defaultGroups] = await connection.query("SELECT id FROM `chat_groups` WHERE communityId = ? AND isDefault = TRUE", [communityId]);
+            for (const group of defaultGroups) {
+                await connection.query("INSERT INTO chat_group_members (chatGroupId, userId) VALUES (?, ?)", [group.id, userIdToAdd]);
+            }
+
+            await connection.commit();
+
+            const [communityData] = await db.promise().query("SELECT title FROM communities WHERE id = ?", [communityId]);
+
             await createNotification(
-                'COMMUNITY_INVITE',
-                inviterId,
-                inviteeId,
+                'COMMUNITY_ADDED',
+                adminId,
+                userIdToAdd,
                 { communityId },
-                { communityTitle: communityData[0].title }
+                { communityTitle: communityData.length > 0 ? communityData[0].title : 'the community' }
             );
 
-            res.status(200).json({ message: "Invitation sent successfully." });
+            res.status(200).json({ message: "User added to the community successfully." });
 
         } catch (error) {
-            console.error("[Error] inviteToCommunity:", error);
-            return res.status(500).json({ message: "Failed to send invitation.", error: error.message });
+            await connection.rollback();
+            console.error("[Error] addCommunityMember:", error);
+            return res.status(500).json({ message: "Failed to add user to the community.", error: error.message });
+        } finally {
+            connection.release();
         }
     });
 };
 
-// --- API FOR AN INVITEE TO ACCEPT A COMMUNITY INVITATION ---
-export const acceptCommunityInvitation = (req, res) => {
+// API FOR ADMIN TO REMOVE A USER FROM A COMMUNITY
+export const removeCommunityMember = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
-            const inviteeId = req.user.id;
-            const { invitationId } = req.params;
+            const adminId = req.user.id;
+            const { communityId, userIdToRemove } = req.params;
 
-            // FETCH AND VALIDATE INVITATION
-            const [inviteData] = await db.promise().query("SELECT * FROM community_invitations WHERE id = ?", [invitationId]);
-            if (inviteData.length === 0) return res.status(404).json({ message: "Invitation not found." });
-
-            const invite = inviteData[0];
-            if (invite.inviteeId !== inviteeId) return res.status(403).json({ message: "This invitation is not for you." });
-            if (invite.status !== 'pending') return res.status(400).json({ message: `This invitation has already been ${invite.status}.` });
-
-            // Start a transaction
-            const connection = await db.promise().getConnection();
-            await connection.beginTransaction();
-
-            try {
-                // Add user to the community
-                await connection.query("INSERT INTO community_members (communityId, userId, isAdmin) VALUES (?, ?, ?)", [invite.communityId, inviteeId, 0]);
-
-                // Add user to default chat groups
-                const [defaultGroups] = await connection.query("SELECT id FROM `chat_groups` WHERE communityId = ? AND isDefault = TRUE", [invite.communityId]);
-                for (const group of defaultGroups) {
-                    // Using joinChatGroupInternal logic directly within the transaction
-                    await connection.query("INSERT INTO chat_group_members (chatGroupId, userId) VALUES (?, ?)", [group.id, inviteeId]);
-                }
-
-                await connection.query("UPDATE community_invitations SET status = 'accepted' WHERE id = ?", [invitationId]);
-                
-                await connection.commit();
-
-                const [community] = await db.promise().query("SELECT title FROM communities WHERE id = ?", [invite.communityId]);
-                await createNotification(
-                    'COMMUNITY_INVITE_ACCEPTED',
-                    inviteeId,
-                    invite.inviterId,
-                    { communityId: invite.communityId },
-                    { communityTitle: community[0].title, inviteeUsername: req.user.username }
-                );
-
-                res.status(200).json({ message: "Invitation accepted. Welcome to the community!" });
-
-            } catch (transError) {
-                await connection.rollback();
-                throw transError;
-            } finally {
-                connection.release();
+            // CHECK PERMISSIONS
+            const [adminCheck] = await db.promise().query("SELECT isAdmin FROM community_members WHERE communityId = ? AND userId = ?", [communityId, adminId]);
+            if (adminCheck.length === 0 || !adminCheck[0].isAdmin) {
+                return res.status(403).json({ message: "You must be an admin to remove members." });
             }
 
+            // PREVENT REMOVING YOURSELF VIA THIS ENDPOINT
+            if (Number(adminId) === Number(userIdToRemove)) {
+                return res.status(400).json({ message: "Admins cannot remove themselves. Please use the 'Leave Community' option instead." });
+            }
+
+            // CHECK IF COMMUNITY/CREATOR EXISTS
+            const [communityData] = await db.promise().query("SELECT creatorId FROM communities WHERE id = ?", [communityId]);
+            if (communityData.length === 0) {
+                return res.status(404).json({ message: "Community not found." });
+            }
+
+            // PREVENT REMOVING THE ORIGINAL CREATOR
+            if (Number(communityData[0].creatorId) === Number(userIdToRemove)) {
+                return res.status(403).json({ message: "The original creator of the community cannot be removed." });
+            }
+
+            // REMOVE USER FROM community_members
+            const [removeResult] = await db.promise().query("DELETE FROM community_members WHERE communityId = ? AND userId = ?", [communityId, userIdToRemove]);
+            if (removeResult.affectedRows === 0) {
+                return res.status(404).json({ message: "User is not a member of this community." });
+            }
+
+            // REMOVE USER FROM ALL CHAT GROUPS WITHIN THAT COMMUNITY
+            const [userChatGroups] = await db.promise().query(
+                `SELECT cgm.chatGroupId FROM chat_group_members cgm JOIN \`chat_groups\` cg ON cgm.chatGroupId = cg.id WHERE cg.communityId = ? AND cgm.userId = ?`,
+                [communityId, userIdToRemove]
+            );
+
+            if (userChatGroups.length > 0) {
+                const chatGroupIdsToLeave = userChatGroups.map(g => g.chatGroupId);
+                await db.promise().query("DELETE FROM chat_group_members WHERE userId = ? AND chatGroupId IN (?)", [userIdToRemove, chatGroupIdsToLeave]);
+            }
+
+            // Optionally, notify the removed user
+            const {username: adminUsername} = req.user;
+            const [community] = await db.promise().query("SELECT title FROM communities WHERE id = ?", [communityId]);
+            await createNotification(
+                'COMMUNITY_REMOVED',
+                adminId, 
+                userIdToRemove,
+                { communityId },
+                { communityTitle: community[0].title, adminUsername: adminUsername }
+            );
+
+            return res.status(200).json({ message: "User removed from the community successfully." });
+
         } catch (error) {
-            console.error("[Error] acceptCommunityInvitation:", error);
-            return res.status(500).json({ message: "Failed to accept invitation.", error: error.message });
+            console.error("[Error] removeCommunityMember:", error);
+            return res.status(500).json({ message: "Failed to remove user from the community.", error: error.message });
         }
-    });
+    });  
 };
