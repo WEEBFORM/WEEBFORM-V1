@@ -66,7 +66,16 @@ export const fetchCommunityPosts = async (req, res) => {
             const [posts] = await db.promise().query(q, [communityId]);
             
             const processedPosts = posts.map(post => {
-                post.media = post.media ? post.media.split(',').map(key => processImageUrl(key.trim())) : [];
+                let mediaArray = [];
+                if (post.media && typeof post.media === 'string') {
+                    mediaArray = post.media.split(',')
+                        .map(key => key.trim())
+                        .filter(key => key)
+                        .map(key => processImageUrl(key));
+                }
+                
+                post.media = mediaArray.length > 0 ? mediaArray : null;
+                
                 post.profilePic = processImageUrl(post.profilePic);
                 return post;
             });
