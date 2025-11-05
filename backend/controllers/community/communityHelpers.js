@@ -1,9 +1,50 @@
 import { db } from "../../config/connectDB.js";
 import { processImageUrl } from '../../middlewares/cloudfrontConfig.js';
 
-// --- HELPER FUNCTION TO FETCH COMMUNITY INFO (Refactored) ---
+// NEW: HELPER FUNCTION TO GET AGGREGATED COMMUNITY AND CREATOR POINTS
+export const getCommunityAggregatedPoints = async (communityId, creatorId) => {
+    try {
+        // CALCULATE TOTAL POINTS FOR COMMUNITY AND CREATOR
+        const pointsQuery = `
+            SELECT
+                -- Sum of all points for the entire community
+                COALESCE(SUM(ua.totalPoints), 0) AS communityPoints,
+                -- Sum of points only for the user who is the creator
+                COALESCE(SUM(CASE WHEN ua.userId = ? THEN ua.totalPoints ELSE 0 END), 0) AS creatorPoints
+            FROM user_activity AS ua
+            JOIN chat_groups AS cg ON ua.chatGroupId = cg.id
+            WHERE cg.communityId = ?
+        `;
+        
+        const [results] = await db.promise().query(pointsQuery, [creatorId, communityId]);
+        
+        if (results.length > 0) {
+            return {
+                communityPoints: parseInt(results[0].communityPoints, 10),
+                creatorPoints: parseInt(results[0].creatorPoints, 10)
+            };
+        }
+
+        // Return default values if no activity is found
+        return { communityPoints: 0, creatorPoints: 0 };
+
+    } catch (error) {
+        console.error("[Helper Error] Error in getCommunityAggregatedPoints:", error);
+        throw new Error("Error fetching community points");
+    }
+};
+
+
+// HELPER FUNCTION TO FETCH COMMUNITY INFO
 export const fetchCommunityInfo = async (communityIds = [], userId = null, options = {}) => {
-    const { includeMemberCount = true, includeUserMembership = false, includeChatGroups = false, includeCreatorInfo = false, discoveryMode = false } = options;
+    const { 
+        includeMemberCount = true, 
+        includeUserMembership = false, 
+        includeChatGroups = false, 
+        includeCreatorInfo = false, 
+        discoveryMode = false,
+        includeCommunityPoints = false // <-- NEW OPTION
+    } = options;
 
     try {
         let baseQuery = `SELECT c.id, c.creatorId, c.title, c.description, c.groupIcon, c.visibility, c.createdAt`;
@@ -37,6 +78,15 @@ export const fetchCommunityInfo = async (communityIds = [], userId = null, optio
             community.groupIcon = processImageUrl(community.groupIcon);
             return community;
         });
+        
+        // MODIFIED: Fetch and attach community and creator points if requested
+        if (includeCommunityPoints && processedCommunities.length > 0) {
+            for (const community of processedCommunities) {
+                const pointsData = await getCommunityAggregatedPoints(community.id, community.creatorId);
+                community.communityPoints = pointsData.communityPoints;
+                community.creatorPoints = pointsData.creatorPoints;
+            }
+        }
 
         if (includeChatGroups && processedCommunities.length > 0) {
             for (const community of processedCommunities) {
@@ -63,7 +113,8 @@ export const fetchCommunityInfo = async (communityIds = [], userId = null, optio
     }
 };
 
-// --- HELPER FUNCTION TO GET USER'S JOINED COMMUNITY IDS ---
+
+// HELPER FUNCTION TO GET USER'S JOINED COMMUNITY IDS
 export const getUserJoinedCommunityIds = async (userId) => {
     try {
         const [results] = await db.promise().query(`SELECT communityId FROM community_members WHERE userId = ?`, [userId]);
@@ -74,7 +125,7 @@ export const getUserJoinedCommunityIds = async (userId) => {
     }
 };
 
-// --- HELPER FUNCTION TO GET FRIEND COMMUNITY IDS ---
+// HELPER FUNCTION TO GET FRIEND COMMUNITY IDS
 export const getFriendCommunityIds = async (userId) => {
     try {
         const [friendsResult] = await db.promise().query(`SELECT f.followed FROM reach f WHERE f.follower = ?`, [userId]);

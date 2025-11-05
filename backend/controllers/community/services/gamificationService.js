@@ -35,7 +35,7 @@ const calculateLevelFromXP = (xp) => {
   return 1;R
 };
 
-// INCREMEMT USER ACTIVITY 
+// INCREMEMT USER ACTIVITY
 export const incrementUserActivity = async (userId, chatGroupId, activityType) => {
   if (!ACTIVITY_POINTS[activityType]) {
     console.error(`Invalid activity type: ${activityType}`);
@@ -43,30 +43,25 @@ export const incrementUserActivity = async (userId, chatGroupId, activityType) =
   }
   
   const points = ACTIVITY_POINTS[activityType];
-  
   const userStatsKey = `user:${userId}:stats:${chatGroupId}`;
-  let currentStats = await redisClient.get(userStatsKey);
-  let stats;
   
-  if (currentStats) {
-    stats = JSON.parse(currentStats);
-  } else {
-    stats = await getUserStats(userId, chatGroupId);
-  }
+  // GET STATS FROM CACHE OR DB
+  const cachedStats = await redisClient.get(userStatsKey);
+  const stats = cachedStats ? JSON.parse(cachedStats) : await getUserStats(userId, chatGroupId);
+  
+  const oldLevel = stats.level;
   
   // UPDATE STATS
   stats.totalPoints += points;
   stats.activityCounts[activityType] = (stats.activityCounts[activityType] || 0) + 1;
-  
-  // CALCULATE LEVEL
-  const oldLevel = stats.level;
   stats.level = calculateLevelFromXP(stats.totalPoints);
   
-  // UPDATE REDIS CACHE(30mins)
-  await redisClient.set(userStatsKey, JSON.stringify(stats), 'EX', 1800);
-  await updateUserStatsInDB(userId, chatGroupId, stats);
+  await Promise.all([
+      redisClient.set(userStatsKey, JSON.stringify(stats), 'EX', 1800),
+      updateUserStatsInDB(userId, chatGroupId, stats)
+  ]);
   
-  // CHECK FOR LEVEL UP
+  // HANDLE LEVEL UP
   if (stats.level > oldLevel) {
     await handleLevelUp(userId, chatGroupId, stats.level); 
   }
@@ -77,62 +72,48 @@ export const incrementUserActivity = async (userId, chatGroupId, activityType) =
 // GET USER STATS FROM DATABASE
 export const getUserStats = async (userId, chatGroupId) => { 
   const query = `
-    SELECT 
-      totalPoints, 
-      level, 
-      messageCount, 
-      reactionCount, 
-      threadCount, 
-      voiceRoomMinutes, 
-      quoteMacroCount
+    SELECT totalPoints, level, messageCount, reactionCount, threadCount, voiceRoomMinutes, quoteMacroCount
     FROM user_activity
     WHERE userId = ? AND chatGroupId = ?
   `;
-  
-  return new Promise((resolve, reject) => {
-    db.query(query, [userId, chatGroupId], (err, results) => { // Use chatGroupId in query values
-      if (err) {
-        console.error("Error fetching user stats:", err);
-        return reject(err);
-      }
-      
-      if (results.length === 0) {
-        return resolve({
-          totalPoints: 0,
-          level: 1,
-          activityCounts: {
-            message: 0,
-            reaction: 0,
-            thread: 0,
-            voiceRoom: 0,
-            quoteMacro: 0
-          }
-        });
-      }
-      
-      const row = results[0];
+  try {
+    const [results] = await db.promise().query(query, [userId, chatGroupId]);
+
+    // IF NO RECORD EXISTS, RETURN DEFAULT STATS
+    if (results.length === 0) {
+      return {
+        totalPoints: 0,
+        level: 1,
+        activityCounts: { message: 0, reaction: 0, thread: 0, voiceRoom: 0, quoteMacro: 0 }
+      };
+    }
     
-      resolve({
-        totalPoints: row.totalPoints || 0,
-        level: row.level || 1,
-        activityCounts: {
-          message: row.messageCount || 0,
-          reaction: row.reactionCount || 0,
-          thread: row.threadCount || 0,
-          voiceRoom: row.voiceRoomMinutes || 0,
-          quoteMacro: row.quoteMacroCount || 0
-        }
-      });
-    });
-  });
+    // If a record exists, return its data.
+    const row = results[0];
+    return {
+      totalPoints: row.totalPoints || 0,
+      level: row.level || 1,
+      activityCounts: {
+        message: row.messageCount || 0,
+        reaction: row.reactionCount || 0,
+        thread: row.threadCount || 0,
+        voiceRoom: row.voiceRoomMinutes || 0,
+        quoteMacro: row.quoteMacroCount || 0
+      }
+    };
+  } catch (err) {
+      console.error("Error fetching user stats:", err);
+      // Re-throw the error so the calling function knows something went wrong.
+      throw err;
+  }
 };
 
 // USER STATS IN DATABASE
-export const updateUserStatsInDB = async (userId, chatGroupId, stats) => { // Use chatGroupId parameter
+export const updateUserStatsInDB = async (userId, chatGroupId, stats) => {
+  // INSERT OR UPDATE USER STATS
   const query = `
-    INSERT INTO user_activity
-    (userId, chatGroupId, totalPoints, level, messageCount, reactionCount, threadCount, voiceRoomMinutes, quoteMacroCount, updatedAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+    INSERT INTO user_activity (userId, chatGroupId, totalPoints, level, messageCount, reactionCount, threadCount, voiceRoomMinutes, quoteMacroCount)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE
     totalPoints = VALUES(totalPoints),
     level = VALUES(level),
@@ -140,32 +121,27 @@ export const updateUserStatsInDB = async (userId, chatGroupId, stats) => { // Us
     reactionCount = VALUES(reactionCount),
     threadCount = VALUES(threadCount),
     voiceRoomMinutes = VALUES(voiceRoomMinutes),
-    quoteMacroCount = VALUES(quoteMacroCount),
-    updatedAt = NOW()
+    quoteMacroCount = VALUES(quoteMacroCount);
   `;
   
   const values = [
-    userId,
-    chatGroupId,
+    userId, chatGroupId,
     stats.totalPoints,
     stats.level,
     stats.activityCounts.message || 0,
     stats.activityCounts.reaction || 0,
     stats.activityCounts.thread || 0,
     stats.activityCounts.voiceRoom || 0,
-    stats.activityCounts.quoteMacro || 0
+    stats.activityCounts.quoteMacro || 0,
   ];
   
-  return new Promise((resolve, reject) => {
-    db.query(query, values, (err, result) => {
-      if (err) {
-        console.error("Error updating user stats:", err);
-        return reject(err);
-      }
-      
-      resolve(result);
-    });
-  });
+  try {
+    const [result] = await db.promise().query(query, values);
+    return result;
+  } catch (err) {
+      console.error("Error updating user stats in DB:", err);
+      throw err;
+  }
 };
 
 // HANDLE LEVEL UP

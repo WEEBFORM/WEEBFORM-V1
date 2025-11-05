@@ -9,7 +9,7 @@ import { joinChatGroupInternal } from './communityGroups.js';
 import { createNotification } from "../notificationsController.js";
 import { processImageUrl, resizeImage } from '../../middlewares/cloudfrontConfig.js';
 
-// --- API TO CREATE NEW COMMUNITY ---
+// API TO CREATE NEW COMMUNITY
 export const createCommunity = (req, res) => {
     authenticateUser(req, res, () => {
         cpUpload(req, res, async (err) => {
@@ -68,7 +68,7 @@ export const createCommunity = (req, res) => {
     });
 };
 
-// --- API TO EDIT COMMUNITY DETAILS ---
+// API TO EDIT COMMUNITY DETAILS
 export const editCommunity = (req, res) => {
     authenticateUser(req, res, () => {
         cpUpload(req, res, async (err) => {
@@ -125,7 +125,7 @@ export const editCommunity = (req, res) => {
     });
 };
 
-// --- API TO VIEW JOINED COMMUNITIES ---
+// API TO VIEW JOINED COMMUNITIES
 export const yourCommunities = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -142,7 +142,7 @@ export const yourCommunities = (req, res) => {
     });
 };
 
-// --- API TO VIEW CREATED COMMUNITIES ---
+// API TO VIEW CREATED COMMUNITIES
 export const getCreatedCommunities = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -160,7 +160,7 @@ export const getCreatedCommunities = (req, res) => {
     });
 };
 
-// --- UTILITY FUNCTION TO SHUFFLE ARRAY ---
+// UTILITY FUNCTION TO SHUFFLE ARRAY
 const shuffleArray = (array) => {
     const shuffled = [...array];
     for (let i = shuffled.length - 1; i > 0; i--) {
@@ -198,7 +198,7 @@ export const getAllCommunities = (req, res) => {
     });
 };
 
-// --- API TO VIEW COMMUNITIES (Categorized Discovery) ---
+// API TO VIEW COMMUNITIES (Categorized Discovery)
 export const communities = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -246,7 +246,7 @@ export const communities = (req, res) => {
     });
 };
 
-// --- API TO VIEW SPECIFIC COMMUNITY DETAILS ---
+// API TO VIEW SPECIFIC COMMUNITY DETAILS
 export const getCommunityDetails = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -254,11 +254,13 @@ export const getCommunityDetails = (req, res) => {
             const userId = req.user.id;
             if (!communityId) return res.status(400).json({ error: "Community ID is required." });
 
+            // MODIFIED: Added 'includeCommunityPoints: true' to the options object.
             const [community] = await fetchCommunityInfo([communityId], userId, {
                 includeMemberCount: true,
                 includeUserMembership: true,
                 includeChatGroups: true,
-                includeCreatorInfo: true
+                includeCreatorInfo: true,
+                includeCommunityPoints: true // <-- THIS IS THE NEW LINE
             });
 
             if (!community) return res.status(404).json({ error: "Community not found." });
@@ -271,7 +273,7 @@ export const getCommunityDetails = (req, res) => {
     });
 };
 
-// --- JOIN COMMUNITY ---
+// JOIN COMMUNITY
 export const joinCommunity = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -305,7 +307,7 @@ export const joinCommunity = (req, res) => {
     });
 };
 
-// --- LEAVE COMMUNITY ---
+// LEAVE COMMUNITY
 export const exitCommunity = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -333,7 +335,7 @@ export const exitCommunity = (req, res) => {
     });
 };
 
-// --- API TO DELETE COMMUNITY --- 
+// API TO DELETE COMMUNITY 
 export const deleteCommunity = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
