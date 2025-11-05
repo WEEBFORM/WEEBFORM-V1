@@ -14,7 +14,7 @@ import {
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import { isCommunityAdmin } from "../../controllers/community/communityGroups.js";
 
-// --- NEW SERVICE CONTROLLERS ---
+// --- NEW SERVICE CONTROLLERS
 import {
     getGroupMembers, getGroupLeaderboard, getUserProgressInGroup
 } from "../../controllers/community/services/groupServicesController.js";
@@ -24,24 +24,24 @@ import {
 
 const router = express.Router();
 
-// --- CORE GROUP MANAGEMENT ---
+// CORE GROUP MANAGEMENT
 router.post('/:communityId/new-group', authenticateUser, createGroup);
-router.put('/:chatGroupId', authenticateUser, isCommunityAdmin, editGroup);
-router.delete('/:chatGroupId', authenticateUser, isCommunityAdmin, deleteGroup);
+router.put('/:chatGroupId', authenticateUser, editGroup);
+router.delete('/:chatGroupId', authenticateUser, deleteGroup);
 router.get('/community/:communityId/all-groups', getCommunityChatGroups);
 router.get('/community/:communityId/my-groups', authenticateUser, getMyChatGroupsInCommunity);
 router.get('/:chatGroupId', getGroupDetails);
 
-// --- USER MEMBERSHIP ---
+// USER MEMBERSHIP
 router.post('/join/:chatGroupId', authenticateUser, joinChatGroup);
 router.delete('/:chatGroupId/leave', authenticateUser, leaveChatGroup);
 
-// --- GAMIFICATION & MEMBER INFO ---
+// GAMIFICATION & MEMBER INFO
 router.get('/:chatGroupId/members', getGroupMembers); 
 router.get('/:chatGroupId/leaderboard', getGroupLeaderboard);
 router.get('/:chatGroupId/my-progress', authenticateUser, getUserProgressInGroup);
 
-// --- GROUP-LEVEL MODERATION (For Admins/Mods) ---
+// GROUP-LEVEL MODERATION (For Admins/Mods) ---
 router.post('/:chatGroupId/moderation/mute', authenticateUser, isCommunityAdmin, muteUserInGroup);
 router.post('/:chatGroupId/moderation/exile', authenticateUser, isCommunityAdmin, exileUserInGroup);
 router.post('/:chatGroupId/moderation/remove', authenticateUser, isCommunityAdmin, removeUserFromGroup);

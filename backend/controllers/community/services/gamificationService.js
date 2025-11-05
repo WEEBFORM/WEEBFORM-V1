@@ -238,4 +238,4 @@ export const getUserLevelProgress = async (userId, chatGroupId) => {
     pointsNeededForNextLevel: nextLevelThreshold - stats.totalPoints,
     isMaxLevel: false
   };
-};
+}; 

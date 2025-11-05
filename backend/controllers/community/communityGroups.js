@@ -30,7 +30,7 @@ export const joinChatGroupInternal = async (userId, chatGroupId) => {
     }
 };
 
-// --- API TO CREATE A NEW CHAT GROUP ---
+// API TO CREATE A NEW CHAT GROUP
 export const createGroup = (req, res) => {
     authenticateUser(req, res, () => {
         cpUpload(req, res, async (err) => {
@@ -75,59 +75,116 @@ export const createGroup = (req, res) => {
     });
 };
 
-// --- API TO EDIT AN EXISTING CHAT GROUP ---
+// API TO EDIT A CHAT GROUP
 export const editGroup = (req, res) => {
-    authenticateUser(req, res, () => {
-        cpUpload(req, res, async (err) => {
-            if (err) return res.status(400).json({ message: "File upload error", error: err.message });
+  authenticateUser(req, res, () => {
+    cpUpload(req, res, async (err) => {
+      if (err) {
+        return res.status(400).json({ message: "File upload error", error: err.message });
+      }
 
-            try {
-                const user = req.user;
-                const { chatGroupId } = req.params;
-                const { title, type, isDefault, clearGroupIcon } = req.body;
-                if (!chatGroupId) return res.status(400).json({ message: "Chat group ID is required." });
+      try {
+        const user = req.user;
+        const { chatGroupId } = req.params;
+        const { title, type, isDefault, clearGroupIcon } = req.body;
 
-                const [groupInfo] = await db.promise().query("SELECT communityId, groupIcon FROM `chat_groups` WHERE id = ?", [chatGroupId]);
-                if (groupInfo.length === 0) return res.status(404).json({ message: "Chat group not found." });
-                
-                const { communityId, groupIcon: oldGroupIconKey } = groupInfo[0];
-                if (!await isCommunityAdmin(user.id, communityId)) {
-                    return res.status(403).json({ message: "You must be a community admin to edit groups." });
-                }
+        if (!chatGroupId) {
+          return res.status(400).json({ message: "Chat group ID is required." });
+        }
 
-                let updateFields = [], updateValues = [];
-                if (title) { updateFields.push("name = ?"); updateValues.push(title); }
-                if (type) { updateFields.push("type = ?"); updateValues.push(type); }
-                if (isDefault !== undefined) { updateFields.push("isDefault = ?"); updateValues.push(isDefault ? 1 : 0); }
+        // 1️⃣ Fetch group details
+        const [groupInfo] = await db.promise().query(
+          "SELECT communityId, groupIcon FROM `chat_groups` WHERE id = ?",
+          [chatGroupId]
+        );
 
-                const groupIconFile = req.files && req.files["groupIcon"] ? req.files["groupIcon"][0] : null;
-                if (clearGroupIcon === 'true') {
-                    if (oldGroupIconKey) await deleteS3Object(oldGroupIconKey);
-                    updateFields.push("groupIcon = ?"); updateValues.push(null);
-                } else if (groupIconFile) {
-                    if (oldGroupIconKey) await deleteS3Object(oldGroupIconKey);
-                    const resizedBuffer = await resizeImage(groupIconFile.buffer, 100, 100);
-                    const key = `uploads/groups/${Date.now()}_${groupIconFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_')}.webp`;
-                    await s3.send(new PutObjectCommand({ Bucket: process.env.BUCKET_NAME, Key: key, Body: resizedBuffer, ContentType: 'image/webp' }));
-                    updateFields.push("groupIcon = ?"); updateValues.push(key);
-                }
+        if (groupInfo.length === 0) {
+          return res.status(404).json({ message: "Chat group not found." });
+        }
 
-                if (updateFields.length === 0) return res.status(400).json({ message: "No fields to update." });
-                
-                updateValues.push(chatGroupId);
-                const [updateResult] = await db.promise().query(`UPDATE \`chat_groups\` SET ${updateFields.join(", ")} WHERE id = ?`, updateValues);
-                if (updateResult.affectedRows === 0) return res.status(404).json({ message: "Chat group not found or no changes made." });
+        const { communityId, groupIcon: oldGroupIconKey } = groupInfo[0];
 
-                res.status(200).json({ message: "Chat group updated successfully." });
-            } catch (error) {
-                console.error("[Error] editGroup:", error);
-                res.status(500).json({ message: "An unexpected error occurred", error: error.message });
-            }
-        });
+        // 2️⃣ Check if current user is an admin of that community
+        const [adminCheck] = await db.promise().query(
+          "SELECT id FROM community_members WHERE communityId = ? AND userId = ? AND isAdmin = 1",
+          [communityId, user.id]
+        );
+
+        if (adminCheck.length === 0) {
+          return res.status(403).json({ message: "You must be a community admin to edit groups." });
+        }
+
+        // 3️⃣ Build the update fields
+        const updateFields = [];
+        const updateValues = [];
+
+        if (title) {
+          updateFields.push("name = ?");
+          updateValues.push(title);
+        }
+
+        if (type) {
+          updateFields.push("type = ?");
+          updateValues.push(type);
+        }
+
+        if (isDefault !== undefined) {
+          updateFields.push("isDefault = ?");
+          updateValues.push(isDefault ? 1 : 0);
+        }
+
+        // 4️⃣ Handle group icon updates
+        const groupIconFile = req.files && req.files["groupIcon"] ? req.files["groupIcon"][0] : null;
+
+        if (clearGroupIcon === "true") {
+          if (oldGroupIconKey) await deleteS3Object(oldGroupIconKey);
+          updateFields.push("groupIcon = ?");
+          updateValues.push(null);
+        } else if (groupIconFile) {
+          if (oldGroupIconKey) await deleteS3Object(oldGroupIconKey);
+
+          const resizedBuffer = await resizeImage(groupIconFile.buffer, 100, 100);
+          const key = `uploads/groups/${Date.now()}_${groupIconFile.originalname.replace(/[^a-zA-Z0-9_.-]/g, "_")}.webp`;
+
+          await s3.send(
+            new PutObjectCommand({
+              Bucket: process.env.BUCKET_NAME,
+              Key: key,
+              Body: resizedBuffer,
+              ContentType: "image/webp",
+            })
+          );
+
+          updateFields.push("groupIcon = ?");
+          updateValues.push(key);
+        }
+
+        if (updateFields.length === 0) {
+          return res.status(400).json({ message: "No fields to update." });
+        }
+
+        // 5️⃣ Finalize update
+        updateValues.push(chatGroupId);
+        const [updateResult] = await db
+          .promise()
+          .query(`UPDATE \`chat_groups\` SET ${updateFields.join(", ")} WHERE id = ?`, updateValues);
+
+        if (updateResult.affectedRows === 0) {
+          return res.status(404).json({ message: "Chat group not found or no changes made." });
+        }
+
+        res.status(200).json({ message: "Chat group updated successfully." });
+      } catch (error) {
+        console.error("[Error] editGroup:", error);
+        res.status(500).json({ message: "An unexpected error occurred", error: error.message });
+      }
     });
+  });
 };
 
-// --- API TO DELETE A CHAT GROUP ---
+
+
+// API TO DELETE A CHAT GROUP
 export const deleteGroup = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -156,7 +213,7 @@ export const deleteGroup = (req, res) => {
     });
 };
 
-// --- API TO VIEW A SPECIFIC CHAT GROUP'S DETAILS ---
+// API TO VIEW A SPECIFIC CHAT GROUP'S DETAILS
 export const getGroupDetails = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -184,7 +241,7 @@ export const getGroupDetails = (req, res) => {
     });
 }; 
 
-// --- API TO JOIN A SPECIFIC CHAT GROUP ---
+// API TO JOIN A SPECIFIC CHAT GROUP
 export const joinChatGroup = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -208,7 +265,7 @@ export const joinChatGroup = (req, res) => {
     });
 };
 
-// --- API TO LEAVE A SPECIFIC CHAT GROUP ---
+// API TO LEAVE A SPECIFIC CHAT GROUP
 export const leaveChatGroup = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
