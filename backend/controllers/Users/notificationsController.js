@@ -1,17 +1,7 @@
-import { db } from "../config/connectDB.js";
-import { authenticateUser } from "../middlewares/verify.mjs";
-import { sendNotificationEmail } from "../middlewares/sendMail.js";
-import { processImageUrl } from '../middlewares/cloudfrontConfig.js';
-
-/**
- * Creates a notification and optionally triggers an email.
- * @param {string} type - The notification type (e.g., 'LIKE_POST', 'FOLLOW').
- * @param {number} senderId - The ID of the user who triggered the notification.
- * @param {number} recipientId - The ID of the user who will receive the notification.
- * @param {object} entityIds - An object containing foreign keys, e.g., { postId: 1, communityId: 2 }.
- * @param {object} details - A JSON object for storing extra data, e.g., { communityTitle: 'Anime Fans' }.
- */
-
+import { db } from "../../config/connectDB.js";
+import { authenticateUser } from "../../middlewares/verify.mjs";
+import { sendNotificationEmail } from "../../middlewares/sendMail.js";
+import { processImageUrl } from '../../middlewares/cloudfrontConfig.js';
 
 const constructNotificationMessage = (notification) => {
     const { type, senderUsername, details, communityTitle, storeLabel } = notification;

@@ -30,15 +30,16 @@ import StoreRatingAndVsits from './routes/Marketplace/ratingsRoute.js';
 import News from './routes/newsAndRecommendations.js';
 import Communities from './routes/Community/community.js';
 import Groups from './routes/Community/communityGroups.js';
-import Notifications from './routes/notificationRoute.js';
+import Notifications from './routes/Users/notificationRoute.js';
 
 import { startBotSchedulers } from './services/botSchedulerService.js';
 
-// Load environment variables early 
-config();
- 
-// Centralize configuration
+// LOAD ENV VARIABLES
 const NODE_ENV = process.env.NODE_ENV || 'development';
+config({ path: `.env.${NODE_ENV}` });
+
+console.log(`[ENV] App running in ${NODE_ENV} mode.`);
+console.log(`[ENV] Attempting to use REDIS_URL: ${process.env.REDIS_URL}`);
 
 const PORT = process.env.PORT || 8001;
 
@@ -60,7 +61,7 @@ const corsOptions = {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
 }; 
 
-  // CORS Configuration
+// CORS Configuration
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (WHITELIST.includes(origin)) {
@@ -97,13 +98,13 @@ app.use(cookieParser());
 // LOGGING
 app.use(morgan(NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// Add request timestamp
+// ADD REQUEST TIMESTAMP
 app.use((req, res, next) => {
     req.requestTime = new Date().toISOString();
     next();
 });
 
-// Rate limiting
+// RATE LIMITING
 // const apiLimiter = rateLimit({
 //     windowMs: 15 * 60 * 1000,
 //     max: 100,
@@ -112,7 +113,7 @@ app.use((req, res, next) => {
 // });    
 // app.use('/api', apiLimiter);
 
-// Routes
+// ROUTES
 app.use('/api/v1/user', authRoute);
 app.use('/api/v1/user', Users);
 app.use('/api/v1/user/actions', Actions);
@@ -130,7 +131,7 @@ app.use('/api/v1/communities/groups', Groups);
 app.use('/api/v1/notifications', Notifications);
 // app.use('/api/v1/communities/groups', CommunityGroupActions); 
  
-// Health Check Endpoint
+// HEALTH CHECK ENDPOINT
 app.get('/health', async (req, res) => {
     try {
         await db.ping(); // Check DB connectivity
@@ -141,12 +142,12 @@ app.get('/health', async (req, res) => {
     }
 });
 
-// Handle unknown routes
+// HANDLE UNKNOWN ROUTES
 app.all('*', (req, res, next) => {
     next(new AppError(`Cannot find ${req.originalUrl} on this server`, 404));
 });
 
-// Global Error Handler
+// GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
     const statusCode = err.isOperational ? err.statusCode : 500;
     const message = err.isOperational ? err.message : 'Internal Server Error';
@@ -161,7 +162,7 @@ app.use((err, req, res, next) => {
     }
 });
 
-// Graceful Shutdown
+// SHUTDOWN HANDLERS
 process.on('SIGINT', () => {
     logger.info('Shutting down server...');
     server.close(() => {
@@ -177,12 +178,12 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('uncaughtException', (err) => {
     logger.error('Uncaught Exception:', err);
     // In a production environment, consider a more aggressive approach
-    process.exit(1); // Terminate the process
+    process.exit(1);
 });
 
-// Clustering Setup
+// CLUSTER SETUP
 if (cluster.isPrimary) {
-    const numCPUs = os.cpus(1);
+    const numCPUs = os.cpus(1)
 
     logger.info(`Master ${process.pid} is running`);
 
@@ -195,26 +196,24 @@ if (cluster.isPrimary) {
         cluster.fork();
     });
 
-    // Connect to database and then start server
     (async () => {
         try {
-            await db.ping(); // Test the database connection
+            await db.ping();
             logger.info('Database connection established.');
         } catch (error) {
             logger.error('Failed to connect to database:', error);
-            process.exit(1); // Exit if database connection fails in primary process
+            process.exit(1);
         }
 
         const server = http.createServer(app);
 
         startBotSchedulers();
-        // Initialize WebSocket functionality
+        // INITIALIZE WEBSOCKET
         initializeMessageSocket(server);
         server.listen(PORT, () => {
             logger.info(`Server listening on port ${PORT} in ${NODE_ENV} mode`);
         });
     })();
 } else {
-    // Worker process
     logger.info(`Worker ${process.pid} started`);
 }

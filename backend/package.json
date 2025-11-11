@@ -6,8 +6,11 @@
   "author": "Chimmezirim",
   "license": "MIT",
   "type": "module",
-  "script": {
-    "start": "nodemon index.js"
+  "scripts": {
+    "start": "cross-env NODE_ENV=production node index.js",
+    "dev": "cross-env NODE_ENV=development nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "worker": "cross-env NODE_ENV=development node services/worker.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.691.0",
@@ -16,6 +19,7 @@
     "axios": "^1.11.0",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
+    "bullmq": "^5.63.0",
     "cheerio": "^1.0.0",
     "cluster": "^0.7.7",
     "cookie-parser": "^1.4.6",
@@ -47,5 +51,8 @@
     "socket.io": "^4.8.1",
     "winston": "^3.17.0",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
   }
 }

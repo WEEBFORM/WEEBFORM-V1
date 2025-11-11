@@ -1,7 +1,7 @@
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import NodeCache from 'node-cache';
-import { createNotification, deleteNotification } from "../notificationsController.js";
+import { createNotification, deleteNotification } from "../Users/notificationsController.js";
 
 const likeCache = new NodeCache({ stdTTL: 300 }); 
 
@@ -64,7 +64,6 @@ export const like = async (req, res) => {
       }
     } catch (err) {
       console.error("Like/Unlike post error:", err);
-      // ... (your existing error handling) ...
       return res.status(500).json({ 
         message: "Failed to toggle like status", 
         error: err.message 

@@ -2,7 +2,7 @@ import express from "express";
 import {
   getNotifications,
   markAsRead,
-} from "../controllers/notificationsController.js";
+} from "../../controllers/Users/notificationsController.js";
 
 const router = express.Router();
 

@@ -1,7 +1,7 @@
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import moment from "moment";
-import { createNotification } from "../notificationsController.js";
+import { createNotification } from "../Users/notificationsController.js";
 
 
 //HELPER TO TRACK STORE VISITS

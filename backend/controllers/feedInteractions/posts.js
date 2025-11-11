@@ -6,7 +6,7 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
 import NodeCache from 'node-cache';
 import { processImageUrl, resizeImage } from '../../middlewares/cloudfrontConfig.js';
-import { createNotification } from "../notificationsController.js";
+import { createNotification } from "../Users/notificationsController.js";
 
 const postCache = new NodeCache({ stdTTL: 300 });
 

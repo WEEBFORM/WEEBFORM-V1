@@ -5,15 +5,45 @@ import {  PutObjectCommand } from '@aws-sdk/client-s3';
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import { cpUpload } from "../../middlewares/storage.js";
-import { s3, generateS3Url, s3KeyFromUrl, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
+import { s3, s3KeyFromUrl, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
 import { executeQuery } from "../../middlewares/dbExecute.js";
-import NodeCache from 'node-cache';
+import { redisClient, PROFILE_CACHE_TTL, ANALYTICS_CACHE_TTL } from '../../config/redisConfig.js'; 
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 import { processImageUrl, resizeImage } from '../../middlewares/cloudfrontConfig.js';
 
-const userProfileCache = new NodeCache({ stdTTL: 600 });
-const analyticsCache = new NodeCache({ stdTTL: 600 });
+
+// export const editPassword = async (req, res) => {
+//     authenticateUser(req, res, async () => {
+//         try {
+//             const authenticatedUser = req.user;
+//             if (!authenticatedUser) {
+//                 return res.status(401).send('Unauthorized. Please log in.');
+//             }
+//             const userId = req.user.id;
+//             const { currentPassword, newPassword } = req.body; 
+
+//             const findUserQuery = "SELECT * FROM users WHERE id = ?";
+//             const [results] = await db.promise().query(findUserQuery, [userId]);
+//             if (results.length === 0) {
+//                 return res.status(404).send('User not found.');
+//             }
+//             const user = results[0];
+//             const isMatch = await bcrypt.compare(currentPassword, user.password);       
+//             if (!isMatch) {
+//                 return res.status(400).send('Current password is incorrect.');
+//             }   
+//             const salt = await bcrypt.genSalt(10);
+//             const hashedNewPassword = await bcrypt.hash(newPassword, salt);       
+//             const updatePasswordQuery = "UPDATE users SET password = ? WHERE id = ?";
+//             await db.promise().query(updatePasswordQuery, [hashedNewPassword, userId]);       
+//             res.status(200).json('Password has been successfully updated.');
+//         } catch (err) {
+//             console.error("Error in editPassword:", err);
+//             return res.status(500).send('An error occurred while updating the password.');
+//         } 
+//     });     
+// };
 
 // API TO EDIT USER INFO
 export const editProfile = async (req, res) => {
@@ -134,7 +164,12 @@ export const editProfile = async (req, res) => {
                                 await Promise.all(oldImageKeysToDelete.map(key => deleteS3Object(key)));
                             }
 
-                            userProfileCache.del(String(userId));
+                            const cacheKey = `user_profile:${userId}`;
+                            try {
+                                await redisClient.del(cacheKey);
+                            } catch (cacheError) {
+                                console.error(`Redis DEL error for key ${cacheKey}:`, cacheError);
+                            }
                             res.status(200).json({ message: "Account details updated successfully", updatedFields: updateFieldsPayload });
                         } else {
                             res.status(200).json({ message: "No changes needed or applied.", updatedFields: {} });
@@ -244,10 +279,14 @@ export const viewProfile = async (req, res) => {
         
         if (!userInfo) {
             try {
-                userInfo = await fetchAndProcessUserData(userId);
+                const cachedUserInfo = await redisClient.get(cacheKey);
+                if (cachedUserInfo) {
+                    return res.status(200).json(JSON.parse(cachedUserInfo));
+                }
+                const userInfo = await fetchAndProcessUserData(userId);
                 if (!userInfo) return res.status(404).json("User not found");
                 
-                userProfileCache.set(cacheKey, userInfo);
+                await redisClient.setex(cacheKey, PROFILE_CACHE_TTL, JSON.stringify(userInfo));
             } catch (err) {
                 console.error("Database error:", err);
                 return res.status(500).json({ message: "Failed to fetch user profile.", error: "DB_ERROR" });
@@ -306,13 +345,19 @@ export const viewUserProfile = async (req, res) => {
                 });
 
             const cacheKey = `user_profile:${profileId}`;
-            let userInfo = userProfileCache.get(cacheKey);
-
+            
+            const cachedUserInfo = await redisClient.get(cacheKey);
+            if (cachedUserInfo) {
+                const safeUserInfo = JSON.parse(cachedUserInfo);
+                delete safeUserInfo.password;
+                return res.status(200).json(safeUserInfo);
+            }
+            const userInfo = await fetchAndProcessUserData(profileId);
             if (!userInfo) {
                 userInfo = await fetchAndProcessUserData(profileId);
                 if (!userInfo) return res.status(404).json({ message: "User not found" });
                 
-                userProfileCache.set(cacheKey, userInfo);
+                await redisClient.setex(cacheKey, PROFILE_CACHE_TTL, JSON.stringify(userInfo));
             }
 
             // SANITIZE OUTPUT
@@ -445,7 +490,11 @@ export const getUserAnalytics = async (req, res) => {
             const userId = req.params.userId;
             const cacheKey = `user_analytics:${userId}`;
 
-            const cachedData = analyticsCache.get(cacheKey);
+            const cachedData = await redisClient.get(cacheKey);
+            if (cachedData) {
+                return res.status(200).json(JSON.parse(cachedData));
+            }
+
             if (cachedData) {
                 return res.status(200).json(cachedData);
             }
@@ -465,7 +514,7 @@ export const getUserAnalytics = async (req, res) => {
             const [results] = await db.promise().query(q, params);
 
             const analytics = results[0];
-            analyticsCache.set(cacheKey, analytics);
+            await redisClient.setex(cacheKey, ANALYTICS_CACHE_TTL, JSON.stringify(analytics));
 
             res.status(200).json(analytics);
         } catch (error) {
@@ -506,11 +555,20 @@ export const deleteAccount = async (req, res) => {
                 deleteImageFromS3(profilePic),
                 deleteImageFromS3(coverPhoto)
             ]);
+
+            const profileCacheKey = `user_profile:${userId}`;
+            const analyticsCacheKey = `user_analytics:${userId}`;
+            try {
+                await redisClient.del(profileCacheKey, analyticsCacheKey);
+            } catch (cacheError) {
+                console.error(`Redis DEL error during account deletion for user ${userId}:`, cacheError);
+            }
+
             //QUERY DB TO DELETE USER
             await executeQuery("DELETE FROM users WHERE id = ?", [userId]);
             userProfileCache.del(userId)
 
-            res.clearCookie("accessToken", {
+            res.clearCookie("accessToken", { 
                 secure: true,
                 sameSite: "none",
             });

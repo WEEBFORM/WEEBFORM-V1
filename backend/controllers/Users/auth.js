@@ -5,12 +5,10 @@ import { transporter } from "../../middlewares/mailTransportConfig.js";
 import { generateS3Url } from "../../middlewares/S3bucketConfig.js";
 import { executeQuery } from "../../middlewares/dbExecute.js";
 import { config } from "dotenv";
-import NodeCache from 'node-cache';
-import { createNotification } from "../notificationsController.js";
-
+import { emailQueue } from "../../config/queueConfig.js";
+import { redisClient, USER_CACHE_TTL, VERIFICATION_CODE_TTL } from "../../config/redisConfig.js"; 
+import { createNotification } from "./notificationsController.js";
 config();
-
-const userCache = new NodeCache({ stdTTL: 300 }); // Cache user data for 5 minutes
 
 // INITIATE REGISTRATION
 export const initiateRegistration = async (req, res) => {
@@ -31,11 +29,13 @@ export const initiateRegistration = async (req, res) => {
         }
 
         const verificationCode = Math.floor(1000 + Math.random() * 9000);
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-        await executeQuery(
-            "INSERT INTO cache (email, full_name, password, verificationCode, expiresAt) VALUES (?)",
-            [[email, fullName, password, verificationCode, expiresAt]]
+        // STORE VERIFICATION DATA IN REDIS
+        const registrationData = { email, fullName, password, verificationCode };
+        await redisClient.setex(
+            `verification:${verificationCode}`, 
+            VERIFICATION_CODE_TTL, 
+            JSON.stringify(registrationData)
         );
 
         const mailOptions = {
@@ -68,13 +68,9 @@ export const initiateRegistration = async (req, res) => {
             `,
         };
 
-        transporter.sendMail(mailOptions, (error) => {
-            if (error) {
-                console.error('Error sending email:', error);
-                return res.status(500).json({ message: 'Failed to send verification code. Please try again later.' });
-            }
-            res.status(200).json({ message: "Verification code sent to email." });
-        });
+        await emailQueue.add('sendVerificationEmail', mailOptions);
+        res.status(200).json("Verification code sent to your email.");
+
     } catch (err) {
         console.error(err);
         res.status(500).json("Internal server error");
@@ -86,28 +82,27 @@ export const register = async (req, res) => {
     try {
         const { verificationCode } = req.body;
 
-        const cacheData = await executeQuery(
-            "SELECT * FROM cache WHERE verificationCode = ?",
-            [verificationCode]
-        );
-
-        if (!cacheData.length) {
+        const cachedDataString = await redisClient.get(`verification:${verificationCode}`);
+        
+        if (!cachedDataString) {
             return res.status(400).json("Verification code expired or invalid.");
         }
+        
+        const cacheData = JSON.parse(cachedDataString);
+        const { email, fullName, password } = cacheData;
 
-        const { email, full_name, password } = cacheData[0];
-
-        const hashedPassword = bcrypt.hashSync(password, bcrypt.genSaltSync(10));
+        const salt = bcrypt.genSaltSync(10);
+        const hashedPassword = bcrypt.hash(password, salt);
 
         const defaultProfilePicKey = process.env.DEFAULT_PROFILE_PIC_KEY;
         const defaultCoverPhotoKey = process.env.DEFAULT_COVER_PHOTO_KEY;
 
         const insertResult = await executeQuery(
             "INSERT INTO users (email, full_name, password, profilePic, coverPhoto) VALUES (?)",
-            [[email, full_name, hashedPassword, defaultProfilePicKey, defaultCoverPhotoKey]]
+            [[email, fullName, hashedPassword, defaultProfilePicKey, defaultCoverPhotoKey]]
         );
 
-        await executeQuery("DELETE FROM cache WHERE email = ?", [email]);
+        await redisClient.del(`verification:${verificationCode}`);
 
         const token = jwt.sign({ id: insertResult.insertId }, process.env.SECRET_KEY);
         res.cookie("accessToken", token, { httpOnly: true }).status(200).json({
@@ -116,7 +111,7 @@ export const register = async (req, res) => {
             user: {
                 id: insertResult.insertId,
                 email,
-                fullName: full_name,
+                fullName: fullName,
                 profilePicUrl: await generateS3Url(defaultProfilePicKey),
                 coverPhotoUrl: await generateS3Url(defaultCoverPhotoKey),
             },
@@ -133,8 +128,17 @@ export const login = async (req, res) => {
         const { username, email, password } = req.body;
         const searchField = username ? "username" : "email";
         const searchValue = username || email;
+        const cacheKey = `user:${searchValue}`;
+        let user;
 
-        let user = userCache.get(searchValue);
+        try {
+            const cachedUser = await redisClient.get(cacheKey);
+            if (cachedUser) {
+                user = JSON.parse(cachedUser);
+            }
+        } catch (cacheError) {
+            console.error("Redis GET error during login:", cacheError);
+        }
 
         if (!user){
              const users = await executeQuery(
@@ -146,7 +150,11 @@ export const login = async (req, res) => {
                 return res.status(404).json({ message: "Username or email not found!" });
             }
            user = users[0];
-            userCache.set(searchValue, user)
+            try {
+                await redisClient.setex(cacheKey, USER_CACHE_TTL, JSON.stringify(user));
+            } catch (cacheError) {
+                console.error("Redis SETEX error during login:", cacheError);
+            }
         }
 
         const passwordMatch = await bcrypt.compare(password, user.password);
@@ -230,7 +238,7 @@ export const login = async (req, res) => {
             `
         };
 
-        transporter.sendMail(mailOptions);
+        await emailQueue.add('sendLoginNotification', mailOptions);
 
     } catch (err) {
         console.error(err);

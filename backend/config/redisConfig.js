@@ -1,13 +1,19 @@
 import Redis from 'ioredis';
+export { redisClient };
 
- export { redisClient };
+//CONSTANTS
+export const USER_CACHE_TTL = 300; // 5 minutes
+export const VERIFICATION_CODE_TTL = 600;
+export const PROFILE_CACHE_TTL = 600; // 10 minutes
+export const ANALYTICS_CACHE_TTL = 900;
 
- let redisClient; 
+
+let redisClient; 
 
 if (process.env.REDIS_URL) {
   const isSecure = process.env.REDIS_URL.startsWith('rediss://');
   
-  // Explicitly disable TLS for non-secure redis://
+  // DISABLE TLS FOR NON-SECURE CONNECTIONS
   redisClient = new Redis(process.env.REDIS_URL, {
     tls: isSecure ? { minVersion: 'TLSv1.2' } : false,
     maxRetriesPerRequest: process.env.NODE_ENV === 'production' ? 10 : 3,
@@ -31,7 +37,7 @@ if (process.env.REDIS_URL) {
       console.log(`Redis: Retrying connection (attempt ${times}), delay ${delay}ms`);
       return delay;
     },
-    tls: false, // Disable TLS for non-secure connection
+    tls: false,
   };
 
   redisClient = new Redis(redisOptions);
@@ -41,19 +47,19 @@ if (process.env.REDIS_URL) {
 
 // Event listeners
 redisClient.on('connect', () => {
-  console.log('✅ Connected to Redis');
+  console.log('Connected to Redis');
 });
 
 redisClient.on('ready', () => {
-  console.log('✅ Redis client is ready to use');
+  console.log('Redis client is ready to use');
 });
 
 redisClient.on('error', (err) => {
-  console.error('❌ Redis connection error:', err);
+  console.error('Redis connection error:', err);
 });
 
 redisClient.on('close', () => {
-  console.log('🔌 Redis connection closed');
+  console.log('Redis connection closed');
 });
 
 redisClient.on('reconnecting', (delay) => {
@@ -61,5 +67,5 @@ redisClient.on('reconnecting', (delay) => {
 });
 
 redisClient.on('end', () => {
-  console.log('⛔ Redis connection ended. No more reconnections will be attempted.');
+  console.log('Redis connection ended. No more reconnections will be attempted.');
 });

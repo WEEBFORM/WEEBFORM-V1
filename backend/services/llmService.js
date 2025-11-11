@@ -214,7 +214,7 @@ export const generateBotPost = async (botCorePrompt, topic) => {
         const scenario = PostScenarios[Math.floor(Math.random() * PostScenarios.length)];
         console.log(`LLM Service: Generating a "${scenario.type}" post for topic "${topic.title}"`);
 
-        const wordCount = 30 + Math.floor(Math.random() * 50);
+        const wordCount = 40 + Math.floor(Math.random() * 50);
 
         const styleConstraints = `
                 KEEP IT SHORT AND SIMPLE:
@@ -312,23 +312,23 @@ export const generateBotComment = async (botCorePrompt, originalPostContent) => 
         const commentType = commentTypes[Math.floor(Math.random() * commentTypes.length)];
 
         const fullPrompt = `
-You are this person:
-${botCorePrompt}
+        You are this person:
+        ${botCorePrompt}
 
-Someone posted: "${originalPostContent}"
+        Someone posted: "${originalPostContent}"
 
-Comment type: ${commentType}
+        Comment type: ${commentType}
 
-RULES:
-- Keep it SHORT. Like 10-30 words.
-- Use simple words only.
-- Sound like a real person, not a bot.
-- Reference what they said specifically.
-- No phrases like "literally", "honestly", "no cap", "facts", "period"
-- Just be chill and natural.
+        RULES:
+        - Keep it SHORT. Like 20-60 words.
+        - Use simple words only.
+        - Sound like a real person, not a bot.
+        - Reference what they said specifically.
+        - No phrases like "literally", "honestly", "no cap", "facts", "period"
+        - Just be chill and natural.
 
-Write ONLY the comment:
-`;
+        Write ONLY the comment:
+        `;
 
         const result = await model.generateContent(fullPrompt);
         const response = await result.response;
