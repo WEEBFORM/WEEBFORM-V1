@@ -41,19 +41,19 @@ if (process.env.REDIS_URL) {
 
 // Event listeners
 redisClient.on('connect', () => {
-  console.log('✅ Connected to Redis');
+  console.log('Connected to Redis');
 });
 
 redisClient.on('ready', () => {
-  console.log('✅ Redis client is ready to use');
+  console.log('Redis client is ready to use');
 });
 
 redisClient.on('error', (err) => {
-  console.error('❌ Redis connection error:', err);
+  console.error('Redis connection error:', err);
 });
 
 redisClient.on('close', () => {
-  console.log('🔌 Redis connection closed');
+  console.log('Redis connection closed');
 });
 
 redisClient.on('reconnecting', (delay) => {
@@ -61,5 +61,5 @@ redisClient.on('reconnecting', (delay) => {
 });
 
 redisClient.on('end', () => {
-  console.log('⛔ Redis connection ended. No more reconnections will be attempted.');
+  console.log('Redis connection ended. No more reconnections will be attempted.');
 });
