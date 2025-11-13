@@ -1,6 +1,5 @@
 node_modules
 .env
 .env.*
-serviceAccountKey.json
 weebform-v1-key-pair.pem
 weebform-v1-key-pair.pub
