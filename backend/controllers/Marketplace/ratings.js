@@ -1,7 +1,7 @@
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import moment from "moment";
-import { createNotification } from "../notificationsController.js";
+import { createNotification } from "../Notifications/notificationsController.js";
 
 
 //HELPER TO TRACK STORE VISITS
@@ -22,7 +22,7 @@ import { createNotification } from "../notificationsController.js";
         console.log(`[Service] Visit recorded for user ${userId} at store ${storeId}.`);
 
     } catch (error) {
-        console.error("Error in createStoreVisit service:", error);
+        console.error("Error in createStoreVisit service:", error); 
     }
 };
 

@@ -6,7 +6,7 @@ import { generateS3Url } from "../../middlewares/S3bucketConfig.js";
 import { executeQuery } from "../../middlewares/dbExecute.js";
 import { config } from "dotenv";
 import NodeCache from 'node-cache';
-import { createNotification } from "../notificationsController.js";
+import { createNotification } from "../Notifications/notificationsController.js";
 
 config();
 

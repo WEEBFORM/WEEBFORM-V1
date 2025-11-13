@@ -3,7 +3,7 @@ import { authenticateUser } from "../../middlewares/verify.mjs";
 import moment from "moment";
 import NodeCache from 'node-cache';
 import { processImageUrl } from '../../middlewares/cloudfrontConfig.js';
-import { createNotification } from "../notificationsController.js";
+import { createNotification } from "../Notifications/notificationsController.js";
 
 const commentCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 const replyCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });

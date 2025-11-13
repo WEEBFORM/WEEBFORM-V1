@@ -1,7 +1,7 @@
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import NodeCache from 'node-cache';
-import { createNotification, deleteNotification } from "../notificationsController.js";
+import { createNotification, deleteNotification } from "../Notifications/notificationsController.js";
 
 const likeCache = new NodeCache({ stdTTL: 300 }); 
 

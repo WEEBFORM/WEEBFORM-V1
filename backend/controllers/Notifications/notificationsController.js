@@ -1,17 +1,8 @@
-import { db } from "../config/connectDB.js";
-import { authenticateUser } from "../middlewares/verify.mjs";
-import { sendNotificationEmail } from "../middlewares/sendMail.js";
-import { processImageUrl } from '../middlewares/cloudfrontConfig.js';
-
-/**
- * Creates a notification and optionally triggers an email.
- * @param {string} type - The notification type (e.g., 'LIKE_POST', 'FOLLOW').
- * @param {number} senderId - The ID of the user who triggered the notification.
- * @param {number} recipientId - The ID of the user who will receive the notification.
- * @param {object} entityIds - An object containing foreign keys, e.g., { postId: 1, communityId: 2 }.
- * @param {object} details - A JSON object for storing extra data, e.g., { communityTitle: 'Anime Fans' }.
- */
-
+import { db } from "../../config/connectDB.js";
+import { authenticateUser } from "../../middlewares/verify.mjs";
+import { sendNotificationEmail } from "../../middlewares/sendMail.js";
+import { processImageUrl } from '../../middlewares/cloudfrontConfig.js';
+import { sendPushNotification } from "./pushNotificationService.js";
 
 const constructNotificationMessage = (notification) => {
     const { type, senderUsername, details, communityTitle, storeLabel } = notification;
@@ -54,7 +45,7 @@ const constructNotificationMessage = (notification) => {
 
 
 export const createNotification = async (type, senderId, recipientId, entityIds = {}, details = {}) => {
-  // Prevent users from notifying themselves
+  // PREVENT SELF-NOTIFICATIONS
   if (senderId === recipientId) {
     return;
   }
@@ -74,14 +65,62 @@ export const createNotification = async (type, senderId, recipientId, entityIds 
       new Date()
     ];
 
-    await db.promise().query(q, values);
+    const [result] = await db.promise().query(q, values);
+    const notificationId = result.insertId;
 
-    // Trigger email notification
+    const [sender] = await db.promise().query("SELECT username FROM users WHERE id = ?", [senderId]);
+    const senderUsername = sender.length > 0 ? sender[0].username : 'Someone';
+    
+    // CONSTRUCT THE NOTIFICATION MESSAGE
+    const messageBody = constructNotificationMessage({ type, senderUsername, details, ...details });
+
+    // DEFINE MESSAGE TITLE
+    const messageTitle = "You have a new notification";
+
+    // PREPARE DATA PAYLOAD
+    const dataPayload = {
+        notificationId: String(notificationId),
+        type,
+        ...entityIds
+    };
+    
+    // Trigger the push notification
+    await sendPushNotification(recipientId, messageTitle, messageBody, dataPayload);
+
+    // Trigger email notification (optional, can be kept for certain types)
     await sendNotificationEmail(recipientId, senderId, type, details);
 
   } catch (err) {
     console.error(`[Notification Error] Failed to create notification:`, err);
   }
+};
+
+// REGISTER A DEVICE TOKEN FOR PUSH NOTIFICATIONS
+export const registerDevice = (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const userId = req.user.id;
+            const { fcmToken, deviceType } = req.body;
+
+            if (!fcmToken) {
+                return res.status(400).json({ message: "fcmToken is required." });
+            }
+
+            // INSERT NEW TOKEN OR UPDATE EXISTING ONE FOR A USER'S DEVICE
+            const query = `
+                INSERT INTO user_devices (userId, fcmToken, deviceType)
+                VALUES (?, ?, ?)
+                ON DUPLICATE KEY UPDATE userId = ?, deviceType = ?
+            `;
+            await db.promise().query(query, [userId, fcmToken, deviceType || 'web', userId, deviceType || 'web']);
+
+            res.status(200).json({ message: "Device registered successfully." });
+
+        } catch (err) {
+            console.error("[FCM Register Error]:", err);
+            res.status(500).json({ message: "Failed to register device.", error: err.message });
+        }
+    });
 };
 
 // GET ALL NOTIFICATIONS FOR A USER
@@ -102,17 +141,15 @@ export const getNotifications = (req, res) => {
       `;
 
       const [notifications] = await db.promise().query(q, [userId]);
-
-      // Process notifications to add the final, display-ready message
+      // PROCESS EACH NOTIFICATION
       const processedNotifications = notifications.map(n => {
           n.senderProfilePic = processImageUrl(n.senderProfilePic);
           try {
-              // Still parse details as it's needed by the message constructor
-              n.details = n.details ? JSON.parse(n.details) : {};
+              n.details = n.details ? JSON.parse(n.details) : {}; //Json
           } catch (e) {
               n.details = {};
           }
-          // --- NEW: Add a 'message' field for the frontend ---
+          // CONSTRUCT THE NOTIFICATION MESSAGE FOR FRONTEND DISPLAY
           n.message = constructNotificationMessage(n);
           return n;
       });
@@ -145,7 +182,6 @@ export const markAsRead = (req, res) => {
 
 export const deleteNotification = async (type, senderId, recipientId, entityIds = {}) => {
   try {
-    // Build the query dynamically based on provided IDs
     let conditions = "type = ? AND senderId = ? AND recipientId = ?";
     const values = [type, senderId, recipientId];
 
@@ -165,4 +201,25 @@ export const deleteNotification = async (type, senderId, recipientId, entityIds 
   } catch (err) {
     console.error(`[Notification Error] Failed to delete notification:`, err);
   }
+};
+
+// NEW: API TO UNREGISTER A DEVICE TOKEN
+export const unregisterDevice = (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const { fcmToken } = req.body;
+
+            if (!fcmToken) {
+                return res.status(400).json({ message: "fcmToken is required." });
+            }
+
+            await db.promise().query("DELETE FROM user_devices WHERE fcmToken = ?", [fcmToken]);
+
+            res.status(200).json({ message: "Device unregistered successfully." });
+
+        } catch (err) {
+            console.error("[FCM Unregister Error]:", err);
+            res.status(500).json({ message: "Failed to unregister device.", error: err.message });
+        }
+    });
 };
