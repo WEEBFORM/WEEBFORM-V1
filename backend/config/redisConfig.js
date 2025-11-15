@@ -57,7 +57,7 @@ redisClient.on('close', () => {
 });
 
 redisClient.on('reconnecting', (delay) => {
-  console.log(`Redis reconnecting in ${delay}ms...`);
+  console.log(`Redis reconnecting in ${delay}ms...`); 
 });
 
 redisClient.on('end', () => {

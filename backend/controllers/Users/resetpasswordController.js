@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import bcrypt from "bcryptjs";
 import { db } from '../../config/connectDB.js';
 import { transporter } from '../../middlewares/mailTransportConfig.js';
+import { authenticateUser } from '../../middlewares/verify.mjs';
 
 export const forgotPassword = (req, res) => { 
     const findEmail = "SELECT * FROM users WHERE `email` = ?";
@@ -26,7 +27,7 @@ export const forgotPassword = (req, res) => {
                 return res.status(500).send('Error occurred while updating the user with the reset token.');
             }
 
-            const resetLink = `https://beta.weebform.com/reset/${token}`;  //Use https.  Also, make sure your frontend handles this route
+            const resetLink = `https://beta.weebform.com/reset/${token}`;
 
             const mailOptions = {
                 to: user.email,
@@ -133,3 +134,30 @@ export const resetPassword = (req, res) => {
         });
     });
 };
+
+
+export const editPassword = (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const userId = req.user.id;
+            const { currentPassword, newPassword } = req.body;
+            const [users] = await db.promise().query("SELECT password FROM users WHERE id = ?", [userId]);
+            if (users.length === 0) {
+                return res.status(404).json({ message: "User not found." });
+            }
+            const user = users[0];
+
+            const isMatch = await bcrypt.compare(currentPassword, user.password);   
+            if (!isMatch) {
+                return res.status(400).json({ message: "Current password is incorrect." });
+            }
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(newPassword, salt);
+            await db.promise().query("UPDATE users SET password = ? WHERE id = ?", [hashedPassword, userId]);
+            res.status(200).json({ message: "Password updated successfully." });
+        } catch (err) {
+            console.error("Error updating password:", err);
+            res.status(500).json({ message: "Server error while updating password." });
+        }
+    });
+}
