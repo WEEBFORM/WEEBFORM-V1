@@ -34,8 +34,8 @@ export const initiateRegistration = async (req, res) => {
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
         await executeQuery(
-            "INSERT INTO cache (email, full_name, username,password, verificationCode, expiresAt) VALUES (?)",
-            [[email, fullName, username, password, verificationCode, expiresAt]]
+            "INSERT INTO cache (email, full_name,password, verificationCode, expiresAt) VALUES (?)",
+            [[email, fullName, password, verificationCode, expiresAt]]
         );
 
         const mailOptions = {
