@@ -27,7 +27,7 @@ export const forgotPassword = (req, res) => {
                 return res.status(500).send('Error occurred while updating the user with the reset token.');
             }
 
-            const resetLink = `https://resetpassword.weebform.com/${token}`;
+            const resetLink = `https://resetpassword.weebform.com/reset/${token}`;
 
             const mailOptions = {
                 to: user.email,
