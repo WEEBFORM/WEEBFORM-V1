@@ -1,6 +1,8 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import geoip from 'geoip-lite';
+import fetch from 'node-fetch';
+import { OAuth2Client } from "google-auth-library";
 import { transporter } from "../../middlewares/mailTransportConfig.js";
 import { generateS3Url } from "../../middlewares/S3bucketConfig.js";
 import { executeQuery } from "../../middlewares/dbExecute.js";
@@ -10,7 +12,71 @@ import { createNotification } from "../Notifications/notificationsController.js"
 
 config();
 
-const userCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
+const userCache = new NodeCache({ stdTTL: 300 });
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); 
+
+// HELPER: HANDLES SUCCESSFUL LOGIN (FOR BOTH METHODS)
+const handleSuccessfulLogin = async (req, res, user) => {
+    try {
+        const userAgent = req.headers['user-agent'];
+        
+        // IP EXTRACTION WITH FALLBACKS
+        let ip = req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.connection.remoteAddress || req.socket.remoteAddress;
+        if (ip && ip.includes(',')) ip = ip.split(',')[0].trim();
+        if (ip && ip.startsWith('::ffff:')) ip = ip.substring(7);
+
+        // GEOLOCATION LOOKUP WITH FALLBACK
+        let location = "an unrecognized location";
+        const geo = geoip.lookup(ip);
+        if (geo && geo.city && geo.country) {
+            location = `${geo.city}, ${geo.country}`;
+        } else {
+            try {
+                const geoResponse = await fetch(`http://ip-api.com/json/${ip}`);
+                const geoData = await geoResponse.json();
+                if (geoData.status === 'success') {
+                    location = geoData.city ? `${geoData.city}, ${geoData.country}` : geoData.country;
+                }
+            } catch (geoError) {
+                console.error('Geolocation fallback failed:', geoError);
+            }
+        }
+
+        const device = userAgent || "an unrecognized device";
+
+        // CREATE A NEW LOGIN NOTIFICATION
+        await createNotification('NEW_LOGIN', user.id, user.id, {}, { device, location });
+
+        const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY, { expiresIn: '1Y' });
+
+        res.cookie("accessToken", token, {
+            httpOnly: false,
+            sameSite: 'None',
+            secure: true,
+            path: "/",
+            maxAge: 365.25 * 24 * 60 * 60 * 1000 // 1 year
+        }).status(200).json({
+            message: "User logged in successfully", user
+        });
+
+        // SEND LOGIN NOTIFICATION EMAIL
+        const loginTime = new Date().toLocaleString();
+        const mailOptions = {
+            from: process.env.EMAIL_USER,
+            to: user.email,
+            subject: "New Login Notification",
+            html: `<p>Hi ${user.username},</p><p>There was a recent login to your account with the following details:</p><ul><li><strong>Date and Time:</strong> ${loginTime}</li><li><strong>Device:</strong> ${device}</li><li><strong>Location:</strong> ${location}</li></ul><p>If this wasn't you, please secure your account immediately.</p>`
+        };
+        transporter.sendMail(mailOptions);
+
+    } catch (err) {
+        console.error("Error in handleSuccessfulLogin:", err);
+        // Avoid sending another response if one is already in flight
+        if (!res.headersSent) {
+            res.status(500).json({ message: "An error occurred during the login process." });
+        }
+    }
+};
 
 // INITIATE REGISTRATION
 export const initiateRegistration = async (req, res) => {
@@ -154,89 +220,77 @@ export const login = async (req, res) => {
             return res.status(400).json({ message: "Wrong password" });
         }
 
-        const userAgent = req.headers['user-agent'];
-        
-        // IP EXTRACTION WITH FALLBACKS(MULTIPLE PROXY SUPPORT)
-        let ip = req.headers['x-forwarded-for'] || 
-                 req.headers['x-real-ip'] || 
-                 req.connection.remoteAddress || 
-                 req.socket.remoteAddress;
-        
-        // IF MULTIPLE IPS, TAKE THE FIRST ONE (CLIENT'S IP)
-        if (ip && ip.includes(',')) {
-            ip = ip.split(',')[0].trim();
-        }
-        
-        // REMOVE IPV6 PREFIX IF PRESENT
-        if (ip && ip.startsWith('::ffff:')) {
-            ip = ip.substring(7);
-        }
-
-        let location = "an unrecognized location";
-        
-        // TRY GEOIP-LOOKUP FIRST
-        const geo = geoip.lookup(ip);
-        if (geo && geo.city && geo.country) {
-            location = `${geo.city}, ${geo.country}`;
-        } else if (geo && geo.country) {
-            location = geo.country;
-        } else {
-            // FALLBACK TO IP API IF GEOIP LOOKUP FAILS
-            try {
-                const geoResponse = await fetch(`http://ip-api.com/json/${ip}`);
-                const geoData = await geoResponse.json();
-                
-                if (geoData.status === 'success') {
-                    location = geoData.city ? 
-                        `${geoData.city}, ${geoData.country}` : 
-                        geoData.country;
-                }
-            } catch (geoError) {
-                console.error('Geolocation lookup failed:', geoError);
-            }
-        }
-
-        const device = userAgent || "an unrecognized device";
-
-        // CREATE A NEW LOGIN NOTIFICATION
-        await createNotification('NEW_LOGIN', user.id, user.id, {}, { device, location });
-
-        const token = jwt.sign({ id: user.id }, process.env.SECRET_KEY, { expiresIn: '1Y' });
-
-        res.cookie("accessToken", token, {
-            httpOnly: false,
-            sameSite: 'None',
-            secure: true,
-            path: "/",
-            maxAge: 365.25 * 24 * 60 * 60 * 1000 // 1 year
-        }).status(200).json({
-            message: "User logged in successfully", user
-        }); 
-
-        const loginTime = new Date().toLocaleString();
-        const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: user.email,
-            subject: "New Login Notification",
-            html: `
-                <p>Hi ${user.username},</p>
-                <p>There was a recent login to your account with the following details:</p>
-                <ul>
-                    <li><strong>Date and Time:</strong> ${loginTime}</li>
-                    <li><strong>Device:</strong> ${device}</li>
-                    <li><strong>Location:</strong> ${location}</li>
-                </ul>
-                <p>If this wasn't you, please secure your account immediately.</p>
-            `
-        };
-
-        transporter.sendMail(mailOptions);
+        // HANDLE SUCCESSFUL LOGIN
+        await handleSuccessfulLogin(req, res, user);
 
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
+// GOOGLE SIGN-IN API
+export const googleSignIn = async (req, res) => {
+    try {
+        const { idToken } = req.body;
+
+        if (!idToken) {
+            return res.status(400).json({ message: "Google ID token is required." });
+        }
+
+        const ticket = await client.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const { name, email, picture } = ticket.getPayload();
+
+        // CHECK IF USER EXISTS
+        const existingUsers = await executeQuery("SELECT * FROM users WHERE email = ?", [email]);
+
+        let user;
+        if (existingUsers.length > 0) {
+            user = existingUsers[0];
+            userCache.set(email, user);
+        } else {
+            // CREATE NEW USER IF NOT EXISTS
+            const defaultCoverPhotoKey = process.env.DEFAULT_COVER_PHOTO_KEY;
+            
+            let username = email.split('@')[0];
+            let isUsernameTaken = (await executeQuery("SELECT id FROM users WHERE username = ?", [username])).length > 0;
+            while (isUsernameTaken) {
+                const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+                username = `${username}${randomSuffix}`;
+                isUsernameTaken = (await executeQuery("SELECT id FROM users WHERE username = ?", [username])).length > 0;
+            }
+
+            const newUserPayload = {
+                email,
+                full_name: name,
+                username: username,
+                password: null,
+                profilePic: picture, 
+                coverPhoto: defaultCoverPhotoKey
+            };
+
+            const insertResult = await executeQuery("INSERT INTO users SET ?", newUserPayload);
+            
+            const [newUserRows] = await executeQuery("SELECT * FROM users WHERE id = ?", [insertResult.insertId]);
+            user = newUserRows;
+        }
+
+        // HANDLE SUCCESSFUL LOGIN
+        await handleSuccessfulLogin(req, res, user);
+
+    } catch (err) {
+        console.error("Google Sign-In Error:", err);
+        if (err.message.includes("Invalid token signature")) {
+            return res.status(401).json({ message: "Invalid Google token. Please try again." });
+        }
+        res.status(500).json({ message: "Internal server error during Google Sign-In." });
+    }
+};
+
 
 // LOGOUT
 export const logout = (req, res) => {
@@ -251,4 +305,7 @@ const deleteExpiredCodes = async () => {
         console.error("Error deleting expired codes:", err);
     }
 };
+
+// SCHEDULE DELETION EVERY HOUR
+setInterval(deleteExpiredCodes, 60 * 60 * 1000);
 deleteExpiredCodes();
