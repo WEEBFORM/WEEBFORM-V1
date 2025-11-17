@@ -176,13 +176,12 @@ process.on('unhandledRejection', (reason, promise) => {
 
 process.on('uncaughtException', (err) => {
     logger.error('Uncaught Exception:', err);
-    // In a production environment, consider a more aggressive approach
-    process.exit(1); // Terminate the process
+    process.exit(1);
 });
 
 // Clustering Setup
 if (cluster.isPrimary) {
-    const numCPUs = os.cpus(1);
+    const numCPUs = os.cpus().length;
 
     logger.info(`Master ${process.pid} is running`);
 
