@@ -1,38 +1,63 @@
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import moment from "moment";
-import { cpUpload } from "../../middlewares/storage.js";
+import multer from "multer";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
 import NodeCache from 'node-cache';
-import { processImageUrl, resizeImage } from '../../middlewares/cloudfrontConfig.js';
+import { processImageUrl, resizeImageForReels } from '../../middlewares/cloudfrontConfig.js';
 import { createNotification } from "../Notifications/notificationsController.js";
+import fs from 'fs';
+import path from 'path';
 
 const postCache = new NodeCache({ stdTTL: 300 });
 
-//HELPER FUNCTION TO PROCESS POSTS (media, profile pics)
+const uploadDir = path.join(process.cwd(), 'tmp', 'uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+    console.log(`Created temporary upload directory at: ${uploadDir}`);
+}
+
+const postMediaStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadDir);
+    }
+});
+
+const uploadPostMedia = multer({
+    storage: postMediaStorage,
+    limits: {
+        fileSize: 1024 * 1024 * 500, // 500 MB
+        fieldSize: 1024 * 1024 * 55,  // 55 MB
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Invalid file type. Only images and videos are allowed.'), false);
+        }
+    }
+}).fields([
+    { name: 'media', maxCount: 4 }
+]);
+// HELPER FUNCTION TO PROCESS POSTS (media, profile pics)
 const processPosts = (posts) => {
     if (!posts || posts.length === 0) return [];
     
     return posts.map(post => {
         if (post.media) {
             let mediaArray = [];
-            
-            // Handle if media is already an array (from JSON parsing)
             if (Array.isArray(post.media)) {
                 mediaArray = post.media.map(keyOrUrl => processImageUrl(keyOrUrl.trim()));
             } else if (typeof post.media === 'string') {
-                // Parse JSON string if it's in JSON format
                 try {
                     const parsed = JSON.parse(post.media);
                     if (Array.isArray(parsed)) {
                         mediaArray = parsed.map(keyOrUrl => processImageUrl(keyOrUrl.trim()));
                     } else {
-                        // Fallback to comma-separated format
                         mediaArray = post.media.split(',').map(keyOrUrl => processImageUrl(keyOrUrl.trim()));
                     }
                 } catch (e) {
-                    // If JSON parsing fails, treat as comma-separated
                     mediaArray = post.media.split(',').map(keyOrUrl => processImageUrl(keyOrUrl.trim()));
                 }
             }
@@ -41,17 +66,16 @@ const processPosts = (posts) => {
         } else {
             post.media = null; 
         }
-        
+
         if (post.profilePic) {
             post.profilePic = processImageUrl(post.profilePic);
         }
+
         if (post.reposterProfilePic) {
             post.reposterProfilePic = processImageUrl(post.reposterProfilePic);
         }
-        
-        // Ensure shareCount is included from the post_shares table count
-        post.shareCount = post.shareCount || 0;
-        
+
+        post.shareCount = post.shareCount || 0;    
         return post;
     });
 };
@@ -97,54 +121,66 @@ const notifyFollowersOfNewPost = async (authorId, postId, authorUsername) => {
 // API TO CREATE NEW POST
 export const newPost = async (req, res) => {
     authenticateUser(req, res, async () => {
-        try {
-            cpUpload(req, res, async (uploadErr) => {
-                if (uploadErr) {
-                    return res.status(400).json({ 
-                        message: "File upload error", 
-                        error: uploadErr.message 
-                    });
-                }
+        uploadPostMedia(req, res, async (uploadErr) => {
+            if (uploadErr) {
+                return res.status(400).json({ 
+                    message: "File upload error", 
+                    error: uploadErr.message 
+                });
+            }
 
+            try {
                 const userId = req.user.id;
                 const { description, tags, category } = req.body;
-                const mediaFiles = req.files && req.files["media"] ? req.files["media"] : [];
+                const mediaFiles = req.files?.media || [];
                 let uploadedMediaKeys = [];
 
-                // RESIZE AND UPLOAD TO S3
+                // PROCESS AND UPLOAD TO S3
                 for (const file of mediaFiles) {
-                    try {
-                        const resizedBuffer = await resizeImage(file.buffer, 1080, 1080);
-                        const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_');
-                        const key = `uploads/posts/${Date.now()}_${sanitizedFilename}.webp`;
-                        
-                        const params = { 
-                            Bucket: process.env.BUCKET_NAME, 
-                            Key: key, 
-                            Body: resizedBuffer, 
-                            ContentType: 'image/webp' 
-                        };
-                        
-                        await s3.send(new PutObjectCommand(params));
-                        uploadedMediaKeys.push(key);
-                    } catch (s3Error) {
-                        console.error("Error uploading to S3:", s3Error);
-                        return res.status(500).json({ 
-                            message: "Error uploading one or more files to S3", 
-                            error: s3Error.message 
-                        });
+                    const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_');
+                    let fileBuffer;
+                    let contentType;
+                    let key;
+
+                    // DIFFERENT PROCESSING FOR IMAGES AND VIDEOS
+                    if (file.mimetype.startsWith('image/')) {
+                        // RESIZE IMAGES FOR REELS (9:16 aspect ratio)
+                        fileBuffer = await resizeImageForReels(file.path, 1080, 1920);
+                        contentType = 'image/webp';
+                        key = `uploads/posts/${Date.now()}_${sanitizedFilename}.webp`;
+
+                    } else if (file.mimetype.startsWith('video/')) {
+                        // UPLOAD VIDEOS DIRECTLY (no server-side resizing)
+                        fileBuffer = fs.createReadStream(file.path);
+                        contentType = file.mimetype;
+                        key = `uploads/posts/${Date.now()}_${sanitizedFilename}`;
+                    } else {
+                        continue;
                     }
+
+                    // UPLOAD TO S3
+                    const params = { 
+                        Bucket: process.env.BUCKET_NAME, 
+                        Key: key, 
+                        Body: fileBuffer, 
+                        ContentType: contentType 
+                    };
+                    
+                    await s3.send(new PutObjectCommand(params));
+                    uploadedMediaKeys.push(key);
+
+                    // CLEAN UP TEMP FILE
+                    fs.unlinkSync(file.path);
                 }
 
-                // Store media as JSON array instead of comma-separated string
                 const mediaString = uploadedMediaKeys.length > 0 ? JSON.stringify(uploadedMediaKeys) : null;
                 const query = "INSERT INTO posts (userId, description, tags, category, media, createdAt) VALUES (?, ?, ?, ?, ?, ?)";
                 const values = [
-                    userId, 
-                    description, 
-                    tags, 
-                    category, 
-                    mediaString, 
+                    userId,
+                    description,
+                    tags,
+                    category,
+                    mediaString,
                     moment().format("YYYY-MM-DD HH:mm:ss")
                 ];
 
@@ -180,21 +216,26 @@ export const newPost = async (req, res) => {
                     postCache.flushAll();
                     return res.status(201).json({ message: "Post created successfully." });
 
-                } catch (dbError) {
+                }  catch (dbError) {
                     console.error("Error inserting post into database:", dbError);
                     return res.status(500).json({ 
                         message: "Database insertion error", 
                         error: dbError.message 
                     });
                 }
-            });
-        } catch (error) {
-            console.error("Error creating post:", error);
-            return res.status(500).json({ 
-                message: "Server error.", 
-                error: error.message 
-            });
-        }
+
+            } catch (error) {
+                console.error("Error creating post:", error);
+                if (req.files?.media) {
+                    req.files.media.forEach(file => {
+                        if (fs.existsSync(file.path)) {
+                            fs.unlinkSync(file.path);
+                        }
+                    });
+                }
+                return res.status(500).json({ message: "Server error.", error: error.message });
+            }
+        });
     });
 };
 

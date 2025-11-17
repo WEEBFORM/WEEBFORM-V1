@@ -5,7 +5,7 @@ import {  PutObjectCommand } from '@aws-sdk/client-s3';
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import { cpUpload } from "../../middlewares/storage.js";
-import { s3, generateS3Url, s3KeyFromUrl, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
+import { s3, s3KeyFromUrl, deleteS3Object } from "../../middlewares/S3bucketConfig.js";
 import { executeQuery } from "../../middlewares/dbExecute.js";
 import NodeCache from 'node-cache';
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";

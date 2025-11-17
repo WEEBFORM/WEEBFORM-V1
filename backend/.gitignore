@@ -1,4 +1,5 @@
 node_modules
+/tmp
 .env
 .env.*
 weebform-v1-key-pair.pem

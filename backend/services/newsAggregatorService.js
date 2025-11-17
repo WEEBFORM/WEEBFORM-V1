@@ -3,7 +3,26 @@ import RSSParser from 'rss-parser';
 
 const parser = new RSSParser();
 
-// --- INDIVIDUAL SOURCE FETCHERS ---
+// INDIVIDUAL SOURCE FETCHERS
+
+const fetchFromKitsu = async () => {
+    try {
+        const response = await axios.get("https://kitsu.io/api/edge/trending/anime", { timeout: 8000 });
+        return response.data.data.map(anime => {
+            const title = anime.attributes.canonicalTitle || "Anime";
+            return {
+                title: title,
+                link: `https://kitsu.io/anime/${anime.id}`,
+                source: "Kitsu.io",
+                content: (anime.attributes.synopsis || "No synopsis available.").substring(0, 280) + "...",
+                imageUrl: anime.attributes.posterImage?.large || null,
+            };
+        });
+    } catch (error) {
+        console.error("Failed to fetch from Kitsu.io:", error.message);
+        return [];
+    }
+};
 
 const fetchFromAnimeNewsNetwork = async () => {
     try {
@@ -138,6 +157,7 @@ export const getFreshAnimeNews = async () => {
         fetchFromJikan(),
         fetchFromAnilist(),
         fetchFromMangaDex(),
+        fetchFromKitsu()
     ]);
 
     const successfulResults = results
