@@ -10,7 +10,7 @@ import { createNotification } from "../Notifications/notificationsController.js"
 
 config();
 
-const userCache = new NodeCache({ stdTTL: 300 }); // Cache user data for 5 minutes
+const userCache = new NodeCache({ stdTTL: 300 }); // Cache for 5 minutes
 
 // INITIATE REGISTRATION
 export const initiateRegistration = async (req, res) => {
