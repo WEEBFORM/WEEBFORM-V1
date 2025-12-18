@@ -192,7 +192,7 @@ if (cluster.isPrimary) {
     cluster.on('exit', (worker, code, signal) => {
         logger.error(`Worker ${worker.process.pid} died with code ${code}, spawning a new one...`);
         cluster.fork();
-    });
+    }); 
 
     // Connect to database and then start server
     (async () => {
