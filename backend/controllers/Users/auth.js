@@ -240,14 +240,10 @@ export const googleSignIn = async (req, res) => {
 
         const ticket = await client.verifyIdToken({
             idToken,
-            audience: [
-                process.env.GOOGLE_CLIENT_ID,
-                process.env.GOOGLE_ANDROID_CLIENT_ID,
-                process.env.GOOGLE_IOS_CLIENT_ID
-            ],
+            audience: process.env.GOOGLE_CLIENT_ID,
         });
 
-        const { name, email, picture } = ticket.getPayload();
+        const { name, email, picture } = ticket.getPayload(); 
 
         // CHECK IF USER EXISTS
         const existingUsers = await executeQuery("SELECT * FROM users WHERE email = ?", [email]);
