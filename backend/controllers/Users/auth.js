@@ -238,7 +238,7 @@ export const googleSignIn = async (req, res) => {
             return res.status(400).json({ message: "Google ID token is required." });
         }
 
-        const ticket = client.verifyIdToken({
+        const ticket = await client.verifyIdToken({
             idToken,
             audience: [
                 process.env.GOOGLE_CLIENT_ID,
