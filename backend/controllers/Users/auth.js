@@ -238,17 +238,25 @@ export const googleSignIn = async (req, res) => {
             return res.status(400).json({ message: "Google ID token is required." });
         }
 
+        const GOOGLE_CLIENT_ID = [
+            process.env.GOOGLE_CLIENT_ID,
+            process.env.GOOGLE_ANDROID_CLIENT_ID,
+            process.env.GOOGLE_IOS_CLIENT_ID
+        ];
+
+        // Add await here - verifyIdToken returns a Promise
         const ticket = await client.verifyIdToken({
             idToken,
-            audience: process.env.GOOGLE_CLIENT_ID,
+            audience: GOOGLE_CLIENT_ID,
         });
 
-        const { name, email, picture } = ticket.getPayload(); 
+        const payload = ticket.getPayload();
+        const { email, name, picture } = payload;
 
         // CHECK IF USER EXISTS
         const existingUsers = await executeQuery("SELECT * FROM users WHERE email = ?", [email]);
 
-        let user;
+        let user; 
         if (existingUsers.length > 0) {
             user = existingUsers[0];
             userCache.set(email, user);
@@ -275,8 +283,9 @@ export const googleSignIn = async (req, res) => {
 
             const insertResult = await executeQuery("INSERT INTO users SET ?", newUserPayload);
             
-            const [newUserRows] = await executeQuery("SELECT * FROM users WHERE id = ?", [insertResult.insertId]);
-            user = newUserRows;
+            // Fix this line too - executeQuery returns an array directly
+            const newUserRows = await executeQuery("SELECT * FROM users WHERE id = ?", [insertResult.insertId]);
+            user = newUserRows[0];
         }
 
         // HANDLE SUCCESSFUL LOGIN
