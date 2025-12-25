@@ -38,8 +38,7 @@ const constructNotificationMessage = (notification) => {
             return `${actor} mentioned you in a comment.`;
         case 'MODERATION_ACTION':
             return `An admin has ${details.action} you in ${details.chatGroupTitle}.`;
-        default:
-            return 'You have a new notification.';
+        default: return `${actor} interacted with your account.`;
     }
 };
 

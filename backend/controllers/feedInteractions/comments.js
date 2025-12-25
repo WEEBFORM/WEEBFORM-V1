@@ -52,8 +52,8 @@ export const addComment = async (req, res) => {
           "COMMENT_ON_POST",
           userId,
           post[0].userId,
-          postId,
-          result.insertId
+          { postId: postId, commentId: result.insertId },
+          { commentText: desc }
         );
       }
 
@@ -198,9 +198,8 @@ export const addReply = async (req, res) => {
             "REPLY_TO_COMMENT",
             userId,
             comment[0].userId,
-            null,
-            commentId,
-            result.insertId
+            { postId: null, commentId: commentId, replyId: result.insertId }, 
+            { commentText: reply }
           );
         }
       }
