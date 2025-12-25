@@ -129,8 +129,13 @@ export const getNotifications = (req, res) => {
     try {
       const userId = req.user.id;
       const q = `
-        SELECT n.*, u.username AS senderUsername, u.profilePic AS senderProfilePic,
-               c.title AS communityTitle, s.label AS storeLabel
+        SELECT 
+          n.*, 
+          u.username AS senderUsername, 
+          u.profilePic AS senderProfilePic,
+          u.id AS senderId,
+          c.title AS communityTitle, 
+          s.label AS storeLabel
         FROM notifications AS n
         JOIN users AS u ON n.senderId = u.id
         LEFT JOIN communities c ON n.communityId = c.id
@@ -141,23 +146,21 @@ export const getNotifications = (req, res) => {
       `;
 
       const [notifications] = await db.promise().query(q, [userId]);
-      // PROCESS EACH NOTIFICATION
+      
       const processedNotifications = notifications.map(n => {
           n.senderProfilePic = processImageUrl(n.senderProfilePic);
           try {
-              n.details = n.details ? JSON.parse(n.details) : {}; //Json
+              n.details = n.details ? (typeof n.details === 'string' ? JSON.parse(n.details) : n.details) : {};
           } catch (e) {
               n.details = {};
           }
-          // CONSTRUCT THE NOTIFICATION MESSAGE FOR FRONTEND DISPLAY
           n.message = constructNotificationMessage(n);
           return n;
       });
 
-      res.status(200).json(processedNotifications);
+      res.status(200).json(processedNotifications); 
     } catch (err) {
-      console.error("Error fetching notifications:", err);
-      res.status(500).json({ message: "Failed to fetch notifications.", error: err.message });
+      res.status(500).json({ message: "Failed to fetch notifications." });
     }
   });
 };
