@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import geoip from 'geoip-lite';
 import fetch from 'node-fetch';
+import crypto from "crypto";
 import { OAuth2Client } from "google-auth-library";
 import { transporter } from "../../middlewares/mailTransportConfig.js";
 import { generateS3Url } from "../../middlewares/S3bucketConfig.js";
@@ -238,19 +239,24 @@ export const googleSignIn = async (req, res) => {
             return res.status(400).json({ message: "Google ID token is required." });
         }
 
-        const GOOGLE_CLIENT_ID = [
+        const ALLOWED_CLIENT_IDS = [
             process.env.GOOGLE_CLIENT_ID,
             process.env.GOOGLE_ANDROID_CLIENT_ID,
             process.env.GOOGLE_IOS_CLIENT_ID
         ];
 
-        // Add await here - verifyIdToken returns a Promise
+        // Verify the ID Token
         const ticket = await client.verifyIdToken({
             idToken,
-            audience: GOOGLE_CLIENT_ID,
+            audience: ALLOWED_CLIENT_IDS,
         });
 
         const payload = ticket.getPayload();
+        
+        if (payload.exp < Date.now() / 1000) {
+             return res.status(401).json({ message: "Token expired" });
+        }
+
         const { email, name, picture } = payload;
 
         // CHECK IF USER EXISTS
@@ -262,7 +268,7 @@ export const googleSignIn = async (req, res) => {
             userCache.set(email, user);
         } else {
             // CREATE NEW USER IF NOT EXISTS
-            const defaultCoverPhotoKey = process.env.DEFAULT_COVER_PHOTO_KEY;
+            const defaultCoverPhotoKey = process.env.DEFAULT_COVER_PHOTO_KEY || "default_cover.jpg";
             
             let username = email.split('@')[0];
             let isUsernameTaken = (await executeQuery("SELECT id FROM users WHERE username = ?", [username])).length > 0;
@@ -271,19 +277,22 @@ export const googleSignIn = async (req, res) => {
                 username = `${username}${randomSuffix}`;
                 isUsernameTaken = (await executeQuery("SELECT id FROM users WHERE username = ?", [username])).length > 0;
             }
+ 
+            // GENERATE A RANDOM PASSWORD FOR THE USER
+            const randomPassword = crypto.randomBytes(16).toString('hex');
+            const hashedPassword = bcrypt.hashSync(randomPassword, bcrypt.genSaltSync(10));
 
             const newUserPayload = {
                 email,
                 full_name: name,
                 username: username,
-                password: null,
+                password: hashedPassword,
                 profilePic: picture, 
                 coverPhoto: defaultCoverPhotoKey
             };
 
             const insertResult = await executeQuery("INSERT INTO users SET ?", newUserPayload);
             
-            // Fix this line too - executeQuery returns an array directly
             const newUserRows = await executeQuery("SELECT * FROM users WHERE id = ?", [insertResult.insertId]);
             user = newUserRows[0];
         }
@@ -293,7 +302,9 @@ export const googleSignIn = async (req, res) => {
 
     } catch (err) {
         console.error("Google Sign-In Error:", err);
-        if (err.message.includes("Invalid token signature")) {
+        if (err.sqlMessage) console.error("SQL Error:", err.sqlMessage);
+
+        if (err.message && err.message.includes("Invalid token signature")) {
             return res.status(401).json({ message: "Invalid Google token. Please try again." });
         }
         res.status(500).json({ message: "Internal server error during Google Sign-In." });
