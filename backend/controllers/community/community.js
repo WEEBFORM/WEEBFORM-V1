@@ -253,14 +253,12 @@ export const getCommunityDetails = (req, res) => {
             const communityId = req.params.id;
             const userId = req.user.id;
             if (!communityId) return res.status(400).json({ error: "Community ID is required." });
-
-            // MODIFIED: Added 'includeCommunityPoints: true' to the options object.
             const [community] = await fetchCommunityInfo([communityId], userId, {
                 includeMemberCount: true,
                 includeUserMembership: true,
                 includeChatGroups: true,
                 includeCreatorInfo: true,
-                includeCommunityPoints: true // <-- THIS IS THE NEW LINE
+                includeCommunityPoints: true
             });
 
             if (!community) return res.status(404).json({ error: "Community not found." });

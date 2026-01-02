@@ -182,6 +182,19 @@ export const markAsRead = (req, res) => {
   });
 };
 
+export const markSingleAsRead = (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const { id } = req.params;
+            const q = "UPDATE notifications SET `read` = 1 WHERE id = ? AND recipientId = ?";
+            await db.promise().query(q, [id, req.user.id]);
+            res.status(200).json({ message: "Notification marked as read." });
+        } catch (err) {
+            res.status(500).json({ message: "Error updating notification" });
+        }
+    });
+};
+
 export const deleteNotification = async (type, senderId, recipientId, entityIds = {}) => {
   try {
     let conditions = "type = ? AND senderId = ? AND recipientId = ?";
