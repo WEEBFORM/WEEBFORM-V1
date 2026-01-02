@@ -19,7 +19,7 @@ router.post('/:id/repost', toggleRepost);
 
 router.get('/:id/reposts', getReposts);
 
-router.get("/:id", getPostById);
+router.get("/single-post/:id", getPostById);
 router.delete('/:id', deletePost) 
 
 
