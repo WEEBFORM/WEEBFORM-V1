@@ -57,7 +57,7 @@ const handleSuccessfulLogin = async (req, res, user) => {
             path: "/",
             maxAge: 365.25 * 24 * 60 * 60 * 1000 // 1 year
         }).status(200).json({
-            message: "User logged in successfully", user
+            message: "User logged in successfully", user, token: token 
         });
 
         // SEND LOGIN NOTIFICATION EMAIL
