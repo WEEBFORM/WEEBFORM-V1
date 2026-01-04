@@ -68,7 +68,6 @@ async function handleNewStore(req, res, user) {
             user.id, req.body.label, req.body.description, logoImageKey,
             req.body.category, req.body.web_link, moment().format("YYYY-MM-DD HH:mm:ss"),
         ];
-
         const [data] = await db.promise().query(insertQuery, values);
         return res.status(200).json({
             message: `New store ${req.body.label} created successfully`,

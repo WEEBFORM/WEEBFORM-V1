@@ -41,13 +41,12 @@ export const rateStore = (req, res) => {
         }
 
         try {
-            // Get store ownerId and label for the notification
+            // GET STORE OWNER INFO
             const [storeData] = await db.promise().query("SELECT ownerId, label FROM stores WHERE id = ?", [storeId]);
             if (storeData.length === 0) {
                 return res.status(404).json({ message: "Store not found." });
             }
             const { ownerId, label } = storeData[0];
-
             const [existingRating] = await db.promise().query("SELECT * FROM store_ratings WHERE storeId = ? AND userId = ?", [storeId, userId]);
             
             let message = "Rating submitted successfully.";
@@ -59,7 +58,7 @@ export const rateStore = (req, res) => {
                 await db.promise().query("INSERT INTO store_ratings (storeId, userId, rating, createdAt) VALUES (?, ?, ?, ?)", values);
             }
 
-            // Create notification for the store owner
+            // CREATE NOTIFICATION FOR STORE OWNER
             await createNotification('STORE_RATING', userId, ownerId, { storeId }, { storeLabel: label });
 
             return res.status(200).json({ message });

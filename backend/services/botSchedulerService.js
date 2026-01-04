@@ -4,7 +4,7 @@ import { generateBotPost, generateBotComment } from './llmService.js';
 import moment from 'moment';
 import { getFreshAnimeNews } from './newsAggregatorService.js';
 
-// HELPER: GET A RANDOM BOT, EXCLUDING CERTAIN USER IDS
+// GET A RANDOM BOT, EXCLUDING CERTAIN USER IDS
 const getRandomBot = async (excludeUserIds = []) => {
     
     let query = "SELECT id, core_prompt FROM users WHERE is_bot = TRUE";
@@ -19,7 +19,7 @@ const getRandomBot = async (excludeUserIds = []) => {
     return bots.length > 0 ? bots[0] : null;
 };
 
-// HELPER: GET MULTIPLE RANDOM BOTS
+// GET MULTIPLE RANDOM BOTS
 const getMultipleBots = async (count, excludeUserIds = []) => {
     let query = "SELECT id, core_prompt FROM users WHERE is_bot = TRUE";
     let params = [];

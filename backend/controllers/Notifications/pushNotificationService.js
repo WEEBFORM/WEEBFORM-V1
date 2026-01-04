@@ -19,7 +19,7 @@ export const sendPushNotification = async (recipientId, title, body, data = {}) 
             tokens: tokens, 
         };
 
-        // USING sendEachForMulticast TO HANDLE MULTIPLE TOKENS
+        // USING `sendEachForMulticast` TO HANDLE MULTIPLE TOKENS
         const response = await admin.messaging().sendEachForMulticast(message);
         
         console.log(`[FCM] Notification sent for userId: ${recipientId}. Success: ${response.successCount}, Failure: ${response.failureCount}`);

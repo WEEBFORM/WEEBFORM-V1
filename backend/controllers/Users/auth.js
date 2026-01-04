@@ -16,7 +16,7 @@ config();
 const userCache = new NodeCache({ stdTTL: 300 });
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID); 
 
-// HELPER: HANDLES SUCCESSFUL LOGIN (FOR BOTH METHODS)
+// HELPER: HANDLES SUCCESSFUL LOGIN (FOR BOTH JWT AND GOOGLE SIGN-IN)
 const handleSuccessfulLogin = async (req, res, user) => {
     try {
         const userAgent = req.headers['user-agent'];

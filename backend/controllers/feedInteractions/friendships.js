@@ -54,7 +54,7 @@ export const followUser = async (req, res) => {
         ]);
       followerCache.flushAll();
 
-      // Create notification
+      // CREATE FOLLOW NOTIFICATION
       await createNotification("FOLLOW", userId, followed);
 
       return res.status(200).json({ message: "Following user" });
@@ -67,7 +67,7 @@ export const followUser = async (req, res) => {
   });
 };
 
-// API TO GET FOLLOWERS (Refactored)
+// API TO GET FOLLOWERS 
 export const getFollowers = async (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -94,7 +94,7 @@ export const getFollowers = async (req, res) => {
     });
 };
 
-// API TO GET FOLLOWING (MUTUAL FOLLOWERS) (Refactored)
+// API TO GET FOLLOWING (MUTUAL FOLLOWERS)
 export const getFollowing = async (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -107,11 +107,13 @@ export const getFollowing = async (req, res) => {
             const cachedData = followerCache.get(cacheKey);
             if (cachedData) return res.status(200).json(cachedData);
 
-            const q = `SELECT u.id, u.full_name, u.username, u.profilePic FROM users AS u WHERE u.id IN (
-                        SELECT r1.followed FROM reach AS r1 WHERE r1.follower = ?
-                        INTERSECT
-                        SELECT r2.follower FROM reach AS r2 WHERE r2.followed = ?
-                       )`;
+            const q = `SELECT u.id, u.full_name, u.username, u.profilePic
+                        FROM users AS u
+                        JOIN reach AS r1 ON r1.followed = u.id
+                        JOIN reach AS r2 ON r2.follower = u.id
+                        WHERE r1.follower = ?
+                        AND r2.followed = ?;
+                    `;
             
             const [data] = await db.promise().query(q, [userId, userId]);
             
@@ -239,7 +241,7 @@ export const checkFollowStatus = async (req, res) => {
     });
 };
 
-// GET FOLLOW RECOMMENDATIONS (Refactored)
+// GET FOLLOW RECOMMENDATIONS 
 export const getRecommendedUsers = async (req, res) => {
     authenticateUser(req, res, async () => {
         try {

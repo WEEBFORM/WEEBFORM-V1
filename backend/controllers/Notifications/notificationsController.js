@@ -24,10 +24,16 @@ const constructNotificationMessage = (notification) => {
             return `${actor} created a new post.`;
         case 'COMMUNITY_JOIN':
             return `${actor} joined your community, ${communityTitle}.`;
-        case 'COMMUNITY_INVITE':
-            return `${actor} invited you to join ${communityTitle}.`;
-        case 'COMMUNITY_INVITE_ACCEPTED':
-            return `${details.inviteeUsername} accepted your invitation to join ${communityTitle}.`;
+            case 'COMMUNITY_ADDED':
+            return `${actor} added you to the community ${communityTitle}.`;
+            case 'COMMUNITY_MESSAGE':
+            return `${actor} sent a message in #${details?.groupName} (${details?.communityTitle})`;
+        case 'COMMUNITY_POST_LIKE':
+            return `${actor} liked your post in ${communityTitle}.`;
+        case 'COMMUNITY_REMOVED':
+        return `Admin ${details?.adminUsername} removed you from ${communityTitle}.`;
+        case 'CHAT_MENTION':
+            return `${actor} mentioned you in #${details?.groupName}.`;
         case 'STORE_RATING':
             return `${actor} left a rating on your store, ${storeLabel}.`;
         case 'NEW_LOGIN':
@@ -44,11 +50,9 @@ const constructNotificationMessage = (notification) => {
 
 
 export const createNotification = async (type, senderId, recipientId, entityIds = {}, details = {}) => {
-  // PREVENT SELF-NOTIFICATIONS
   if (senderId === recipientId) {
     return;
   }
-
   try {
     const q = `INSERT INTO notifications (type, senderId, recipientId, postId, communityId, storeId, details, createdAt) 
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -67,26 +71,32 @@ export const createNotification = async (type, senderId, recipientId, entityIds 
     const [result] = await db.promise().query(q, values);
     const notificationId = result.insertId;
 
-    const [sender] = await db.promise().query("SELECT username FROM users WHERE id = ?", [senderId]);
-    const senderUsername = sender.length > 0 ? sender[0].username : 'Someone';
+    // const [sender] = await db.promise().query("SELECT username FROM users WHERE id = ?", [senderId]);
+    // const senderUsername = sender.length > 0 ? sender[0].username : 'Someone';
+
+    let senderUsername = details.senderUsername;
+    if (!senderUsername) {
+        const [sender] = await db.promise().query("SELECT username FROM users WHERE id = ?", [senderId]);
+        senderUsername = sender.length > 0 ? sender[0].username : 'Someone';
+    }
     
     // CONSTRUCT THE NOTIFICATION MESSAGE
     const messageBody = constructNotificationMessage({ type, senderUsername, details, ...details });
 
-    // DEFINE MESSAGE TITLE
+    // MESSAGE TITLE
     const messageTitle = "You have a new notification";
 
-    // PREPARE DATA PAYLOAD
+    // DATA PAYLOAD
     const dataPayload = {
         notificationId: String(notificationId),
         type,
         ...entityIds
     };
     
-    // Trigger the push notification
+    // TRIGGER PUSH NOTIFICATION
     await sendPushNotification(recipientId, messageTitle, messageBody, dataPayload);
 
-    // Trigger email notification (optional, can be kept for certain types)
+    // TRIGGER EMAIL NOTIFICATION
     await sendNotificationEmail(recipientId, senderId, type, details);
 
   } catch (err) {
@@ -195,26 +205,25 @@ export const markSingleAsRead = (req, res) => {
     });
 };
 
+// DELETE NOTIFICATION
 export const deleteNotification = async (type, senderId, recipientId, entityIds = {}) => {
   try {
     let conditions = "type = ? AND senderId = ? AND recipientId = ?";
     const values = [type, senderId, recipientId];
 
-    if (entityIds.postId) {
-      conditions += " AND postId = ?";
-      values.push(entityIds.postId);
-    }
-    if (entityIds.commentId) {
-      conditions += " AND commentId = ?";
-      values.push(entityIds.commentId);
-    }
-    // Add other entities as needed...
+    // ADD DYNAMIC ENTITY CONDITIONS
+    const possibleEntityColumns = ['postId', 'communityId', 'groupId', 'storeId', 'commentId', 'replyId', 'messageId'];
 
-    const q = `DELETE FROM notifications WHERE ${conditions}`;
-    await db.promise().query(q, values);
+    possibleEntityColumns.forEach(column => {
+      if (entityIds[column]) {
+        conditions += ` AND ${column} = ?`;
+        values.push(entityIds[column]);
+      }
+    });
 
+    await db.promise().query(`DELETE FROM notifications WHERE ${conditions}`, values);
   } catch (err) {
-    console.error(`[Notification Error] Failed to delete notification:`, err);
+    console.error(`[Delete Error]:`, err);
   }
 };
 

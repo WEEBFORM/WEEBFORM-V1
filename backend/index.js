@@ -34,20 +34,12 @@ import Notifications from './routes/notificationRoute.js';
 
 import { startBotSchedulers } from './services/botSchedulerService.js';
 
-// Load environment variables early 
+// LOAD ENV VARIABLES 
 config();
  
-// Centralize configuration
+// SERVER CONFIGURATION
 const NODE_ENV = process.env.NODE_ENV || 'development';
-
 const PORT = process.env.PORT || 8001;
-
-const WHITELIST = [
-    'http://localhost:3001',
-    'http://localhost:3002',
-    'https://beta.weebform.com',
-];
-
 const app = express();
 
 // CORS {All Origins}
@@ -60,7 +52,13 @@ const corsOptions = {
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
 }; 
 
-  // CORS Configuration
+// CORS WHITELIST HANDLING
+const WHITELIST = [
+    'http://localhost:3001',
+    'http://localhost:3002',
+    'https://beta.weebform.com',
+];
+
 app.use((req, res, next) => {
     const origin = req.headers.origin;
     if (WHITELIST.includes(origin)) {
@@ -75,7 +73,6 @@ app.use((req, res, next) => {
             'GET, POST, PUT, DELETE, OPTIONS'
         );
     }
-
     if (req.method === 'OPTIONS') {
         return res.status(200).json({});
     }
@@ -97,7 +94,7 @@ app.use(cookieParser());
 // LOGGING
 app.use(morgan(NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// Add request timestamp
+// ADD REQUEST TIMESTAMP
 app.use((req, res, next) => {
     req.requestTime = new Date().toISOString();
     next();
@@ -128,12 +125,11 @@ app.use('/api/v1/news-content', News);
 app.use('/api/v1/communities', Communities);
 app.use('/api/v1/communities/groups', Groups);
 app.use('/api/v1/notifications', Notifications);
-// app.use('/api/v1/communities/groups', CommunityGroupActions); 
  
-// Health Check Endpoint
+// SERVER HEALTH CHECK
 app.get('/health', async (req, res) => {
     try {
-        await db.ping(); // Check DB connectivity
+        await db.ping(); // DB CHECK
         res.status(200).json({ status: 'healthy', timestamp: new Date() });
     } catch (error) {
         logger.error('Health check failed:', error);
@@ -141,12 +137,12 @@ app.get('/health', async (req, res) => {
     }
 });
 
-// Handle unknown routes
+// HANDLE UNKNOWN ROUTES
 app.all('*', (req, res, next) => {
     next(new AppError(`Cannot find ${req.originalUrl} on this server`, 404));
 });
 
-// Global Error Handler
+// GLOBAL ERROR HANDLER
 app.use((err, req, res, next) => {
     const statusCode = err.isOperational ? err.statusCode : 500;
     const message = err.isOperational ? err.message : 'Internal Server Error';
@@ -161,7 +157,7 @@ app.use((err, req, res, next) => {
     }
 });
 
-// Graceful Shutdown
+// GRACEFUL SHUTDOWN
 process.on('SIGINT', () => {
     logger.info('Shutting down server...');
     server.close(() => {
@@ -179,7 +175,7 @@ process.on('uncaughtException', (err) => {
     process.exit(1);
 });
 
-// Clustering Setup
+// CLUSTERING
 if (cluster.isPrimary) {
     const numCPUs = os.cpus().length;
 
@@ -194,26 +190,25 @@ if (cluster.isPrimary) {
         cluster.fork();
     }); 
 
-    // Connect to database and then start server
+    // CONNECT TO DATABASE AND START SERVER
     (async () => {
         try {
             await db.ping(); // Test the database connection
             logger.info('Database connection established.');
         } catch (error) {
             logger.error('Failed to connect to database:', error);
-            process.exit(1); // Exit if database connection fails in primary process
+            process.exit(1); // EXIT IF DB CONNECTION FAILS
         }
 
         const server = http.createServer(app);
 
         startBotSchedulers();
-        // Initialize WebSocket functionality
+        // WEBSOCKET INITIALIZATION
         initializeMessageSocket(server);
         server.listen(PORT, () => {
             logger.info(`Server listening on port ${PORT} in ${NODE_ENV} mode`);
         });
     })();
 } else {
-    // Worker process
     logger.info(`Worker ${process.pid} started`);
 }

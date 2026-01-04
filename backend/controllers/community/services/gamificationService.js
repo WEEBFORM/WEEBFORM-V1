@@ -11,7 +11,7 @@ const ACTIVITY_POINTS = {
   quoteMacro: 5
 };
 
-// LEVEL THRESH
+// LEVEL THRESHOLD
 const LEVEL_THRESHOLDS = [
   0,      // Level 1
   100,    // Level 2
@@ -35,7 +35,7 @@ const calculateLevelFromXP = (xp) => {
   return 1;R
 };
 
-// INCREMEMT USER ACTIVITY
+// INCREMENT USER ACTIVITY
 export const incrementUserActivity = async (userId, chatGroupId, activityType) => {
   if (!ACTIVITY_POINTS[activityType]) {
     console.error(`Invalid activity type: ${activityType}`);

@@ -14,12 +14,12 @@ export const fetchAndProcessUserData = async (userId) => {
                 
     const [data] = await executeQuery(q, [userId]);
     if (!data) {
-        return null; // Return null if user is not found
+        return null;
     }
     
     const userInfo = data;
 
-    // Generate pre-signed S3 URLs if media exists
+    // GENERATE S3 URLS FOR IMAGES
     if (userInfo.coverPhoto) {
         const coverPhotoKey = s3KeyFromUrl(userInfo.coverPhoto);
         userInfo.coverPhoto = await generateS3Url(coverPhotoKey);

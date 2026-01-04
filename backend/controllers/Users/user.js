@@ -1,4 +1,3 @@
-import sharp from 'sharp';
 import multer from 'multer';
 import bcrypt from 'bcryptjs';
 import {  PutObjectCommand } from '@aws-sdk/client-s3';
@@ -24,7 +23,6 @@ export const editProfile = async (req, res) => {
         if (!userId) {
             return res.status(401).json({ message: "Authentication failed, user ID missing." });
         }
-
         try {
             cpUpload(req, res, async (uploadErr) => {
                 if (uploadErr instanceof multer.MulterError) {

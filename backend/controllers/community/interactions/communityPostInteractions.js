@@ -15,7 +15,29 @@ export const like = async (req, res) => {
                 return res.status(400).json({ message: "Invalid communityPostId" });
             }
             
+            // FETCH POST DETAILS FOR NOTIFICATION
+            const [postDetails] = await db.promise().query(
+                `SELECT cp.userId as authorId, c.title as communityTitle, c.id as communityId 
+                 FROM community_posts cp 
+                 JOIN communities c ON cp.communityId = c.id 
+                 WHERE cp.id = ?`, 
+                [communityPostId]
+            );
+
             await db.promise().query("INSERT INTO likes (userId, communityPostId) VALUES(?, ?)", [userId, communityPostId]);
+            
+            // TRIGGER NOTIFICATION TO POST AUTHOR
+            if (postDetails.length > 0 && postDetails[0].authorId !== userId) {
+                const { authorId, communityTitle, communityId } = postDetails[0];
+                await createNotification(
+                    'COMMUNITY_POST_LIKE',
+                    userId,
+                    authorId,
+                    { communityId, postId: communityPostId }, 
+                    { communityTitle, senderUsername: req.user.username }
+                );
+            }
+
             likeCache.flushAll();
             return res.status(200).json({ message: "Post liked successfully." });
         } catch (err) {

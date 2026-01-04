@@ -36,9 +36,9 @@ export const resizeImageForReels = async (input, width, height) => {
                 width: width,
                 height: height,
                 fit: 'cover', 
-                position: 'center' // Use the center of the image when cropping.
+                position: 'center'
             })
-            .webp({ quality: 80 }) // Convert to WebP for better performance
+            .webp({ quality: 80 })
             .toBuffer();
     } catch (error) {
         console.error("Error resizing reel image:", error);

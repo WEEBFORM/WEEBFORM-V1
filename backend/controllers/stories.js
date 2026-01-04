@@ -5,11 +5,11 @@ import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { s3, generateS3Url, s3KeyFromUrl } from "../middlewares/S3bucketConfig.js";
 import { cpUpload } from "../middlewares/storage.js";
 
-// Utility function for deleting S3 objects
+// UTILITY FUNCTION TO DELETE S3 OBJECT
 const deleteS3Object = async (url) => {
   const key = s3KeyFromUrl(url);
   if (!key) {
-    console.warn("Invalid S3 object URL, skipping deletion:", url); // Use warn for non-critical issues
+    console.warn("Invalid S3 object URL, skipping deletion:", url);
     return;
   }
   try {
@@ -21,7 +21,7 @@ const deleteS3Object = async (url) => {
     console.log("S3 object deleted successfully:", key);
   } catch (s3Error) {
     console.error("Error deleting S3 object:", key, s3Error);
-    throw s3Error; // Re-throw to be caught in the calling function
+    throw s3Error;
   }
 };
 
@@ -41,7 +41,7 @@ export const addStory = (req, res) => {
       const storyImageUrls = [];
       const storyVideoUrls = [];
 
-      // Upload images to S3
+      // UPLOAD IMAGES TO S3
       if (storyImages) {
         for (const image of storyImages) {
           try {
@@ -61,7 +61,7 @@ export const addStory = (req, res) => {
         }
       }
 
-      // Upload videos to S3
+      // UPLOAD VIDEOS TO S3
       if (storyVideos) {
         for (const video of storyVideos) {
           try {
@@ -81,7 +81,7 @@ export const addStory = (req, res) => {
         }
       }
 
-      // Save story data to the database
+      // SAVE STORY RECORD IN DATABASE
       const q = "INSERT INTO stories (`storyImage`, `text`, `storyVideo`, `userId`, `createdAt`) VALUES (?)";
       const values = [
         storyImageUrls.join(","),

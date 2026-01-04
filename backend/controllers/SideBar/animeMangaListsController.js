@@ -124,7 +124,7 @@ export const addEntryToList = async (req, res) => {
         }
     const q = "INSERT INTO listEntries (listId, listItem) VALUES (?, ?, ?) WHERE userId = ?";
     try {
-        const [result] = await db.promise().query(q, [listId, listItemr ]);
+        const [result] = await db.promise().query(q, [listId, listItem, userId]);
         return res.status(201).json({ message: "Entry added successfully", entryId: result.insertId });
     } catch (error) {
         return handleAPIError(error, res, "Failed to add entry to list");

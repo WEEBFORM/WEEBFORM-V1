@@ -2,49 +2,39 @@ import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 import RSSParser from "rss-parser";
 import axios from 'axios';
-
-// --- Import the CloudFront URL processor ---
 import { processImageUrl } from "../../middlewares/cloudfrontConfig.js";
 
 const parser = new RSSParser();
 
-// --- Centralized helper with the "smart URL" logic included ---
+// CENTRALIZED FUNCTION TO PROCESS NEWS POSTS
 const processNewsPosts = (posts) => {
     if (!posts || posts.length === 0) {
         return [];
     }
     return posts.map(post => {
-        // Process post media (if it exists)
         if (post.media) {
             const mediaKeysOrUrls = post.media.split(',');
-            // Map over each item and apply the smart URL logic
+            //MAP THROUGH EACH MEDIA ITEM
             post.media = mediaKeysOrUrls.map(keyOrUrl => {
                 const trimmedItem = keyOrUrl.trim();
-                // If it's already a full URL, use it directly.
                 if (trimmedItem.startsWith('http')) {
-                    return trimmedItem;
+                    return trimmedItem;// USE DIRECT URL IF AVAILABLE
                 }
-                // Otherwise, build the CDN URL from the key.
                 return processImageUrl(trimmedItem);
             });
         }
         
-        // Process the author's profile picture
         if (post.profilePic) {
-            // If it's already a full URL (from a bot), use it directly.
             if (post.profilePic.startsWith('http')) {
-                // No action needed, the URL is already correct.
             } else {
-                // Otherwise, build the CDN URL from the key.
                 post.profilePic = processImageUrl(post.profilePic);
             }
         }
-        
         return post;
     });
 };
 
-// ALL NEWS (Refactored with async/await and CloudFront)
+// ALL NEWS
 export const allnews = async (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -84,7 +74,7 @@ export const allnews = async (req, res) => {
     });
 };
 
-// VIEW NEWS BASED ON CATEGORY (Refactored with async/await and CloudFront)
+// VIEW NEWS BASED ON CATEGORY
 export const categorizedNews = async (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -126,7 +116,7 @@ export const categorizedNews = async (req, res) => {
 };
 
 
-// --- EXTERNAL API FETCHERS (Unchanged) ---
+// EXTERNAL API FETCHERS
 
 export const animeNewsNetwork = async (req, res) => {
     try {

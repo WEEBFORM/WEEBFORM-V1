@@ -2,15 +2,15 @@ import {
     toggleUserMute,
     toggleUserExile,
     toggleGroupSlowMode,
-    removeUserFromGroup as removeUserService // Alias to avoid naming conflicts
+    removeUserFromGroup as removeUserService 
 } from './moderationService.js';
 
-// Controller to toggle mute for a user in a specific group.
+// CONTROLLER TO TOGGLE MUTE FOR A USER IN A SPECIFIC GROUP
 export const muteUserInGroup = async (req, res) => {
     try {
         const { chatGroupId } = req.params;
         const { targetUserId, duration } = req.body;
-        const adminId = req.user.id; // The admin performing the action
+        const adminId = req.user.id;
 
         if (!targetUserId || !duration) {
             return res.status(400).json({ message: "targetUserId and duration are required." });
@@ -24,10 +24,7 @@ export const muteUserInGroup = async (req, res) => {
     }
 };
 
-/**
- * Controller to toggle exile for a user in a specific group.
- * Expects { targetUserId, duration } in the request body.
- */
+// TOGGLE EXILE FOR A USER IN A SPECIFIC GROUP
 export const exileUserInGroup = async (req, res) => {
     try {
         const { chatGroupId } = req.params;
@@ -46,10 +43,7 @@ export const exileUserInGroup = async (req, res) => {
     }
 };
 
-/**
- * Controller to remove (kick) a user from a group.
- * Expects { targetUserId } in the request body.
- */
+// CONTROLLER TO REMOVE A USER FROM A GROUP
 export const removeUserFromGroup = async (req, res) => {
     try {
         const { chatGroupId } = req.params;
@@ -71,10 +65,7 @@ export const removeUserFromGroup = async (req, res) => {
     }
 };
 
-/**
- * Controller to toggle group-wide slow mode.
- * Expects { duration } in the request body to enable, can be empty to disable.
- */
+// CONTROLLER TO TOGGLE SLOW MODE IN A GROUP
 export const applyGroupSlowMode = async (req, res) => {
     try {
         const { chatGroupId } = req.params;

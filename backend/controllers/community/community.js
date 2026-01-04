@@ -47,7 +47,7 @@ export const createCommunity = (req, res) => {
                 await db.promise().query("INSERT INTO community_members (`communityId`, `userId`, `isAdmin`) VALUES (?, ?, ?)", [communityId, user.id, 1]);
 
                 const defaultChatGroups = [
-                    { title: `${title} General Chat`, type: 'text', isDefault: true },
+                    { title: `${title} General`, type: 'text', isDefault: true },
                     { title: `${title} Announcements`, type: 'announcement', isDefault: true }
                 ];
                 const groupValues = defaultChatGroups.map(group => [group.title, communityId, group.type, group.isDefault, null, timestamp]);
@@ -182,7 +182,7 @@ export const getAllCommunities = (req, res) => {
                 { 
                     includeMemberCount: true, 
                     includeUserMembership: true,
-                    discoveryMode: true // <-- Ensures only public communities are fetched
+                    discoveryMode: true 
                 }
             );
             const result = shuffleArray(publicCommunities);
@@ -204,20 +204,20 @@ export const communities = (req, res) => {
         try {
             const userId = req.user.id;
 
-            // 1. Fetch all communities (public and private) that the user has joined
+            // FETCH COMMUNITIES IN CATEGORIES
             const joinedCommunityIds = await getUserJoinedCommunityIds(userId);
             const joinedResult = joinedCommunityIds.length > 0 
                 ? await fetchCommunityInfo(joinedCommunityIds, userId, { includeMemberCount: true, includeUserMembership: true })
                 : [];
 
-            // 2. Fetch all public communities for the discovery pool
+            // FETCH PUBLIC COMMUNITIES FOR DISCOVERY
             const publicCommunities = await fetchCommunityInfo([], userId, { 
                 includeMemberCount: true, 
                 includeUserMembership: true, 
                 discoveryMode: true 
             });
 
-            // 3. Filter the discovery pool to exclude communities the user has already joined
+            // FILTER INTO RECOMMENDED, POPULAR, AND OTHERS
             const discoveryPool = publicCommunities.filter(c => !c.isCommunityMember);
             
             const friendCommunityIds = new Set(await getFriendCommunityIds(userId));
@@ -237,7 +237,7 @@ export const communities = (req, res) => {
                 recommended: recommendedResult,
                 popular: popularResult,
                 others: othersResult,
-                joined: joinedResult // This list correctly includes the user's private communities
+                joined: joinedResult // INCLUDE JOINED COMMUNITIES
             });
         } catch (error) {
             console.error("[Error] communities:", error);
@@ -278,7 +278,7 @@ export const joinCommunity = (req, res) => {
             const userId = req.user.id;
             const communityId = req.params.id;
     
-            // Check if community exists and get creatorId
+            // CHECK IF ALREADY A MEMBER
             const [communityData] = await db.promise().query("SELECT creatorId, title FROM communities WHERE id = ?", [communityId]);
             if (communityData.length === 0) return res.status(404).json({ message: "Community not found." });
             
@@ -294,7 +294,7 @@ export const joinCommunity = (req, res) => {
                 await joinChatGroupInternal(userId, group.id);
             }
 
-            // Create notification for the community creator
+            // CREATE NOTIFICATION FOR COMMUNITY CREATOR
             await createNotification('COMMUNITY_JOIN', userId, creatorId, { communityId }, { communityTitle: title });
     
             res.status(200).json({ message: "Successfully joined community." });
@@ -419,7 +419,9 @@ export const getCommunityMembers = (req, res) => {
     });
 };
 
-// NEW: API TO FETCH USERS AN ADMIN CAN INVITE TO A COMMUNITY
+
+
+// API TO FETCH USERS AN ADMIN CAN INVITE TO A COMMUNITY
 export const getInvitableUsers = (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -617,7 +619,7 @@ export const removeCommunityMember = (req, res) => {
                 await db.promise().query("DELETE FROM chat_group_members WHERE userId = ? AND chatGroupId IN (?)", [userIdToRemove, chatGroupIdsToLeave]);
             }
 
-            // Optionally, notify the removed user
+            // NOTIFY THE REMOVED USER
             const {username: adminUsername} = req.user;
             const [community] = await db.promise().query("SELECT title FROM communities WHERE id = ?", [communityId]);
             await createNotification(
@@ -632,7 +634,7 @@ export const removeCommunityMember = (req, res) => {
 
         } catch (error) {
             console.error("[Error] removeCommunityMember:", error);
-            return res.status(500).json({ message: "Failed to remove user from the community.", error: aerror.message });
+            return res.status(500).json({ message: "Failed to remove user from the community.", error: error.message });
         }
     });  
 };

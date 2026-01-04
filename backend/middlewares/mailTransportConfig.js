@@ -5,7 +5,7 @@ config();
 export const transporter = nodemailer.createTransport({
     host: 'smtp.hostinger.com',
     port: 465,
-    secure: true, // Use SSL 
+    secure: true, 
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
@@ -13,7 +13,7 @@ export const transporter = nodemailer.createTransport({
     tls: {
         rejectUnauthorized: false
     },
-    debug: true // Enable debugging
+    debug: true 
 }); 
 
 transporter.verify((error, success) => {

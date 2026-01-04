@@ -4,29 +4,24 @@ import { authenticateUser } from "../../middlewares/verify.mjs";
 //FETCH USER SETTINGS, CREATE DEFAULT IF NONE
 export const getSettings = async (req, res) => {
     authenticateUser(req, res, async () => {
-        
         console.log('DEBUG: req.user object is:', req.user);
-
         const userId = req.user.id;
 
         if (!userId) { 
             return res.status(400).json({ message: "User ID could not be determined from token." });
         }
-
         try {
             const getQuery = "SELECT * FROM user_settings WHERE userId = ?";
             const [rows] = await db.promise().query(getQuery, [userId]);
 
             if (rows.length > 0) {
-                // User settings found, return them
                 return res.status(200).json(rows[0]);
             } else {
-                // No settings found for this user, so create a default entry
-                console.log(`[Settings] No settings found for user ${userId}. Creating default entry.`);
+                // NO SETTINGS FOUND, CREATE DEFAULT
                 const insertQuery = "INSERT INTO user_settings (userId) VALUES (?)";
                 await db.promise().query(insertQuery, [userId]);
 
-                // Fetch the newly created default settings to return them
+                // FETCH THE NEWLY CREATED DEFAULT SETTINGS
                 const [newRows] = await db.promise().query(getQuery, [userId]);
                 return res.status(200).json(newRows[0]);
             }
@@ -43,8 +38,7 @@ export const updateSettings = async (req, res) => {
         const userId = req.user.id;
         const updates = req.body;
 
-        // Define a list of fields that are allowed to be updated to prevent malicious input
-        // This should match the columns in your user_settings table
+        // VALIDATE INPUT FIELDS
         const allowedFields = [
             'anime_genres', 'profile_visibility', 
             'show_online_status', 'notifications_push', 'notifications_new_episodes',
@@ -58,7 +52,6 @@ export const updateSettings = async (req, res) => {
         for (const key in updates) {
             if (allowedFields.includes(key)) {
                 setClauses.push(`\`${key}\` = ?`);
-                // If the value is an object (for JSON fields), stringify it
                 const value = typeof updates[key] === 'object' && updates[key] !== null 
                     ? JSON.stringify(updates[key]) 
                     : updates[key];
@@ -70,7 +63,7 @@ export const updateSettings = async (req, res) => {
             return res.status(400).json({ message: "No valid settings fields provided for update." });
         }
 
-        values.push(userId); // Add userId for the WHERE clause
+        values.push(userId);
 
         const updateQuery = `UPDATE user_settings SET ${setClauses.join(', ')} WHERE userId = ?`;
 

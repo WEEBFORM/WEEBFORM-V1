@@ -10,6 +10,8 @@ const eventEmitter = new EventEmitter();
  * @param {string} eventName - The name of the event (e.g., "user.joined.group", "message.created").
  * @param {object} data - The payload associated with the event.
  */
+
+
 export const publishEvent = (eventName, data) => {
   console.log(`[EventBus] Publishing event: ${eventName}`, data);
   eventEmitter.emit(eventName, data);

@@ -16,7 +16,6 @@ export const like = async (req, res) => {
     }
 
     try {
-      // First, get the post owner's ID so we have it for both liking and unliking
       const [post] = await db.promise().query("SELECT userId FROM posts WHERE id = ?", [postId]);
       if (post.length === 0) {
         return res.status(404).json({ message: "Post not found" });
@@ -25,12 +24,12 @@ export const like = async (req, res) => {
 
       const [existingLike] = await db.promise().query("SELECT id FROM likes WHERE userId = ? AND postId = ?", [userId, postId]);
 
-      // --- UNLIKE LOGIC ---
+      // UNLIKE LOGIC
       if (existingLike.length > 0) {
         await db.promise().query("DELETE FROM likes WHERE postId = ? AND userId = ?", [postId, userId]);
         likeCache.flushAll();
 
-        // --- IMPROVEMENT: Delete the corresponding notification ---
+        // DELETE NOTIFICATION FOR POST OWNER
         if (postOwnerId !== userId) {
           await deleteNotification("LIKE_POST", userId, postOwnerId, { postId });
         }
@@ -40,20 +39,19 @@ export const like = async (req, res) => {
           liked: false 
         });
 
-      // --- LIKE LOGIC ---
+      // LIKE LOGIC
       } else {
         await db.promise().query("INSERT INTO likes (userId, postId) VALUES(?, ?)", [userId, postId]);
         likeCache.flushAll();
 
-        // Prevent users from notifying themselves
+        // PREVENT SELF-NOTIFICATION AND CREATE NOTIFICATION FOR POST OWNER
         if (postOwnerId !== userId) {
-          // --- FIX: Correctly call createNotification with all required arguments ---
           await createNotification(
-            "LIKE_POST",          // 1. type
-            userId,               // 2. senderId
-            postOwnerId,          // 3. recipientId
-            { postId: postId },   // 4. entityIds (as an object)
-            { senderUsername: req.user.username } // 5. details (as an object)
+            "LIKE_POST", 
+            userId, 
+            postOwnerId, 
+            { postId: postId },
+            { senderUsername: req.user.username }
           );
         }
 
@@ -64,7 +62,6 @@ export const like = async (req, res) => {
       }
     } catch (err) {
       console.error("Like/Unlike post error:", err);
-      // ... (your existing error handling) ...
       return res.status(500).json({ 
         message: "Failed to toggle like status", 
         error: err.message 
@@ -79,7 +76,6 @@ export const getLikes = async (req, res) => {
       if (!Number.isInteger(postId)) {
             return res.status(400).json({ message: "Invalid postId" });
         }
-
     let cacheKey = `likes:${postId}`;
 
     try {
@@ -102,7 +98,7 @@ export const getLikes = async (req, res) => {
     }
 };
 
-// API TO UNLIKE POST
+// API TO UNLIKE POST(PLACEHOLDER, HANDLED IN LIKE TOGGLE)
 export const unlike = async (req, res) => {
     authenticateUser(req, res, async () => {
         const userId = req.user.id;

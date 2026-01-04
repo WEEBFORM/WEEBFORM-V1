@@ -1,7 +1,7 @@
 import { db } from "../../config/connectDB.js";
 import { processImageUrl } from '../../middlewares/cloudfrontConfig.js';
 
-// NEW: HELPER FUNCTION TO GET AGGREGATED COMMUNITY AND CREATOR POINTS
+// HELPER FUNCTION TO GET AGGREGATED COMMUNITY AND CREATOR POINTS
 export const getCommunityAggregatedPoints = async (communityId, creatorId) => {
     try {
         // CALCULATE TOTAL POINTS FOR COMMUNITY AND CREATOR
@@ -25,7 +25,7 @@ export const getCommunityAggregatedPoints = async (communityId, creatorId) => {
             };
         }
 
-        // Return default values if no activity is found
+        // RETURN ZERO POINTS IF NO RESULTS
         return { communityPoints: 0, creatorPoints: 0 };
 
     } catch (error) {
@@ -43,7 +43,7 @@ export const fetchCommunityInfo = async (communityIds = [], userId = null, optio
         includeChatGroups = false, 
         includeCreatorInfo = false, 
         discoveryMode = false,
-        includeCommunityPoints = false // <-- NEW OPTION
+        includeCommunityPoints = false
     } = options;
 
     try {
@@ -79,7 +79,7 @@ export const fetchCommunityInfo = async (communityIds = [], userId = null, optio
             return community;
         });
         
-        // MODIFIED: Fetch and attach community and creator points if requested
+        // FETCH ADDITIONAL DATA IF REQUESTED
         if (includeCommunityPoints && processedCommunities.length > 0) {
             for (const community of processedCommunities) {
                 const pointsData = await getCommunityAggregatedPoints(community.id, community.creatorId);

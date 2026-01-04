@@ -44,7 +44,6 @@ const fetchFromJikan = async () => {
     try {
         const response = await axios.get("https://api.jikan.moe/v4/seasons/now", { timeout: 8000 });
         return response.data.data.map(anime => {
-            // Use large image URL for better quality
             const largeImageUrl = anime.images?.jpg?.large_image_url || 
                                  anime.images?.jpg?.image_url || 
                                  null;
@@ -83,7 +82,7 @@ const fetchFromAnilist = async () => {
         }, { timeout: 8000 });
 
         return response.data.data.Page.media.map(anime => {
-            // Prioritize banner image for social media, then extra large cover
+            // PRIRORITIZE BEST AVAILABLE IMAGE
             const bestImage = anime.bannerImage || 
                             anime.coverImage?.extraLarge || 
                             anime.coverImage?.large || 
@@ -106,7 +105,7 @@ const fetchFromAnilist = async () => {
     }
 };
 
-// NEW: Enhanced manga source with better images
+// ENHANCED SOURCE FETCHER: MANGADEX
 const fetchFromMangaDex = async () => {
     try {
         const response = await axios.get("https://api.mangadex.org/manga", {
@@ -120,7 +119,6 @@ const fetchFromMangaDex = async () => {
         });
 
         return response.data.data.map(manga => {
-            // Extract cover image
             const coverArt = manga.relationships.find(rel => rel.type === 'cover_art');
             const coverImageUrl = coverArt 
                 ? `https://uploads.mangadex.org/covers/${manga.id}/${coverArt.attributes.fileName}.256.jpg`
@@ -142,13 +140,8 @@ const fetchFromMangaDex = async () => {
     }
 };
 
-// --- MAIN AGGREGATOR FUNCTION ---
 
-/**
- * Fetches, consolidates, and deduplicates news from multiple anime/manga sources.
- * Prioritizes high-quality images from premium CDNs.
- * @returns {Promise<Array<object>>} A shuffled array of unique news articles with quality images.
- */
+// FETCH FRESH ANIME NEWS FROM ALL SOURCES AND CONSOLIDATE
 export const getFreshAnimeNews = async () => {
     console.log("Aggregator: Fetching fresh anime news from all sources...");
 
@@ -169,17 +162,17 @@ export const getFreshAnimeNews = async () => {
         return [];
     }
 
-    // Deduplicate articles based on title to avoid spamming similar news
+    // REDUCE DUPLICATES BASED ON TITLE, PRIORITIZING THOSE WITH IMAGES
     const uniqueArticles = new Map();
     successfulResults.forEach(article => {
         const cleanedTitle = article.title.toLowerCase().trim();
         
-        // Only add if not already present, or if this version has a better image
+        // ONLY ADD IF UNIQUE OR BETTER IMAGE QUALITY
         if (!uniqueArticles.has(cleanedTitle)) {
             uniqueArticles.set(cleanedTitle, article);
         } else {
             const existing = uniqueArticles.get(cleanedTitle);
-            // Upgrade to version with image if current one doesn't have it
+            // UPGRADE TO ARTICLE WITH IMAGE IF CURRENT ONE LACKS
             if (!existing.imageUrl && article.imageUrl) {
                 uniqueArticles.set(cleanedTitle, article);
             }
@@ -188,13 +181,13 @@ export const getFreshAnimeNews = async () => {
 
     const articlesArray = Array.from(uniqueArticles.values());
 
-    // Shuffle the final array to ensure variety
+    // SHUFFLE THE FINAL ARRAY
     for (let i = articlesArray.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [articlesArray[i], articlesArray[j]] = [articlesArray[j], articlesArray[i]];
     }
 
-    // Log image quality statistics
+    // LOG SUMMARY
     const articlesWithImages = articlesArray.filter(a => a.imageUrl).length;
     console.log(`Aggregator: Successfully consolidated ${articlesArray.length} unique news articles. ${articlesWithImages} have high-quality images.`);
     

@@ -189,12 +189,12 @@ export const newPost = async (req, res) => {
                     const postId = result.insertId;
 
                     // SCHEDULE BOT ENGAGEMENTS
-                    const COMMENT_PROBABILITY = 0.35;
-                    const LIKE_PROBABILITY = 0.50;
+                    const COMMENT_PROBABILITY = 0.65;
+                    const LIKE_PROBABILITY = 0.70;
 
                     if (Math.random() < COMMENT_PROBABILITY) {
-                        const minDelay = 15 * 60 * 1000; // 15 minutes
-                        const maxDelay = 24 * 60 * 60 * 1000; // 24 hours
+                        const minDelay = 15 * 60 * 1000; // 15 mins
+                        const maxDelay = 24 * 60 * 60 * 1000; // 24 hrs
                         const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
                         const executeAt = moment(new Date(Date.now() + randomDelay)).format("YYYY-MM-DD HH:mm:ss");
                         
@@ -203,8 +203,8 @@ export const newPost = async (req, res) => {
                             .catch(err => console.error("Failed to schedule bot comment:", err));
                     }
                     if (Math.random() < LIKE_PROBABILITY) {
-                        const minDelay = 2 * 60 * 1000; // 2 minutes
-                        const maxDelay = 8 * 60 * 60 * 1000; // 8 hours
+                        const minDelay = 2 * 60 * 1000; // 2 mins
+                        const maxDelay = 8 * 60 * 60 * 1000; // 8 hrs
                         const randomDelay = Math.floor(Math.random() * (maxDelay - minDelay + 1)) + minDelay;
                         const executeAt = moment(new Date(Date.now() + randomDelay)).format("YYYY-MM-DD HH:mm:ss");
                         
@@ -247,13 +247,15 @@ const getPosts = async (req, res, queryType) => {
             const userId = req.user.id;
             const searchTerm = req.query.searchTerm || '';
             const searchValue = `%${searchTerm}%`;
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const offset = (page - 1) * limit;
+            
             let q;
             let params;
 
-            // Post columns to select consistently across all queries 
             const postColumns = `p.id, p.description, p.tags, p.category, p.media, p.createdAt`;
 
-            //HELPER TO BUILD FINAL QUERY WITH COMMON JOINS AND FILTERS
             const buildFinalQuery = (feedSubQuery) => `
                 SELECT
                     f.*,
@@ -277,14 +279,13 @@ const getPosts = async (req, res, queryType) => {
                          f.reposterId, f.reposterUsername, f.reposterFullName, f.reposterProfilePic, 
                          f.description, f.tags, f.category, f.media, f.createdAt, f.activityDate
                 ORDER BY f.activityDate DESC
+                LIMIT ? OFFSET ?
             `;
 
             switch (queryType) {
                 case 'all':
-                    // ALL POSTS
                     const allFeedQuery = `
                         SELECT * FROM (
-                            -- Original Posts from public users or followed private users
                             SELECT 
                                 ${postColumns}, 
                                 u.id AS userId, u.username, u.full_name, u.profilePic,
@@ -300,7 +301,6 @@ const getPosts = async (req, res, queryType) => {
 
                             UNION ALL
 
-                            -- Reposted Posts from public users or followed private users
                             SELECT 
                                 ${postColumns}, 
                                 u.id AS userId, u.username, u.full_name, u.profilePic,
@@ -319,18 +319,17 @@ const getPosts = async (req, res, queryType) => {
                     `;
                     q = buildFinalQuery(allFeedQuery);
                     params = [
-                        userId, userId, // For allFeedQuery (visibility checks)
-                        userId, userId, userId, // For buildFinalQuery (likes, bookmarks, following)
-                        userId, userId, userId, userId, // For blocked users subqueries (2 subqueries x 2 params each)
-                        searchValue, searchValue, searchValue // Search terms
+                        userId, userId, 
+                        userId, userId, userId, 
+                        userId, userId, userId, userId, 
+                        searchValue, searchValue, searchValue,
+                        limit, offset
                     ];
                     break;
 
                 case 'following':
-                    // FOLLOWING POSTS
                     const followingFeedQuery = `
                         SELECT * FROM (
-                            -- Original posts by followed users or self
                             SELECT 
                                 ${postColumns}, 
                                 u.id AS userId, u.username, u.full_name, u.profilePic,
@@ -345,7 +344,6 @@ const getPosts = async (req, res, queryType) => {
 
                             UNION ALL
 
-                            -- Reposts by followed users or self
                             SELECT 
                                 ${postColumns}, 
                                 u.id AS userId, u.username, u.full_name, u.profilePic,
@@ -363,20 +361,19 @@ const getPosts = async (req, res, queryType) => {
                     `;
                     q = buildFinalQuery(followingFeedQuery);
                     params = [
-                        userId, userId, // For followingFeedQuery (following checks)
-                        userId, userId, // For followingFeedQuery (repost checks)
-                        userId, userId, userId, // For buildFinalQuery (likes, bookmarks, following)
-                        userId, userId, userId, userId, // For blocked users subqueries (2 subqueries x 2 params each)
-                        searchValue, searchValue, searchValue // Search terms
+                        userId, userId, 
+                        userId, userId, 
+                        userId, userId, userId, 
+                        userId, userId, userId, userId, 
+                        searchValue, searchValue, searchValue,
+                        limit, offset
                     ];
                     break;
 
                 case 'user':
-                    // User profile: Original posts + Reposts by specific user
                     const targetUserId = req.params.id;
                     const userFeedQuery = `
                         SELECT * FROM (
-                            -- Original posts by the target user
                             SELECT 
                                 ${postColumns}, 
                                 u.id AS userId, u.username, u.full_name, u.profilePic,
@@ -390,7 +387,6 @@ const getPosts = async (req, res, queryType) => {
 
                             UNION ALL
 
-                            -- Reposts by the target user
                             SELECT 
                                 ${postColumns}, 
                                 u.id AS userId, u.username, u.full_name, u.profilePic,
@@ -407,10 +403,11 @@ const getPosts = async (req, res, queryType) => {
                     `;
                     q = buildFinalQuery(userFeedQuery);
                     params = [
-                        targetUserId, targetUserId, // For userFeedQuery (target user)
-                        userId, userId, userId, // For buildFinalQuery (likes, bookmarks, following)
-                        userId, userId, userId, userId, // For blocked users subqueries (2 subqueries x 2 params each)
-                        searchValue, searchValue, searchValue // Search terms
+                        targetUserId, targetUserId, 
+                        userId, userId, userId, 
+                        userId, userId, userId, userId, 
+                        searchValue, searchValue, searchValue,
+                        limit, offset
                     ];
                     break;
 
@@ -418,15 +415,13 @@ const getPosts = async (req, res, queryType) => {
                     return res.status(400).json({ message: "Invalid query type" });
             }
 
-            // CONSTRUCT CACHE KEY
-            const cacheKey = `posts:${queryType}:${queryType === 'user' ? req.params.id : userId}:${searchTerm}`;
+            const cacheKey = `posts:${queryType}:${queryType === 'user' ? req.params.id : userId}:${searchTerm}:${page}`;
             let posts = postCache.get(cacheKey);
 
             if (!posts) {
                 const [data] = await db.promise().query(q, params);
                 posts = processPosts(data);
                 
-                // CACHE ALL POSTS AND FOLLOWING POSTS (but not user-specific feeds)
                 if (queryType !== 'user') {
                     postCache.set(cacheKey, posts);
                 }
@@ -443,12 +438,11 @@ const getPosts = async (req, res, queryType) => {
     });
 };
 
-// EXPORT SPECIFIC FEED ENDPOINTS
 export const allPosts = (req, res) => getPosts(req, res, 'all');
 export const followingPosts = (req, res) => getPosts(req, res, 'following');
 export const userPosts = (req, res) => getPosts(req, res, 'user');
 
-//FETCH POSTS BY CATEGORY WITH SEARCH
+// FETCH POSTS BY CATEGORY WITH SEARCH
 export const postCategory = async (req, res) => {
     authenticateUser(req, res, async () => {
         try {
@@ -456,6 +450,9 @@ export const postCategory = async (req, res) => {
             const { category } = req.params;
             const searchTerm = req.query.searchTerm || '';
             const searchValue = `%${searchTerm}%`;
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const offset = (page - 1) * limit;
 
             const q = `
                 SELECT p.*, u.id AS userId, u.username, full_name, u.profilePic,
@@ -477,15 +474,17 @@ export const postCategory = async (req, res) => {
                   AND (u.full_name LIKE ? OR u.username LIKE ? OR p.description LIKE ?)
                 GROUP BY p.id, u.id 
                 ORDER BY p.createdAt DESC
+                LIMIT ? OFFSET ?
             `;
             
             const [data] = await db.promise().query(q, [
                 userId, userId, userId, category, 
-                searchValue, searchValue, searchValue
+                searchValue, searchValue, searchValue,
+                limit, offset
             ]);
             
             if (data.length === 0) {
-                return res.status(404).json([]);
+                return res.status(200).json([]);
             }
             
             const posts = processPosts(data);

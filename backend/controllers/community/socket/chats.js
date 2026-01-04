@@ -25,6 +25,7 @@ import {
 import { incrementUserActivity } from "../services/gamificationService.js";
 import { REACTION_TYPES, ADMIN_ACTIONS } from "../constants/index.js";
 import { redisClient } from "../../../config/redisConfig.js";
+import { handleGroupChatNotifications  } from "../../Notifications/communityNotificationHelper.js";
 
 const typingUsers = new Map();
 
@@ -243,6 +244,17 @@ export const initializeMessageSocket = (server) => {
         console.log(`[Gamification] User ${socket.user.id} activity incremented for message.`);
 
         io.to(chatGroupId).emit("newMessage", newMessage);
+        
+        // SEND COMMUNITY NOTIFICATIONS TO INACTIVE MEMBERS
+        handleGroupChatNotifications (
+            socket.user.id, 
+            chatGroupId, 
+            savedMessage.id, 
+            message, 
+            user.username,
+            mentionedUsers
+        );
+
         console.log(`[Socket] Broadcasted newMessage (ID: ${newMessage.id}) to chat group ${chatGroupId} (excluding sender).`);
 
         if (mentionedUsers.length > 0) {

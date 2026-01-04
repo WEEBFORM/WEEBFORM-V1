@@ -2,7 +2,7 @@ import { db } from "../../../config/connectDB.js";
 import { redisClient } from "../../../config/redisConfig.js";
 import { generateS3Url, s3KeyFromUrl } from "../../../middlewares/S3bucketConfig.js";
 
-// HELPER: PROCESS PROFILE PICTURE TO ENSURE IT'S A VALID S3 URL
+// PROCESS PROFILE PICTURE TO ENSURE IT'S A VALID S3 URL
 const processProfilePicture = async (userObject) => {
     if (userObject && userObject.profilePic) {
         if (userObject.profilePic.startsWith('http')) {
@@ -64,12 +64,9 @@ export const getUserInfo = async (userId) => {
   if (cachedUser) {
     console.log(`[Redis] User ${userId} found in cache.`);
     let user = JSON.parse(cachedUser);
-    // Process the cached user's profile picture
     user = await processProfilePicture(user);
     return user;
   }
-
-  // If not in cache, fetch from database
   console.log(`[DB Service] User ${userId} not in cache, fetching from database.`);
   const query = `
     SELECT id, full_name, username, profilePic,
@@ -90,10 +87,8 @@ export const getUserInfo = async (userId) => {
       }
 
       let user = results[0];
-      // Process the database user's profile picture
       user = await processProfilePicture(user);
-
-      // Cache the processed user object
+      // CACHE USER INFO
       redisClient.set(`user:${userId}`, JSON.stringify(user), 'EX', 300)
         .catch(cacheErr => console.error(`[Redis] Error caching user ${userId}:`, cacheErr));
       
@@ -110,8 +105,6 @@ export const getMessageById = async (messageId) => {
   if (cachedMessage) {
     console.log(`[Redis] Message ${messageId} found in cache.`);
     let message = JSON.parse(cachedMessage);
-    // Even if cached, the S3 URL might be expired, so we can re-process it.
-    // Or, for performance, we can trust the cache. Let's re-process for freshness.
     message = await processProfilePicture(message);
     return message;
   }
@@ -143,7 +136,6 @@ export const getMessageById = async (messageId) => {
       let message = results[0];
       console.log(`[DB Service] Message ${messageId} fetched successfully.`);
 
-      // Process the profile picture
       message = await processProfilePicture(message);
 
       // PARSE MEDIA URLs
@@ -166,7 +158,7 @@ export const getMessageById = async (messageId) => {
   });
 };
 
-//GET MESSAGES IN THREAD
+//GET MESSAGES IN THREAD (FUTUTRE USE)
 export const getThreadMessages = async (threadId) => {
   console.log(`[DB Service] Fetching messages for thread ID: ${threadId}`);
   const query = `
@@ -191,13 +183,11 @@ export const getThreadMessages = async (threadId) => {
       console.log(`[DB Service] Fetched ${results.length} messages for thread ${threadId}.`);
 
       const messages = await Promise.all(results.map(async (message) => {
-        // Process the profile picture for each message
         let processedMessage = await processProfilePicture(message);
 
-        // Parse media URLs
         processedMessage.mediaUrls = processedMessage.media ? processedMessage.media.split(',') : [];
 
-        // Parse mentions
+        // PARSE MENTIONS
         try {
             processedMessage.mentionedUsers = processedMessage.mentions ? JSON.parse(processedMessage.mentions) : [];
         } catch (e) {
@@ -212,9 +202,6 @@ export const getThreadMessages = async (threadId) => {
     });
   });
 };
-
-
-// --- UNCHANGED FUNCTIONS BELOW ---
 
 // SAVE A REACTION TO THE DB 
 export const saveReaction = async (reactionData) => {
@@ -301,11 +288,7 @@ export const addMessageToThread = async (threadId, messageId) => {
 };
 
 
-/**
- * Parse mentions from a message
- * @param {string} messageText
- * @returns {Array<{ userId: string, name: string, fullMatch: string }>}
- */
+// PARSE MENTIONS IN MESSAGE TEXT
 export const parseMentions = (messageText) => {
   if (!messageText) return [];
 

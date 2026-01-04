@@ -92,7 +92,7 @@ export const editGroup = (req, res) => {
           return res.status(400).json({ message: "Chat group ID is required." });
         }
 
-        // 1️⃣ Fetch group details
+        // FETCH CURRENT GROUP INFO
         const [groupInfo] = await db.promise().query(
           "SELECT communityId, groupIcon FROM `chat_groups` WHERE id = ?",
           [chatGroupId]
@@ -104,7 +104,7 @@ export const editGroup = (req, res) => {
 
         const { communityId, groupIcon: oldGroupIconKey } = groupInfo[0];
 
-        // 2️⃣ Check if current user is an admin of that community
+        // ADMIN CHECK
         const [adminCheck] = await db.promise().query(
           "SELECT id FROM community_members WHERE communityId = ? AND userId = ? AND isAdmin = 1",
           [communityId, user.id]
@@ -114,7 +114,7 @@ export const editGroup = (req, res) => {
           return res.status(403).json({ message: "You must be a community admin to edit groups." });
         }
 
-        // 3️⃣ Build the update fields
+        // BUILD UPDATE QUERY
         const updateFields = [];
         const updateValues = [];
 
@@ -133,7 +133,7 @@ export const editGroup = (req, res) => {
           updateValues.push(isDefault ? 1 : 0);
         }
 
-        // 4️⃣ Handle group icon updates
+        // GROUP ICON HANDLING
         const groupIconFile = req.files && req.files["groupIcon"] ? req.files["groupIcon"][0] : null;
 
         if (clearGroupIcon === "true") {
@@ -163,7 +163,7 @@ export const editGroup = (req, res) => {
           return res.status(400).json({ message: "No fields to update." });
         }
 
-        // 5️⃣ Finalize update
+        // FINALIZE AND EXECUTE UPDATE
         updateValues.push(chatGroupId);
         const [updateResult] = await db
           .promise()

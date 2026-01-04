@@ -89,13 +89,11 @@ export const toggleUserSlowMode = async (targetUserId, chatGroupId, duration, ad
   let logAction;
 
   if (isSlowModeActive) {
-    // Unapply slow mode
     await redisClient.del(userSlowModeKey);
     actionPerformed = false;
     logAction = 'remove_slow_mode';
     console.log(`[Moderation] Removed slow mode for user ${targetUserId} in chat group ${chatGroupId}.`); 
   } else {
-    // Apply slow mode
     if (!duration || duration <= 0) {
         throw new Error("Duration is required to apply slow mode.");
     }

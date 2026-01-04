@@ -6,14 +6,11 @@ const getUserInfoForEmail = async (userId) => {
   try {
     const [user] = await db.promise().query("SELECT email, username FROM users WHERE id = ?", [userId]);
     if (user.length === 0) return null;
-
-    // --- FIX: Query for `notifications_email` to correctly check email preferences ---
     const [settings] = await db.promise().query("SELECT notifications_email FROM user_settings WHERE userId = ?", [userId]);
 
     return {
       email: user[0].email,
       username: user[0].username,
-      // --- FIX: Use the correct property (`notifications_email`) and default to true ---
       emailNotificationsEnabled: settings.length > 0 ? settings[0].notifications_email : true,
     };
   } catch (error) {
@@ -38,7 +35,6 @@ export const sendNotificationEmail = async (recipientId, senderId, type, details
   try {
     const recipientInfo = await getUserInfoForEmail(recipientId);
 
-    // This check will now work correctly
     if (!recipientInfo || !recipientInfo.emailNotificationsEnabled) {
       console.log(`[Mail Info] Email notifications disabled or user not found for recipientId: ${recipientId}`);
       return;
@@ -69,7 +65,6 @@ export const sendNotificationEmail = async (recipientId, senderId, type, details
 
 // CONSTRUCTS RICH EMAIL CONTENT FOR ALL NOTIFICATION TYPES
 const getNotificationMessage = (type, senderUsername, details) => {
-  // Use the details object for more specific information when available
   const actor = details.senderUsername || details.postAuthorUsername || senderUsername;
 
   switch (type) {
@@ -126,7 +121,7 @@ const getNotificationMessage = (type, senderUsername, details) => {
          text: `An admin has ${details.action} you in ${details.chatGroupTitle}. Duration: ${details.duration || 'Permanent'}.`
        };
     default:
-      // Return an empty object so no generic email is sent for unhandled types
+      // RETURN EMPTY OBJECT IF NO TEMPLATE EXISTS
       return {};
   }
 };

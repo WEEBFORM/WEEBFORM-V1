@@ -52,7 +52,7 @@ export const forgotPassword = (req, res) => {
             transporter.sendMail(mailOptions, (err, info) => {
                 if (err) {
                     console.error("Error sending email:", err);
-                    return res.status(500).send(`Error occurred while sending the reset email. ${err.message}`); // Include more detail
+                    return res.status(500).send(`Error occurred while sending the reset email. ${err.message}`);
                 }
 
                 console.log("Email sent:", info.messageId);
@@ -67,7 +67,7 @@ export const resetPassword = (req, res) => {
     const { token } = req.params;
     const { password } = req.body;
 
-    const findToken = "SELECT * FROM users WHERE resetPasswordToken = ? AND resetPasswordExpires > ?"; // Check expiration
+    const findToken = "SELECT * FROM users WHERE resetPasswordToken = ? AND resetPasswordExpires > ?";
 
     db.query(findToken, [token, Date.now()], (err, result) => {
         if (err) {

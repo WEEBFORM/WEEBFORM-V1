@@ -43,7 +43,7 @@ export const addComment = async (req, res) => {
       const [result] = await db.promise().query(q, values);
       commentCache.del(`comments:${postId}`);
 
-      // Create notification for post author
+      // CREATE NOTIFICATIONS (USER WHO OWNS THE POST)
       const [post] = await db
         .promise()
         .query("SELECT userId FROM posts WHERE id = ?", [postId]);
@@ -57,7 +57,7 @@ export const addComment = async (req, res) => {
         );
       }
 
-      // Create notifications for mentioned users
+      // CREATE NOTIFICATIONS FOR MENTIONED USERS
       const mentionedUsers = desc.match(/@(\w+)/g);
       if (mentionedUsers) {
         for (const mention of mentionedUsers) {
@@ -97,14 +97,20 @@ export const getComments = async (req, res) => {
             const cachedData = commentCache.get(cacheKey);
             if (cachedData) return res.status(200).json(cachedData);
     
-            const q = `
-              SELECT c.*, u.id AS userId, u.username, u.full_name, u.profilePic,
-                     (SELECT COUNT(*) FROM replies WHERE commentId = c.id) AS replyCount
-              FROM comments AS c
-              JOIN users AS u ON u.id = c.userId
-              WHERE c.postId = ?
-              ORDER BY c.createdAt DESC;
-            `;
+            const q = `SELECT 
+                          c.*,
+                          u.id AS userId,
+                          u.username,
+                          u.full_name,
+                          u.profilePic,
+                          COUNT(r.id) AS replyCount
+                        FROM comments c
+                        JOIN users u ON u.id = c.userId
+                        LEFT JOIN replies r ON r.commentId = c.id
+                        WHERE c.postId = ?
+                        GROUP BY c.id
+                        ORDER BY c.createdAt DESC;
+                      `;
     
             const [comments] = await db.promise().query(q, [postId]);
             const processedComments = processItems(comments);

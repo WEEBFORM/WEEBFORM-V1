@@ -162,11 +162,9 @@ Create this image now:`;
 const isHighQualityImageUrl = (url) => {
     if (!url) return false;
     
-    // Reject low-quality CDN sources
     const lowQualitySources = ['cdn.myanimelist', 'img.myanimelist', 'thumb'];
     const isLowQuality = lowQualitySources.some(source => url.toLowerCase().includes(source));
     
-    // Accept high-quality sources
     const highQualitySources = ['anilist', 'jikan', 'gravatar', 'cloudinary', 'cdn.discordapp'];
     const isHighQuality = highQualitySources.some(source => url.toLowerCase().includes(source));
     

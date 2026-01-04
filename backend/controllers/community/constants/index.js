@@ -9,9 +9,6 @@ export const REACTION_TYPES = {
     OMEGALUL: 'omegalul'
   };
   
-  // User levels are typically defined by XP thresholds in gamificationService.js
-  // This constant might be for roles or tiers if USER_LEVELS implies something different.
-  // For now, keeping it simple. If it's about permissions, it's better handled by roles.
   export const USER_ROLES = {
     MEMBER: 'member',
     MODERATOR: 'moderator',

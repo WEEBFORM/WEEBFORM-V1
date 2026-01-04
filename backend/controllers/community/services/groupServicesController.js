@@ -12,7 +12,6 @@ export const getGroupMembers = async (req, res) => {
         const { chatGroupId } = req.params;
         console.log(`[DEBUG] Fetching members for chatGroupId: ${chatGroupId} (Type: ${typeof chatGroupId})`);
 
-        // Get the communityId from the chatGroupId
         const communityQuery = 'SELECT communityId FROM chat_groups WHERE id = ?';
         const [chatGroupRows] = await db.promise().query(communityQuery, [chatGroupId]);
 
@@ -22,7 +21,7 @@ export const getGroupMembers = async (req, res) => {
         const communityId = chatGroupRows[0].communityId;
         console.log(`[DEBUG] Found communityId: ${communityId} for chatGroupId: ${chatGroupId}`);
 
-        // Fetch userIds and their admin status using a JOIN.
+        // FETCH MEMBERS WITH JOIN TO GET isAdmin STATUS
         const memberQuery = `
             SELECT
                 cgm.userId,
@@ -41,8 +40,6 @@ export const getGroupMembers = async (req, res) => {
         if (memberRows.length === 0) {
             return res.status(200).json([]);
         }
-
-        // Create an array of promises to fetch info for each member
         const memberDataPromises = memberRows.map(member => {
             return Promise.all([
                 fetchAndProcessUserData(member.userId),
@@ -50,16 +47,13 @@ export const getGroupMembers = async (req, res) => {
             ]);
         });
 
-        // Use Promise.allSettled to prevent one failure from crashing the whole process
         const results = await Promise.allSettled(memberDataPromises);
 
         const members = [];
-        // Loop through the results of allSettled
-        for (const [index, result] of results.entries()) { // Using .entries() to get index
+        for (const [index, result] of results.entries()) {
             if (result.status === 'fulfilled') {
                 const [userInfo, userStats] = result.value;
                 if (userInfo) {
-                    // Add the 'isAdmin' value from our initial JOIN query
                     members.push({
                         ...userInfo,
                         stats: userStats,
@@ -98,7 +92,7 @@ export const getGroupLeaderboard = async (req, res) => {
 export const getUserProgressInGroup = async (req, res) => {
     try {
         const { chatGroupId } = req.params;
-        const userId = req.user.id; // From `authenticateUser` middleware
+        const userId = req.user.id;
         const progress = await getProgressService(userId, chatGroupId);
         res.status(200).json(progress);
     } catch (error){
