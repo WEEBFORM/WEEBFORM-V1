@@ -290,26 +290,27 @@ export const getCommunityChatGroups = (req, res) => {
             const { communityId } = req.params;
             const userId = req.user.id;
             
-            const [memberships] = await db.promise().query("SELECT id FROM community_members WHERE communityId = ? AND userId = ?", [communityId, userId]);
-            if (memberships.length === 0) return res.status(403).json({ message: "You must be a member of the community to view its chat groups." });
-
             const query = `
                 SELECT cg.id, cg.name AS title, cg.groupIcon, cg.type, cg.isDefault, cg.createdAt,
-                       cgm.userId IS NOT NULL AS isJoined
+                       cgm.userId IS NOT NULL AS isJoined,
+                       (
+                           SELECT COUNT(*) FROM groupmessages gm 
+                           WHERE gm.chatGroupId = cg.id 
+                             AND gm.createdAt > COALESCE(cgm.lastReadAt, '1970-01-01')
+                             AND gm.userId != ?
+                       ) AS unreadCount
                 FROM \`chat_groups\` cg
                 LEFT JOIN chat_group_members cgm ON cg.id = cgm.chatGroupId AND cgm.userId = ?
                 WHERE cg.communityId = ? ORDER BY cg.name;`;
             
-            const [chatGroups] = await db.promise().query(query, [userId, communityId]);
+            const [chatGroups] = await db.promise().query(query, [userId, userId, communityId]);
             const processedChatGroups = chatGroups.map(group => {
                 group.groupIcon = processImageUrl(group.groupIcon);
                 return group;
             });
-
             res.status(200).json(processedChatGroups);
         } catch (error) {
-            console.error("[Error] getCommunityChatGroups:", error);
-            res.status(500).json({ message: "Internal server error fetching chat groups." });
+            res.status(500).json({ message: "Internal server error" });
         }
     });
 };
@@ -341,6 +342,23 @@ export const getMyChatGroupsInCommunity = (req, res) => {
         } catch (error) {
             console.error("[Error] getMyChatGroupsInCommunity:", error);
             res.status(500).json({ message: "Internal server error fetching user's chat groups." });
+        }
+    });
+};
+
+// API TO MARK A CHAT GROUP AS READ
+export const markGroupAsRead = (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const userId = req.user.id;
+            const { chatGroupId } = req.params;
+            await db.promise().query(
+                "UPDATE chat_group_members SET lastReadAt = NOW() WHERE chatGroupId = ? AND userId = ?",
+                [chatGroupId, userId]
+            );
+            res.status(200).json({ message: "Marked as read" });
+        } catch (error) {
+            res.status(500).json({ message: "Error updating read status" });
         }
     });
 };
