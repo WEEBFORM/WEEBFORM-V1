@@ -3,7 +3,7 @@ import express from "express";
 // --- CORE & MESSAGE CONTROLLERS ---
 import {
     createGroup, editGroup, deleteGroup, getGroupDetails,
-    joinChatGroup, leaveChatGroup, getCommunityChatGroups, getMyChatGroupsInCommunity
+    joinChatGroup, leaveChatGroup, getCommunityChatGroups, getMyChatGroupsInCommunity, markGroupAsRead
 } from "../../controllers/community/communityGroups.js";
 import {
     fetchGroupMessages, editMessage, deleteMessage,
@@ -31,6 +31,7 @@ router.delete('/:chatGroupId', authenticateUser, deleteGroup);
 router.get('/community/:communityId/all-groups', getCommunityChatGroups);
 router.get('/community/:communityId/my-groups', authenticateUser, getMyChatGroupsInCommunity);
 router.get('/:chatGroupId', getGroupDetails);
+router.post('/:chatGroupId/mark-read', authenticateUser, markGroupAsRead);
 
 // USER MEMBERSHIP
 router.post('/join/:chatGroupId', authenticateUser, joinChatGroup);
