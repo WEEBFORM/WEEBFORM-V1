@@ -14,6 +14,7 @@ import {
     getInvitableUsers,
     addCommunityMember,
     removeCommunityMember,
+    togglePinCommunity
 } from "../../controllers/community/community.js";
 //COMMUNITY POST INTERACTIONS/FEATURES
 import {
@@ -37,6 +38,7 @@ router.get('/', communities);
 router.get('/existing/joined', yourCommunities);
 router.get('/existing/created', getCreatedCommunities);
 router.get('/:id', getCommunityDetails);
+router.post('/toggle-pin/:id', togglePinCommunity);
 router.post('/join/:id', joinCommunity);
 router.delete('/leave/:id', exitCommunity);
 router.put('/:id/edit', editCommunity);

@@ -133,7 +133,7 @@ export const yourCommunities = (req, res) => {
             const joinedCommunityIds = await getUserJoinedCommunityIds(userId);
             if (joinedCommunityIds.length === 0) return res.status(200).json([]);
 
-            const communities = await fetchCommunityInfo(joinedCommunityIds, userId, { includeMemberCount: true });
+            const communities = await fetchCommunityInfo(joinedCommunityIds, userId, { includeMemberCount: true, includePinStatus: true });
             res.status(200).json(communities);
         } catch (error) {
             console.error("[Error] yourCommunities:", error);
@@ -151,7 +151,7 @@ export const getCreatedCommunities = (req, res) => {
             const createdCommunityIds = rows.map(c => c.id);
             if (createdCommunityIds.length === 0) return res.status(200).json([]);
 
-            const communities = await fetchCommunityInfo(createdCommunityIds, userId, { includeMemberCount: true, includeUserMembership: true });
+            const communities = await fetchCommunityInfo(createdCommunityIds, userId, { includeMemberCount: true, includeUserMembership: true, includePinStatus: true });
             res.status(200).json(communities);
         } catch (error) {
             console.error("[Error] getCreatedCommunities:", error);
@@ -182,7 +182,8 @@ export const getAllCommunities = (req, res) => {
                 { 
                     includeMemberCount: true, 
                     includeUserMembership: true,
-                    discoveryMode: true 
+                    discoveryMode: true,
+                    includePinStatus: true 
                 }
             );
             const result = shuffleArray(publicCommunities);
@@ -214,7 +215,8 @@ export const communities = (req, res) => {
             const publicCommunities = await fetchCommunityInfo([], userId, { 
                 includeMemberCount: true, 
                 includeUserMembership: true, 
-                discoveryMode: true 
+                discoveryMode: true,
+                includePinStatus: true 
             });
 
             // FILTER INTO RECOMMENDED, POPULAR, AND OTHERS
@@ -258,7 +260,8 @@ export const getCommunityDetails = (req, res) => {
                 includeUserMembership: true,
                 includeChatGroups: true,
                 includeCreatorInfo: true,
-                includeCommunityPoints: true
+                includeCommunityPoints: true,
+                includePinStatus: true
             });
 
             if (!community) return res.status(404).json({ error: "Community not found." });
@@ -329,6 +332,59 @@ export const exitCommunity = (req, res) => {
         } catch (error) {
             console.error("[Error] exitCommunity:", error);
             return res.status(500).json({ message: "Error leaving community." });
+        }
+    });
+};
+
+// API TO TOGGLE PIN STATUS FOR A COMMUNITY
+export const togglePinCommunity = (req, res) => {
+    authenticateUser(req, res, async () => {
+        try {
+            const userId = req.user.id;
+            const userRole = req.user.role || 'free';
+            const communityId = req.params.id;
+            const [membership] = await db.promise().query(
+                "SELECT isPinned FROM community_members WHERE communityId = ? AND userId = ?", 
+                [communityId, userId]
+            );
+
+            if (membership.length === 0) {
+                return res.status(403).json({ message: "You must join the community before pinning it." });
+            }
+
+            const isCurrentlyPinned = membership[0].isPinned;
+
+            if (isCurrentlyPinned) {
+                await db.promise().query(
+                    "UPDATE community_members SET isPinned = 0 WHERE communityId = ? AND userId = ?", 
+                    [communityId, userId]
+                );
+                return res.status(200).json({ message: "Community unpinned successfully.", isPinned: false });
+            } else { 
+                const isExempt = userRole === 'premium' || userRole === 'admin';
+                
+                if (!isExempt) {
+                    const [pinCountData] = await db.promise().query(
+                        "SELECT COUNT(*) as pinCount FROM community_members WHERE userId = ? AND isPinned = 1",
+                        [userId]
+                    );
+                    
+                    if (pinCountData[0].pinCount >= 3) {
+                        return res.status(403).json({ 
+                            message: "Pin limit reached. You can only pin up to 3 communities. Upgrade to Premium for unlimited pins!" 
+                        });
+                    }
+                }
+                await db.promise().query(
+                    "UPDATE community_members SET isPinned = 1 WHERE communityId = ? AND userId = ?", 
+                    [communityId, userId]
+                );
+                return res.status(200).json({ message: "Community pinned successfully.", isPinned: true });
+            }
+
+        } catch (error) {
+            console.error("[Error] togglePinCommunity:", error);
+            return res.status(500).json({ message: "An error occurred while toggling the community pin.", error: error.message });
         }
     });
 };
@@ -638,3 +694,4 @@ export const removeCommunityMember = (req, res) => {
         }
     });  
 };
+

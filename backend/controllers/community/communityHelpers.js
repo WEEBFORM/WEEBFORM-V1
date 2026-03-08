@@ -43,19 +43,29 @@ export const fetchCommunityInfo = async (communityIds = [], userId = null, optio
         includeChatGroups = false, 
         includeCreatorInfo = false, 
         discoveryMode = false,
-        includeCommunityPoints = false
+        includeCommunityPoints = false,
+        includePinStatus = false // NEW: Option to retrieve and sort by Pin status
     } = options;
 
     try {
         let baseQuery = `SELECT c.id, c.creatorId, c.title, c.description, c.groupIcon, c.visibility, c.createdAt`;
+        
         if (includeMemberCount) baseQuery += `,(SELECT COUNT(*) FROM community_members WHERE communityId = c.id) AS memberCount`;
+        
         if (includeUserMembership && userId) baseQuery += `, (SELECT COUNT(*) FROM community_members WHERE communityId = c.id AND userId = ?) > 0 AS isCommunityMember`;
+        
+        // NEW: Fetch Pin Status
+        if (includePinStatus && userId) baseQuery += `, COALESCE((SELECT isPinned FROM community_members WHERE communityId = c.id AND userId = ?), 0) AS isPinned`;
+        
         if (includeCreatorInfo) baseQuery += `, u.username AS creatorUsername, u.full_name AS creatorFullName`;
+        
         baseQuery += ` FROM communities AS c`;
+        
         if (includeCreatorInfo) baseQuery += ` LEFT JOIN users u ON c.creatorId = u.id`;
         
         const queryParams = [];
         if (includeUserMembership && userId) queryParams.push(userId);
+        if (includePinStatus && userId) queryParams.push(userId); // Bind user ID for the isPinned subquery
 
         const whereClauses = [];
         if (communityIds.length > 0) {
@@ -70,12 +80,26 @@ export const fetchCommunityInfo = async (communityIds = [], userId = null, optio
             baseQuery += ` WHERE ${whereClauses.join(' AND ')}`;
         }
         
-        baseQuery += ` ORDER BY c.createdAt ASC`;
+        // NEW: Natively sort by Pinned status first, then by creation date
+        if (includePinStatus && userId) {
+            baseQuery += ` ORDER BY isPinned DESC, c.createdAt ASC`;
+        } else {
+            baseQuery += ` ORDER BY c.createdAt ASC`;
+        }
 
         const [communities] = await db.promise().query(baseQuery, queryParams);
 
         const processedCommunities = communities.map(community => {
             community.groupIcon = processImageUrl(community.groupIcon);
+            
+            // Format 1/0 from Database to Boolean true/false 
+            if (community.isPinned !== undefined) {
+                community.isPinned = !!community.isPinned;
+            }
+            if (community.isCommunityMember !== undefined) {
+                community.isCommunityMember = !!community.isCommunityMember;
+            }
+            
             return community;
         });
         
@@ -139,3 +163,5 @@ export const getFriendCommunityIds = async (userId) => {
         throw new Error("Error fetching friend communities");
     }
 };
+
+
