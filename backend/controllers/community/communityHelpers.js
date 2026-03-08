@@ -51,6 +51,21 @@ export const fetchCommunityInfo = async (communityIds = [], userId = null, optio
         let baseQuery = `SELECT c.id, c.creatorId, c.title, c.description, c.groupIcon, c.visibility, c.createdAt`;
         
         if (includeMemberCount) baseQuery += `,(SELECT COUNT(*) FROM community_members WHERE communityId = c.id) AS memberCount`;
+
+        // UNREAD MESSAGE COUNT FOR USER
+        if (userId) {
+            baseQuery += `, (
+                SELECT COUNT(*) 
+                FROM groupmessages gm
+                JOIN chat_groups cg ON gm.chatGroupId = cg.id
+                JOIN chat_group_members cgm ON cg.id = cgm.chatGroupId
+                WHERE cg.communityId = c.id 
+                  AND cgm.userId = ? 
+                  AND gm.createdAt > COALESCE(cgm.lastReadAt, '1970-01-01')
+                  AND gm.userId != ?
+            ) AS totalUnreadCount`;
+        }
+
         
         if (includeUserMembership && userId) baseQuery += `, (SELECT COUNT(*) FROM community_members WHERE communityId = c.id AND userId = ?) > 0 AS isCommunityMember`;
         
@@ -64,6 +79,8 @@ export const fetchCommunityInfo = async (communityIds = [], userId = null, optio
         if (includeCreatorInfo) baseQuery += ` LEFT JOIN users u ON c.creatorId = u.id`;
         
         const queryParams = [];
+
+        if (userId) queryParams.push(userId, userId); // For unread count
         if (includeUserMembership && userId) queryParams.push(userId);
         if (includePinStatus && userId) queryParams.push(userId); // Bind user ID for the isPinned subquery
 
