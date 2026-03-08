@@ -180,5 +180,3 @@ export const getFriendCommunityIds = async (userId) => {
         throw new Error("Error fetching friend communities");
     }
 };
-
-
