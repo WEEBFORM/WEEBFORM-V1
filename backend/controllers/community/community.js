@@ -208,7 +208,7 @@ export const communities = (req, res) => {
             // FETCH COMMUNITIES IN CATEGORIES
             const joinedCommunityIds = await getUserJoinedCommunityIds(userId);
             const joinedResult = joinedCommunityIds.length > 0 
-                ? await fetchCommunityInfo(joinedCommunityIds, userId, { includeMemberCount: true, includeUserMembership: true })
+                ? await fetchCommunityInfo(joinedCommunityIds, userId, { includeMemberCount: true, includeUserMembership: true, includePinStatus: true })
                 : [];
 
             // FETCH PUBLIC COMMUNITIES FOR DISCOVERY

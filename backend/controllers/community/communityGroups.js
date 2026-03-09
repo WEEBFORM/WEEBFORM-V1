@@ -107,7 +107,7 @@ export const editGroup = (req, res) => {
         // ADMIN CHECK
         const [adminCheck] = await db.promise().query(
           "SELECT id FROM community_members WHERE communityId = ? AND userId = ? AND isAdmin = 1",
-          [communityId, user.id]
+          [communityId, user.id] 
         );
 
         if (adminCheck.length === 0) {
