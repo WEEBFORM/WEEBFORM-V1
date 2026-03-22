@@ -31,6 +31,7 @@ import News from './routes/newsAndRecommendations.js';
 import Communities from './routes/Community/community.js';
 import Groups from './routes/Community/communityGroups.js';
 import Notifications from './routes/notificationRoute.js';
+import PaymentRoutes from './routes/paymentRoute.js'; 
 
 import { startBotSchedulers } from './services/botSchedulerService.js';
 
@@ -112,6 +113,7 @@ app.use((req, res, next) => {
 // Routes
 app.use('/api/v1/user', authRoute);
 app.use('/api/v1/user', Users);
+app.use('/api/v1/user/payment', PaymentRoutes);
 app.use('/api/v1/user/actions', Actions);
 app.use('/api/v1/user/sidebar', SideBar);
 app.use('/api/v1/user', forgottenPasswordRoute);
