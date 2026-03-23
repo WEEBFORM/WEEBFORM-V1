@@ -83,7 +83,7 @@ export const getPaymentConfig = async (req, res) => {
         monthlyPrice = isAfrica ? Math.ceil(monthlyPrice) : Number(monthlyPrice.toFixed(2));
         yearlyPrice = isAfrica ? Math.ceil(yearlyPrice) : Number(yearlyPrice.toFixed(2));
 
-        try {
+        try { 
             // Get user info for Flutterwave payload
             const [users] = await db.promise().query("SELECT email, full_name, username FROM users WHERE id = ?", [userId]);
             if (!users.length) return res.status(404).json({ message: "User not found" });

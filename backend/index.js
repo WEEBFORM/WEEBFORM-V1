@@ -31,7 +31,7 @@ import News from './routes/newsAndRecommendations.js';
 import Communities from './routes/Community/community.js';
 import Groups from './routes/Community/communityGroups.js';
 import Notifications from './routes/notificationRoute.js';
-import PaymentRoutes from './routes/paymentRoute.js'; 
+import PaymentRoutes from './routes/Users/paymentRoute.js'; 
 
 import { startBotSchedulers } from './services/botSchedulerService.js';
 
