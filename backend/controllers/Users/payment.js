@@ -2,8 +2,8 @@ import axios from 'axios';
 import geoip from 'geoip-lite';
 import getCurrency from 'country-to-currency';
 import NodeCache from 'node-cache';
-import { db } from "../config/connectDB.js";
-import { authenticateUser } from "../middlewares/verify.mjs";
+import { db } from "../../config/connectDB.js";
+import { authenticateUser } from "../../middlewares/verify.mjs";
 
 // Cache exchange rates for 12 hours to avoid API rate limits
 const exchangeCache = new NodeCache({ stdTTL: 43200 }); 
