@@ -1,5 +1,5 @@
 import express from 'express';
-import { getPaymentConfig, flutterwaveWebhook } from '../controllers/payment.js';
+import { getPaymentConfig, flutterwaveWebhook } from '../../controllers/Users/payment.js';
 
 const router = express.Router();
 
