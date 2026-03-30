@@ -39,26 +39,19 @@ const getExchangeRates = async () => {
 export const getPaymentConfig = async (req, res) => {
     authenticateUser(req, res, async () => {
         const userId = req.user.id;
-
-        // 1. Get User IP & Country (handle proxy chains correctly)
-        let ip = req.headers['x-forwarded-for']
-            ? req.headers['x-forwarded-for'].split(',')[0].trim()
-            : req.socket.remoteAddress;
-
-        // Strip IPv6-mapped IPv4 prefix
-        if (ip && ip.startsWith('::ffff:')) ip = ip.replace('::ffff:', '');
-
-        // Fallback to Nigerian IP for local dev
-        if (!ip || ip === '127.0.0.1' || ip === '::1') ip = '102.89.0.0';
-
+        
+        // 1. Get User IP & Country
+        let ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        if (ip === '127.0.0.1' || ip === '::1') ip = '102.89.0.0'; // Fallback to a Nigerian IP for local testing
+        
         const geo = geoip.lookup(ip);
         const countryCode = geo ? geo.country : 'US';
         const isAfrica = africanCountries.includes(countryCode);
-
-        // 2. Determine Local Currency
-        let localCurrency = getCurrency(countryCode) || 'USD'; // ← fixed: call as function
+        
+        // 2. Determine Local Currency (Fallback to USD if Flutterwave doesn't support it)
+        let localCurrency = getCurrency[countryCode] || 'USD';
         if (!flwSupportedCurrencies.includes(localCurrency)) {
-            localCurrency = 'USD';
+            localCurrency = 'USD'; 
         }
 
         // 3. Fetch Exchange Rates
@@ -69,32 +62,39 @@ export const getPaymentConfig = async (req, res) => {
         let yearlyPrice = 0;
 
         if (countryCode === 'NG') {
+            // Strictly Fixed for Nigeria
             monthlyPrice = 599;
             yearlyPrice = 5999;
             localCurrency = 'NGN';
         } else if (isAfrica) {
-            const ngnToUsd = 599 / rates['NGN'];
+            // African Equivalent of NGN 599 / 5999
+            const ngnToUsd = 599 / rates['NGN']; // Convert Base NGN to USD
             const ngnToUsdYearly = 5999 / rates['NGN'];
-            monthlyPrice = ngnToUsd * rates[localCurrency];
+            
+            monthlyPrice = ngnToUsd * rates[localCurrency]; // Convert USD to Local African Currency
             yearlyPrice = ngnToUsdYearly * rates[localCurrency];
         } else {
+            // Rest of the World Equivalent of $1.99 / $19.99
             monthlyPrice = 1.99 * rates[localCurrency];
             yearlyPrice = 19.99 * rates[localCurrency];
         }
 
+        // Round up to nearest whole number for clean pricing (or 2 decimal places)
         monthlyPrice = isAfrica ? Math.ceil(monthlyPrice) : Number(monthlyPrice.toFixed(2));
         yearlyPrice = isAfrica ? Math.ceil(yearlyPrice) : Number(yearlyPrice.toFixed(2));
 
-        try {
-            const [users] = await db.promise().query(
-                "SELECT email, full_name, username FROM users WHERE id = ?", [userId]
-            );
+        try { 
+            // Get user info for Flutterwave payload
+            const [users] = await db.promise().query("SELECT email, full_name, username FROM users WHERE id = ?", [userId]);
             if (!users.length) return res.status(404).json({ message: "User not found" });
 
             res.status(200).json({
                 currency: localCurrency,
                 country: countryCode,
-                prices: { monthly: monthlyPrice, annually: yearlyPrice },
+                prices: {
+                    monthly: monthlyPrice,
+                    annually: yearlyPrice
+                },
                 user: users[0]
             });
         } catch (error) {
