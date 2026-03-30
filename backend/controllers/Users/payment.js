@@ -7,9 +7,6 @@ import { authenticateUser } from "../../middlewares/verify.mjs";
 // Cache exchange rates for 12 hours
 const exchangeCache = new NodeCache({ stdTTL: 43200 });
 
-// Cache IP lookups for 1 hour — same user won't re-geolocate on every request
-const geoCache = new NodeCache({ stdTTL: 3600 });
-
 const africanCountries = [
     "DZ","AO","BJ","BW","BF","BI","CV","CM","CF","TD","KM","CD","CG","CI","DJ","EG","GQ",
     "ER","SZ","ET","GA","GM","GH","GN","GW","KE","LS","LR","LY","MG","MW","ML","MR","MU",
@@ -19,54 +16,9 @@ const africanCountries = [
 
 const flwSupportedCurrencies = ["NGN","GHS","KES","UGX","TZS","ZAR","RWF","XOF","XAF","USD","GBP","EUR"];
 
-// ─── Extract the real client IP from proxy headers ────────────────────────────
-const extractClientIp = (req) => {
-    const forwarded = req.headers['x-forwarded-for'];
-    if (forwarded) {
-        return forwarded.split(',')[0].trim();
-    }
-    return req.socket.remoteAddress;
-};
-
-// ─── Geolocate via ip-api.com (free, 45 req/min, no key needed) ──────────────
-// This replaces geoip-lite which ships with a static bundled DB that goes stale
-// and misidentifies newer IP ranges (common with African ISPs like MTN, Airtel).
-const getCountryFromIp = async (ip) => {
-    // Return cached result if available
-    const cached = geoCache.get(ip);
-    if (cached) return cached;
-
-    try {
-        // ip-api.com returns accurate, live data — free tier allows 45 req/min
-        const response = await axios.get(`http://ip-api.com/json/${ip}?fields=status,countryCode`, {
-            timeout: 4000,
-        });
-
-        if (response.data.status === 'success') {
-            const countryCode = response.data.countryCode;
-            geoCache.set(ip, countryCode);
-            return countryCode;
-        }
-    } catch (error) {
-        console.error(`[GeoIP] ip-api.com failed for ${ip}:`, error.message);
-    }
-
-    // Fallback: try a second provider (ipapi.co) if ip-api.com fails
-    try {
-        const fallback = await axios.get(`https://ipapi.co/${ip}/country/`, {
-            timeout: 4000,
-        });
-        const countryCode = fallback.data?.trim();
-        if (countryCode && countryCode.length === 2) {
-            geoCache.set(ip, countryCode);
-            return countryCode;
-        }
-    } catch (err) {
-        console.error(`[GeoIP] ipapi.co fallback also failed for ${ip}:`, err.message);
-    }
-
-    return null; // Both providers failed
-};
+// Valid ISO 3166-1 alpha-2 country code check
+const isValidCountryCode = (code) =>
+    typeof code === 'string' && /^[A-Z]{2}$/.test(code);
 
 const getExchangeRates = async () => {
     let rates = exchangeCache.get("rates");
@@ -87,46 +39,34 @@ export const getPaymentConfig = async (req, res) => {
     authenticateUser(req, res, async () => {
         const userId = req.user.id;
 
-        // 1. Extract IP
-        let ip = extractClientIp(req);
-        const isLocalDev = !ip || ip === '127.0.0.1' || ip === '::1';
+        // Read country detected by the client app — no server-side IP guessing.
+        // The app calls ip-api.com directly and forwards the result in this header.
+        const clientCountry = req.headers['x-client-country']?.trim().toUpperCase();
+        const countryCode   = isValidCountryCode(clientCountry) ? clientCountry : 'US';
 
-        // 2. Geolocate — use live API, skip for localhost (use NG as dev default)
-        let countryCode;
-        if (isLocalDev) {
-            countryCode = 'NG'; // local dev always tests Nigerian pricing
-            console.log('[GeoIP] Local dev detected — defaulting to NG');
-        } else {
-            countryCode = await getCountryFromIp(ip);
-            if (!countryCode) {
-                console.warn(`[GeoIP] Could not resolve country for IP ${ip} — defaulting to US`);
-                countryCode = 'US';
-            }
-        }
-
-        console.log(`[GeoIP] IP: ${ip} → Country: ${countryCode}`);
+        console.log(`[PaymentConfig] userId=${userId} country=${countryCode} (client-provided: ${clientCountry})`);
 
         const isAfrica = africanCountries.includes(countryCode);
 
-        // 3. Determine currency
+        // Determine currency
         let localCurrency = getCurrency[countryCode] || 'USD';
         if (!flwSupportedCurrencies.includes(localCurrency)) {
             localCurrency = 'USD';
         }
 
-        // 4. Fetch exchange rates
+        // Fetch exchange rates
         const rates = await getExchangeRates();
 
-        // 5. Calculate pricing
+        // Calculate pricing
         let monthlyPrice, yearlyPrice;
 
         if (countryCode === 'NG') {
-            monthlyPrice = 599;
-            yearlyPrice  = 5999;
+            monthlyPrice  = 599;
+            yearlyPrice   = 5999;
             localCurrency = 'NGN';
         } else if (isAfrica) {
-            const ngnToUsd        = 599  / rates['NGN'];
-            const ngnToUsdYearly  = 5999 / rates['NGN'];
+            const ngnToUsd       = 599  / rates['NGN'];
+            const ngnToUsdYearly = 5999 / rates['NGN'];
             monthlyPrice = ngnToUsd       * rates[localCurrency];
             yearlyPrice  = ngnToUsdYearly * rates[localCurrency];
         } else {
@@ -168,7 +108,7 @@ export const flutterwaveWebhook = async (req, res) => {
         return res.status(401).end();
     }
 
-    // Acknowledge immediately — Flutterwave retries if it doesn't get 200 fast
+    // Acknowledge immediately — Flutterwave retries if it doesn't get 200 quickly
     res.status(200).end();
 
     const payload = req.body;
@@ -199,7 +139,7 @@ export const flutterwaveWebhook = async (req, res) => {
                 return;
             }
 
-            // Parse tx_ref: sub_monthly_<userId>_<uuid> or sub_annually_<userId>_<uuid>
+            // tx_ref format: sub_monthly_<userId>_<uuid> or sub_annually_<userId>_<uuid>
             const parts  = txRef.split('_');
             const plan   = parts[1];  // "monthly" or "annually"
             const userId = parts[2];  // numeric user id
@@ -221,7 +161,7 @@ export const flutterwaveWebhook = async (req, res) => {
                 [plan, transactionId, userId]
             );
 
-            console.log(`[Webhook] User ${userId} upgraded to ${plan} premium. TxID: ${transactionId}`);
+            console.log(`[Webhook] User ${userId} → ${plan} premium. TxID: ${transactionId}`);
         } catch (error) {
             console.error("[Webhook] Processing error:", error.message);
         }
