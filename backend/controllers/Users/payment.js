@@ -1,14 +1,15 @@
 import axios from 'axios';
-import geoip from 'geoip-lite';
 import getCurrency from 'country-to-currency';
 import NodeCache from 'node-cache';
 import { db } from "../../config/connectDB.js";
 import { authenticateUser } from "../../middlewares/verify.mjs";
 
-// Cache exchange rates for 12 hours to avoid API rate limits
+// Cache exchange rates for 12 hours
 const exchangeCache = new NodeCache({ stdTTL: 43200 });
 
-// List of African country codes (ISO 2-letter)
+// Cache IP lookups for 1 hour — same user won't re-geolocate on every request
+const geoCache = new NodeCache({ stdTTL: 3600 });
+
 const africanCountries = [
     "DZ","AO","BJ","BW","BF","BI","CV","CM","CF","TD","KM","CD","CG","CI","DJ","EG","GQ",
     "ER","SZ","ET","GA","GM","GH","GN","GW","KE","LS","LR","LY","MG","MW","ML","MR","MU",
@@ -16,10 +17,57 @@ const africanCountries = [
     "TG","TN","UG","EH","ZM","ZW"
 ];
 
-// Currencies natively supported by Flutterwave
 const flwSupportedCurrencies = ["NGN","GHS","KES","UGX","TZS","ZAR","RWF","XOF","XAF","USD","GBP","EUR"];
 
-// Fetch live exchange rates (Base USD)
+// ─── Extract the real client IP from proxy headers ────────────────────────────
+const extractClientIp = (req) => {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (forwarded) {
+        return forwarded.split(',')[0].trim();
+    }
+    return req.socket.remoteAddress;
+};
+
+// ─── Geolocate via ip-api.com (free, 45 req/min, no key needed) ──────────────
+// This replaces geoip-lite which ships with a static bundled DB that goes stale
+// and misidentifies newer IP ranges (common with African ISPs like MTN, Airtel).
+const getCountryFromIp = async (ip) => {
+    // Return cached result if available
+    const cached = geoCache.get(ip);
+    if (cached) return cached;
+
+    try {
+        // ip-api.com returns accurate, live data — free tier allows 45 req/min
+        const response = await axios.get(`http://ip-api.com/json/${ip}?fields=status,countryCode`, {
+            timeout: 4000,
+        });
+
+        if (response.data.status === 'success') {
+            const countryCode = response.data.countryCode;
+            geoCache.set(ip, countryCode);
+            return countryCode;
+        }
+    } catch (error) {
+        console.error(`[GeoIP] ip-api.com failed for ${ip}:`, error.message);
+    }
+
+    // Fallback: try a second provider (ipapi.co) if ip-api.com fails
+    try {
+        const fallback = await axios.get(`https://ipapi.co/${ip}/country/`, {
+            timeout: 4000,
+        });
+        const countryCode = fallback.data?.trim();
+        if (countryCode && countryCode.length === 2) {
+            geoCache.set(ip, countryCode);
+            return countryCode;
+        }
+    } catch (err) {
+        console.error(`[GeoIP] ipapi.co fallback also failed for ${ip}:`, err.message);
+    }
+
+    return null; // Both providers failed
+};
+
 const getExchangeRates = async () => {
     let rates = exchangeCache.get("rates");
     if (!rates) {
@@ -29,72 +77,63 @@ const getExchangeRates = async () => {
             exchangeCache.set("rates", rates);
         } catch (error) {
             console.error("Failed to fetch exchange rates:", error.message);
-            // Fallback rates if API fails
             rates = { USD: 1, NGN: 1500, EUR: 0.92, GBP: 0.79, ZAR: 19 };
         }
     }
     return rates;
 };
 
-// ─── FIX 1: Robust IP extraction ─────────────────────────────────────────────
-// x-forwarded-for can be a comma-separated list like "clientIP, proxy1, proxy2".
-// We always want the first (leftmost) IP — that's the real client IP.
-const extractClientIp = (req) => {
-    const forwarded = req.headers['x-forwarded-for'];
-    if (forwarded) {
-        // Take only the first IP in the list and strip whitespace
-        return forwarded.split(',')[0].trim();
-    }
-    return req.socket.remoteAddress;
-};
-
 export const getPaymentConfig = async (req, res) => {
     authenticateUser(req, res, async () => {
         const userId = req.user.id;
 
-        // 1. Get User IP & Country (with reliable IP extraction)
+        // 1. Extract IP
         let ip = extractClientIp(req);
+        const isLocalDev = !ip || ip === '127.0.0.1' || ip === '::1';
 
-        // For local dev: fall back to a Nigerian IP so you can test NGN pricing
-        if (!ip || ip === '127.0.0.1' || ip === '::1') {
-            ip = '102.89.0.0';
+        // 2. Geolocate — use live API, skip for localhost (use NG as dev default)
+        let countryCode;
+        if (isLocalDev) {
+            countryCode = 'NG'; // local dev always tests Nigerian pricing
+            console.log('[GeoIP] Local dev detected — defaulting to NG');
+        } else {
+            countryCode = await getCountryFromIp(ip);
+            if (!countryCode) {
+                console.warn(`[GeoIP] Could not resolve country for IP ${ip} — defaulting to US`);
+                countryCode = 'US';
+            }
         }
 
-        const geo = geoip.lookup(ip);
-        const countryCode = geo ? geo.country : 'US';
+        console.log(`[GeoIP] IP: ${ip} → Country: ${countryCode}`);
+
         const isAfrica = africanCountries.includes(countryCode);
 
-        // 2. Determine Local Currency (fallback to USD if Flutterwave doesn't support it)
+        // 3. Determine currency
         let localCurrency = getCurrency[countryCode] || 'USD';
         if (!flwSupportedCurrencies.includes(localCurrency)) {
             localCurrency = 'USD';
         }
 
-        // 3. Fetch Exchange Rates
+        // 4. Fetch exchange rates
         const rates = await getExchangeRates();
 
-        // 4. Calculate Dynamic Pricing
-        let monthlyPrice = 0;
-        let yearlyPrice = 0;
+        // 5. Calculate pricing
+        let monthlyPrice, yearlyPrice;
 
         if (countryCode === 'NG') {
-            // Strictly Fixed for Nigeria
             monthlyPrice = 599;
-            yearlyPrice = 5999;
+            yearlyPrice  = 5999;
             localCurrency = 'NGN';
         } else if (isAfrica) {
-            // African Equivalent of NGN 599 / 5999
-            const ngnToUsd = 599 / rates['NGN'];
-            const ngnToUsdYearly = 5999 / rates['NGN'];
-            monthlyPrice = ngnToUsd * rates[localCurrency];
-            yearlyPrice = ngnToUsdYearly * rates[localCurrency];
+            const ngnToUsd        = 599  / rates['NGN'];
+            const ngnToUsdYearly  = 5999 / rates['NGN'];
+            monthlyPrice = ngnToUsd       * rates[localCurrency];
+            yearlyPrice  = ngnToUsdYearly * rates[localCurrency];
         } else {
-            // Rest of the World: equivalent of $1.99 / $19.99
-            monthlyPrice = 1.99 * rates[localCurrency];
-            yearlyPrice = 19.99 * rates[localCurrency];
+            monthlyPrice = 1.99  * rates[localCurrency];
+            yearlyPrice  = 19.99 * rates[localCurrency];
         }
 
-        // Round up to nearest whole number for African currencies, 2dp for others
         monthlyPrice = isAfrica ? Math.ceil(monthlyPrice) : Number(monthlyPrice.toFixed(2));
         yearlyPrice  = isAfrica ? Math.ceil(yearlyPrice)  : Number(yearlyPrice.toFixed(2));
 
@@ -107,9 +146,9 @@ export const getPaymentConfig = async (req, res) => {
 
             res.status(200).json({
                 currency: localCurrency,
-                country: countryCode,
+                country:  countryCode,
                 prices: {
-                    monthly: monthlyPrice,
+                    monthly:  monthlyPrice,
                     annually: yearlyPrice,
                 },
                 user: users[0],
@@ -120,12 +159,7 @@ export const getPaymentConfig = async (req, res) => {
     });
 };
 
-// ─── FIX 2: Reliable webhook with idempotency guard ──────────────────────────
-// The webhook MUST be the source of truth for upgrading users. We add:
-//   (a) An idempotency check so replayed webhooks don't double-process.
-//   (b) Correct parsing of tx_ref — format: sub_<plan>_<userId>_<uuid>
-//       "plan" may be "monthly" or "annually" (no underscores in those words),
-//       and userId is numeric, so we can safely split and grab indices 1 and 2.
+// ─── Flutterwave Webhook ──────────────────────────────────────────────────────
 export const flutterwaveWebhook = async (req, res) => {
     const secretHash = process.env.FLW_WEBHOOK_HASH;
     const signature  = req.headers["verif-hash"];
@@ -134,17 +168,17 @@ export const flutterwaveWebhook = async (req, res) => {
         return res.status(401).end();
     }
 
-    // Always acknowledge immediately — Flutterwave retries if it doesn't get 200 fast
+    // Acknowledge immediately — Flutterwave retries if it doesn't get 200 fast
     res.status(200).end();
 
     const payload = req.body;
 
     if (payload.event === "charge.completed" && payload.data.status === "successful") {
         const transactionId = payload.data.id;
-        const txRef         = payload.data.tx_ref; // "sub_monthly_userId_uuid" or "sub_annually_userId_uuid"
+        const txRef         = payload.data.tx_ref;
 
         try {
-            // ── Idempotency: skip if this transaction was already processed ──
+            // Idempotency: skip already-processed transactions
             const [existing] = await db.promise().query(
                 "SELECT id FROM users WHERE last_transaction_id = ?",
                 [transactionId]
@@ -154,23 +188,21 @@ export const flutterwaveWebhook = async (req, res) => {
                 return;
             }
 
-            // ── Verify with Flutterwave API (source of truth) ────────────────
+            // Verify with Flutterwave
             const verifyRes = await axios.get(
                 `https://api.flutterwave.com/v3/transactions/${transactionId}/verify`,
                 { headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` } }
             );
 
             if (verifyRes.data.data.status !== "successful") {
-                console.warn(`[Webhook] Transaction ${transactionId} verification failed.`);
+                console.warn(`[Webhook] Transaction ${transactionId} not verified.`);
                 return;
             }
 
-            // ── Parse tx_ref ─────────────────────────────────────────────────
-            // Format guaranteed by frontend: sub_monthly_<userId>_<uuid>
-            //                             or sub_annually_<userId>_<uuid>
+            // Parse tx_ref: sub_monthly_<userId>_<uuid> or sub_annually_<userId>_<uuid>
             const parts  = txRef.split('_');
-            const plan   = parts[1];           // "monthly" or "annually"
-            const userId = parts[2];           // numeric user id
+            const plan   = parts[1];  // "monthly" or "annually"
+            const userId = parts[2];  // numeric user id
 
             if (!plan || !userId || isNaN(Number(userId))) {
                 console.error(`[Webhook] Invalid tx_ref format: ${txRef}`);
@@ -179,13 +211,12 @@ export const flutterwaveWebhook = async (req, res) => {
 
             const interval = plan === 'monthly' ? '1 MONTH' : '1 YEAR';
 
-            // ── Update DB: upgrade user and store transaction id for idempotency
             await db.promise().query(
                 `UPDATE users
-                 SET role                 = 'premium',
-                     subscription_plan   = ?,
+                 SET role                  = 'premium',
+                     subscription_plan     = ?,
                      subscription_end_date = DATE_ADD(NOW(), INTERVAL ${interval}),
-                     last_transaction_id = ?
+                     last_transaction_id   = ?
                  WHERE id = ?`,
                 [plan, transactionId, userId]
             );
