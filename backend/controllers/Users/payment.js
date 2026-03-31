@@ -61,7 +61,7 @@ export const getPaymentConfig = async (req, res) => {
         let monthlyPrice, yearlyPrice;
 
         if (countryCode === 'NG') {
-            monthlyPrice  = 599;
+            monthlyPrice  = 99;
             yearlyPrice   = 5999;
             localCurrency = 'NGN';
         } else if (isAfrica) {
