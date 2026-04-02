@@ -61,7 +61,7 @@ export const getPaymentConfig = async (req, res) => {
         let monthlyPrice, yearlyPrice;
 
         if (countryCode === 'NG') {
-            monthlyPrice  = 199;
+            monthlyPrice  = 99;
             yearlyPrice   = 5999;
             localCurrency = 'NGN';
         } else if (isAfrica) {
@@ -149,9 +149,14 @@ export const flutterwaveWebhook = async (req, res) => {
                 return;
             }
 
+            // tx_ref uses "monthly" or "annually" — match both variants defensively
+            if (plan !== 'monthly' && plan !== 'annually') {
+                console.error(`[Webhook] Unrecognised plan "${plan}" in tx_ref: ${txRef}`);
+                return;
+            }
             const interval = plan === 'monthly' ? '1 MONTH' : '1 YEAR';
 
-            await db.promise().query(
+            const [updateResult] = await db.promise().query(
                 `UPDATE users
                  SET role                  = 'premium',
                      subscription_plan     = ?,
@@ -161,7 +166,11 @@ export const flutterwaveWebhook = async (req, res) => {
                 [plan, transactionId, userId]
             );
 
-            console.log(`[Webhook] User ${userId} → ${plan} premium. TxID: ${transactionId}`);
+            if (updateResult.affectedRows === 0) {
+                console.error(`[Webhook] UPDATE matched 0 rows — userId ${userId} may not exist.`);
+            } else {
+                console.log(`[Webhook] User ${userId} → ${plan} premium. TxID: ${transactionId}`);
+            }
         } catch (error) {
             console.error("[Webhook] Processing error:", error.message);
         }
