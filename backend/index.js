@@ -31,6 +31,7 @@ import News from './routes/newsAndRecommendations.js';
 import Communities from './routes/Community/community.js';
 import Groups from './routes/Community/communityGroups.js';
 import Notifications from './routes/notificationRoute.js';
+import PaymentRoutes from './routes/Users/paymentRoute.js'; 
 
 import { startBotSchedulers } from './services/botSchedulerService.js';
 
@@ -85,7 +86,6 @@ app.use(cors(corsOptions));
 
 // SECURITY MIDDLEWARE
 app.use(helmet());
-app.set('trust proxy', true);
 
 // REQUEST PARSING
 app.use(express.json({ limit: '50mb' }));
@@ -101,19 +101,19 @@ app.use((req, res, next) => {
     next();
 });
 
-//Rate limiting
-const apiLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    standardHeaders: true,
-    message: 'Too many requests from this IP, please try again after 15 minutes',
-}); 
-
-app.use('/api', apiLimiter);
+// Rate limiting
+// const apiLimiter = rateLimit({
+//     windowMs: 15 * 60 * 1000,
+//     max: 100,
+//     standardHeaders: true,
+//     message: 'Too many requests from this IP, please try again after 15 minutes',
+// });    
+// app.use('/api', apiLimiter);
 
 // Routes
 app.use('/api/v1/user', authRoute);
 app.use('/api/v1/user', Users);
+app.use('/api/v1/user/payment', PaymentRoutes);
 app.use('/api/v1/user/actions', Actions);
 app.use('/api/v1/user/sidebar', SideBar);
 app.use('/api/v1/user', forgottenPasswordRoute);
@@ -190,28 +190,27 @@ if (cluster.isPrimary) {
     cluster.on('exit', (worker, code, signal) => {
         logger.error(`Worker ${worker.process.pid} died with code ${code}, spawning a new one...`);
         cluster.fork();
-    });
+    }); 
 
-    startBotSchedulers();
-
-} else {
-    logger.info(`Worker ${process.pid} started`);
-
+    // CONNECT TO DATABASE AND START SERVER
     (async () => {
         try {
-            await db.ping();
+            await db.ping(); // Test the database connection
             logger.info('Database connection established.');
         } catch (error) {
             logger.error('Failed to connect to database:', error);
-            process.exit(1);
+            process.exit(1); // EXIT IF DB CONNECTION FAILS
         }
 
         const server = http.createServer(app);
 
+        startBotSchedulers();
+        // WEBSOCKET INITIALIZATION
         initializeMessageSocket(server);
-
         server.listen(PORT, () => {
             logger.info(`Server listening on port ${PORT} in ${NODE_ENV} mode`);
         });
     })();
+} else {
+    logger.info(`Worker ${process.pid} started`);
 }
