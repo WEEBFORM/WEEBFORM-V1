@@ -22,15 +22,25 @@ const isValidCountryCode = (code) =>
 
 const getExchangeRates = async () => {
     let rates = exchangeCache.get("rates");
-    if (!rates) {
-        try {
-            const response = await axios.get("https://api.exchangerate-api.com/v4/latest/USD");
-            rates = response.data.rates;
-            exchangeCache.set("rates", rates);
-        } catch (error) {
-            console.error("Failed to fetch exchange rates:", error.message);
-            rates = { USD: 1, NGN: 1500, EUR: 0.92, GBP: 0.79, ZAR: 19 };
-        }
+    if (rates) return rates; // instant cache hit
+
+    try {
+        const response = await axios.get(
+            "https://api.exchangerate-api.com/v4/latest/USD",
+            { timeout: 5000 } // ← fail fast, don't block the endpoint
+        );
+        rates = response.data.rates;
+        exchangeCache.set("rates", rates);
+    } catch (error) {
+        console.error("Failed to fetch exchange rates:", error.message);
+        // Broad fallback covering all FLW-supported African currencies
+        rates = {
+            USD: 1,    NGN: 1580, EUR: 0.92, GBP: 0.79,
+            ZAR: 19,   KES: 130,  GHS: 15,   UGX: 3800,
+            TZS: 2700, RWF: 1300, XOF: 600,  XAF: 600,
+        };
+        // Cache fallback too — stops hammering a dead API on every request
+        exchangeCache.set("rates", rates);
     }
     return rates;
 };
@@ -39,29 +49,27 @@ export const getPaymentConfig = async (req, res) => {
     authenticateUser(req, res, async () => {
         const userId = req.user.id;
 
-        // Read country detected by the client app — no server-side IP guessing.
-        // The app calls ip-api.com directly and forwards the result in this header.
+        // Country is detected on the client (ip-api.com) and forwarded here.
+        // This avoids all server-side IP/proxy detection issues.
         const clientCountry = req.headers['x-client-country']?.trim().toUpperCase();
         const countryCode   = isValidCountryCode(clientCountry) ? clientCountry : 'US';
 
-        console.log(`[PaymentConfig] userId=${userId} country=${countryCode} (client-provided: ${clientCountry})`);
+        console.log(`[PaymentConfig] userId=${userId} country=${countryCode} (client-sent: ${clientCountry})`);
 
         const isAfrica = africanCountries.includes(countryCode);
 
-        // Determine currency
-        let localCurrency = getCurrency[countryCode] || 'USD';
+        // getCurrency is a FUNCTION, not an object — call it correctly
+        let localCurrency = getCurrency(countryCode) || 'USD';
         if (!flwSupportedCurrencies.includes(localCurrency)) {
             localCurrency = 'USD';
         }
 
-        // Fetch exchange rates
         const rates = await getExchangeRates();
 
-        // Calculate pricing
         let monthlyPrice, yearlyPrice;
 
         if (countryCode === 'NG') {
-            monthlyPrice  = 99;
+            monthlyPrice  = 199;
             yearlyPrice   = 5999;
             localCurrency = 'NGN';
         } else if (isAfrica) {
@@ -108,7 +116,7 @@ export const flutterwaveWebhook = async (req, res) => {
         return res.status(401).end();
     }
 
-    // Acknowledge immediately — Flutterwave retries if it doesn't get 200 quickly
+    // Acknowledge immediately — Flutterwave retries if it doesn't get 200 fast
     res.status(200).end();
 
     const payload = req.body;
@@ -128,10 +136,13 @@ export const flutterwaveWebhook = async (req, res) => {
                 return;
             }
 
-            // Verify with Flutterwave
+            // Verify with Flutterwave (with timeout so it doesn't hang)
             const verifyRes = await axios.get(
                 `https://api.flutterwave.com/v3/transactions/${transactionId}/verify`,
-                { headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` } }
+                {
+                    headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` },
+                    timeout: 8000,
+                }
             );
 
             if (verifyRes.data.data.status !== "successful") {
